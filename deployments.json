@@ -1,0 +1,149 @@
+{
+  "ganache": {
+    "owner": "",
+    "tokens": {
+      "wbtc": "0xA193E42526F1FEA8C99AF609dcEabf30C1c29fAA",
+      "usdc": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+      "usdt": "0xaC8444e7d45c34110B34Ed269AD86248884E78C7",
+      "dai": "0x94BA4d5Ebb0e05A50e977FFbF6e1a1Ee3D89299c",
+      "weth": "0xFf807885934003A35b1284d7445fc83Fd23417e5"
+    },
+    "pairs": {},
+    "delay": "0x84e924C5E04438D2c1Df1A981f7E7104952e6de1"
+  },
+  "kovan": {
+    "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
+    "tokens": {
+      "wbtc": "0x5313e18163a2b66BF23B45d0a838219e1b236957",
+      "usdc": "0xb922e0b5C8fFA89Fe6195a581acC7D292B924142",
+      "usdt": "0x9EB96a6a675D633D2754d4E6B039b6fCCfB82DC4",
+      "dai": "0xa0a8e1221AaF7f4220302C23943c1a60fB386447",
+      "weth": "0xd0A1E359811322d97991E03f863a0C30C2cF029C",
+      "link": "0xAE1f32bE79026EbfddEe398d8D7B2d9B7dF8891E",
+      "crv": "0xbB94607042C237b9c9d2bB2Cd0fe0c04356993c0"
+    },
+    "pairs": {
+      "weth-usdc": "0x1b1a7E186cf13Db3852f7f5bf19091061f323842",
+      "weth-crv": "0x39356Ee0464C3E815C5a6375ADa3D7580D5F9CbC"
+    },
+    "factory": "0x1c5cf8f73b1f544E01BA3F665fEE658e291329d9",
+    "reader": "0x1CD25C41Ff4BB6d3dcC147d8f9d1a64dde70b2e6",
+    "delay": "0x5236515d137eAC385F58C945Ec82371dcdb88c84",
+    "uniswap": {
+      "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "weth-usdc": "0x75DB3FC2C1f45d9781B349331eF72AB184c91125"
+    },
+    "tokenShares": "0x733C7b85f4dC3e47C3fCe7e402e1B62ffEDc7973",
+    "orders": "0xB47d585DA1eD48C3E6E5A622d08aB90099EC7CdC",
+    "addLiquidity": "0xAC8a1B33C92666fF69afb6d7D46C6c49E01463b8",
+    "buyHelper": "0x8FB37D93c257053606d92fcD2f12428e826DF04b",
+    "withdrawHelper": "0xd172A753075c520E882213E50CF76cdA6E62C960",
+    "integralToken": "0x597F10966E918d099Bfc30516ce2368DcCacf321",
+    "integralTimeRelease": "0xF86a107c4025bD7D53544788A457E50fbfb6ebC4",
+    "uniswapV2": {
+      "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "weth-usdc": "0x5177390e6a05e73549310C3864cce6Aba5FAf0BD",
+      "weth-wbtc": "0x54455168a481ac077E0d0A23984825731D58606B",
+      "weth-usdt": "0xC3539a7C181ea1Fa2926C1f76E4aee022B1907F4",
+      "weth-dai": "0x9F5937D4B64B6eBd1E4a84E7F0B766e30313D355",
+      "weth-link": "0x7e45094b7856B37Bc67d459aCCe6f64875a9f8e0",
+      "dai-usdc": "0x36b882992EDCE785fDFfA1ae1aCb318C7D37069e",
+      "dai-usdt": "0xA5335f078880840803f162b35B4bf1e221687bB3",
+      "usdc-usdt": "0x805D27Fa0b190a52e4FB2F1b9105A6D41569B81f"
+    },
+    "oraclesV2": {
+      "weth-usdc": "0x1574a91BBc73037D6817B02a0e105DbF11791945",
+      "weth-crv": "0x76e8AD3c7d3593B5da79f744B7BAF7FAE039A1EC"
+    },
+    "integralStaking": {
+      "sixMonths": "0xd514094E40d9Abf634B7586e6F045b9046aCbc77",
+      "threeYears": "0xA56989c1FA2a9041C45AA50af772f34f03796100"
+    },
+    "priceReader": "0xB089726BEf3A9a6c336f2701fD630024DA534039",
+    "sushiswapV2": {
+      "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+      "weth-crv": "0xdC07447b81efd0e502c037B3AB41805c5cd1809d"
+    }
+  },
+  "ropsten": {
+    "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
+    "tokens": {
+      "wbtc": "0x2d80502854fc7304c3e3457084de549f5016b73f",
+      "usdc": "0x0d9c8723b343a8368bebe0b5e89273ff8d712e3c",
+      "usdt": "0xa0e51D9f52e030f6a8341225cd48BF32607D5256",
+      "dai": "0xad6d458402f60fd3bd25163575031acdce07538d",
+      "weth": "0xc778417e063141139fce010982780140aa0cd5ab"
+    },
+    "uniswap": {
+      "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "weth-usdc": "0xbc30AaA8e99d0f0e435FC938034850c2fC77f753"
+    }
+  },
+  "rinkeby": {
+    "owner": "",
+    "tokens": {
+      "usdc": "0xa5bD78d99c7f0E9157d2af4E5f92ee63D2875769",
+      "weth": "0xc778417E063141139Fce010982780140Aa0cD5Ab",
+      "crv": "0x9E0B79f66042dC2EB83db7cc6DD84F82405CD06a"
+    },
+    "uniswapV2": {
+      "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "weth-usdc": "0x358409053f2D6f386B5B80859e81B863bBF1F8bC"
+    },
+    "sushiswapV2": {
+      "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+      "weth-crv": "0xDE4155f5816d9dbc9693057A40fB70DaE82D39C4"
+    },
+    "factory": "0xe09EfBdB58F3fb9bF18715534C4DC33dcf1B3028",
+    "tokenShares": "0x4D86E05C7028d121e9CddBE4c2183E2E0990a562",
+    "withdrawHelper": "0x48E1F034499c66FDEeaA75D43b92F3DF8C53E6c0",
+    "addLiquidity": "0xdCf283Ec29580244b5740a04cC174897Aca01124",
+    "orders": "0xfb424460D9415374612cCF56Efa295303cf8dC78",
+    "delay": "0x460F21E224d657dd36530131443fBd38C9477831",
+    "oraclesV2": {
+      "weth-usdc": "0xab3c5C35e3501e0A6F82FAD5Da3EB2C90C0c1904",
+      "weth-crv": "0x5d77ce4939F888482Ec3235356739eC8F91c5303"
+    },
+    "pairs": {
+      "weth-usdc": "0x9cCF47CC3FD5378061E2949ABb437DEbd13789Bf",
+      "weth-crv": "0x8CE1CD689deF124037f2eb59393f062bC790b884"
+    },
+    "reader": "0xd69c8a45B14f9f0ac11085CfB186C667faE71210"
+  },
+  "mainnet": {
+    "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
+    "tokens": {
+      "wbtc": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "usdt": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      "dai": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "weth": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "link": "0x514910771af9ca656af840dff83e8264ecf986ca"
+    },
+    "uniswap": {},
+    "pairs": {
+      "weth-usdc": "0x2fe16Dd18bba26e457B7dD2080d5674312b026a2"
+    },
+    "integralToken": "0xD502F487e1841Fdc805130e13eae80c61186Bc98",
+    "uniswapV2": {
+      "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "weth-usdc": "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+    },
+    "oraclesV2": {
+      "weth-usdc": "0x842362006863C9BF35A2B7397C3c6dF051DC4C4D"
+    },
+    "priceReader": "0x75e4955dd2B608Eb7A821EefCbBacB5f9dC978AF",
+    "integralTimeRelease": "0xc8805CeBD927941a3B26e2EDCed20d666Fb118Ba",
+    "integralStaking": {
+      "sixMonths": "0x36bD665392236b20bd42e161f02Bf0ae1d9441Ff",
+      "threeYears": "0xFFc0EAC1a1aE79C697607229Aca43Ef422625a40"
+    },
+    "factory": "0xC480b33eE5229DE3FbDFAD1D2DCD3F3BAD0C56c6",
+    "tokenShares": "0xB28c804E3dAcFF80701BbbafD106DBFb416A5168",
+    "withdrawHelper": "0x6195015B38773F468DD43620dD5A64e9bb63c2e3",
+    "addLiquidity": "0xB291730099D3Ac9975Abd4003Ba3BD47401fd2FD",
+    "orders": "0x6336788A85F54d8856782d58c1ca63c7d3844531",
+    "delay": "0x77B1E5D58247bC3300A8e646b018fceBfeE5a59c",
+    "reader": "0xB5C08263c1D2c9651Ea6d91A9908460e40095f7c"
+  }
+}
