@@ -1,13 +1,12 @@
 import { Wallet, ContractFactory } from 'ethers'
-import { deployContract } from 'ethereum-waffle'
-import { artifacts } from 'hardhat'
+import { artifacts, waffle } from 'hardhat'
 import { Orders__factory, TokenShares__factory } from '../../../../build/types'
 import { overrides } from '../../utilities'
 
 export async function deployLibraries(wallet: Wallet) {
   const WithdrawHelper = await artifacts.readArtifact('WithdrawHelper')
   const AddLiquidity = await artifacts.readArtifact('AddLiquidity')
-  const withdrawHelper = await deployContract(wallet, WithdrawHelper, [])
+  const withdrawHelper = await waffle.deployContract(wallet, WithdrawHelper, [])
   const addLiquidity = await new ContractFactory(AddLiquidity.abi, AddLiquidity.bytecode, wallet).deploy(overrides)
   const tokenShares = await new ContractFactory(TokenShares__factory.abi, TokenShares__factory.bytecode, wallet).deploy(
     overrides

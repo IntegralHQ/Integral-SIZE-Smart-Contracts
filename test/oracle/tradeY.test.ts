@@ -28,30 +28,149 @@ describe('TwapOracle.tradeY', () => {
 
   describe('returns correct values', () => {
     const decimals = [6, 18, 20]
+    const values1 = {
+      '6': {
+        '6': ['2137000000', '2000002635', '1999997366', '1000000131735', '999999868266', '1000000002634698985640891'],
+        '18': ['2137000000', '2000002635', '1999997366', '1000000131735', '999999868266', '1000000002634698985640891'],
+        '20': ['2137000000', '2000002635', '1999997366', '1000000131735', '999999868266', '1000000002634698985640891'],
+      },
+      '18': {
+        '6': [
+          '2137000000000000000000',
+          '2000002634698985640891',
+          '1999997365301014359110',
+          '1000000131734949282044527',
+          '999999868265050717955474',
+          '1000000002634698985640890528257146621',
+        ],
+        '18': [
+          '2137000000000000000000',
+          '2000002634698985640891',
+          '1999997365301014359110',
+          '1000000131734949282044527',
+          '999999868265050717955474',
+          '1000000002634698985640890528257146621',
+        ],
+        '20': [
+          '2137000000000000000000',
+          '2000002634698985640891',
+          '1999997365301014359110',
+          '1000000131734949282044527',
+          '999999868265050717955474',
+          '1000000002634698985640890528257146621',
+        ],
+      },
+      '20': {
+        '6': [
+          '213700000000000000000000',
+          '200000263469898564089053',
+          '199999736530101435910948',
+          '100000013173494928204452642',
+          '99999986826505071795547359',
+          '100000000263469898564089052825714662100',
+        ],
+        '18': [
+          '213700000000000000000000',
+          '200000263469898564089053',
+          '199999736530101435910948',
+          '100000013173494928204452642',
+          '99999986826505071795547359',
+          '100000000263469898564089052825714662100',
+        ],
+        '20': [
+          '213700000000000000000000',
+          '200000263469898564089053',
+          '199999736530101435910948',
+          '100000013173494928204452642',
+          '99999986826505071795547359',
+          '100000000263469898564089052825714662100',
+        ],
+      },
+    }
+
+    const values2 = {
+      '6': {
+        '6': ['2137000000', '2013495277', '1986504724', '1000674763833', '999325236168', '1000013495276653171390014'],
+        '18': ['2137000000', '2013495277', '1986504724', '1000674763833', '999325236168', '1000013495276653171390014'],
+        '20': ['2137000000', '2013495277', '1986504724', '1000674763833', '999325236168', '1000013495276653171390014'],
+      },
+      '18': {
+        '6': [
+          '2137000000000000000000',
+          '2013495276653171390014',
+          '1986504723346828609987',
+          '1000674763832658569500675',
+          '999325236167341430499326',
+          '1000013495276653171390013495276653172',
+        ],
+        '18': [
+          '2137000000000000000000',
+          '2013495276653171390014',
+          '1986504723346828609987',
+          '1000674763832658569500675',
+          '999325236167341430499326',
+          '1000013495276653171390013495276653172',
+        ],
+        '20': [
+          '2137000000000000000000',
+          '2013495276653171390014',
+          '1986504723346828609987',
+          '1000674763832658569500675',
+          '999325236167341430499326',
+          '1000013495276653171390013495276653172',
+        ],
+      },
+      '20': {
+        '6': [
+          '213700000000000000000000',
+          '201349527665317139001350',
+          '198650472334682860998651',
+          '100067476383265856950067477',
+          '99932523616734143049932524',
+          '100001349527665317139001349527665317140',
+        ],
+        '18': [
+          '213700000000000000000000',
+          '201349527665317139001350',
+          '198650472334682860998651',
+          '100067476383265856950067477',
+          '99932523616734143049932524',
+          '100001349527665317139001349527665317140',
+        ],
+        '20': [
+          '213700000000000000000000',
+          '201349527665317139001350',
+          '198650472334682860998651',
+          '100067476383265856950067477',
+          '99932523616734143049932524',
+          '100001349527665317139001349527665317140',
+        ],
+      },
+    }
 
     for (const xDecimals of decimals) {
       for (const yDecimals of decimals) {
         it(`tokenX ${xDecimals} decimals, tokenY ${yDecimals} decimals (price > 0)`, async () => {
-          const { tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(xDecimals, yDecimals, '379.55'))
-          expect(await tradeY(100, 2137, 100)).to.eq(toDecimals('2137', xDecimals))
-          expect(await tradeY(99, 2000, 100)).to.eq(toDecimals('2000.00263469898564089052', xDecimals))
-          expect(await tradeY(101, 2000, 100)).to.eq(toDecimals('1999.99736530101435910947', xDecimals))
-          expect(await tradeY(50, 1000000, 100)).to.eq(toDecimals('1000000.13173494928204452641', xDecimals))
-          expect(await tradeY(150, 1000000, 100)).to.eq(toDecimals('999999.86826505071795547358', xDecimals))
+          const { tradeY } = await loadFixture(getTradeFixtureFor(xDecimals, yDecimals, '379.55'))
+          expect(await tradeY(100, 2137, 100)).to.eq((values1 as any)[xDecimals.toString()][yDecimals.toString()][0])
+          expect(await tradeY(99, 2000, 100)).to.eq((values1 as any)[xDecimals.toString()][yDecimals.toString()][1])
+          expect(await tradeY(101, 2000, 100)).to.eq((values1 as any)[xDecimals.toString()][yDecimals.toString()][2])
+          expect(await tradeY(50, 1000000, 100)).to.eq((values1 as any)[xDecimals.toString()][yDecimals.toString()][3])
+          expect(await tradeY(150, 1000000, 100)).to.eq((values1 as any)[xDecimals.toString()][yDecimals.toString()][4])
           expect(await tradeY('1000000000000', '1000000000000000000', '2000000000000')).to.eq(
-            toDecimals('1000000002634698985.64089052825714662099', xDecimals)
+            (values1 as any)[xDecimals.toString()][yDecimals.toString()][5]
           )
         })
 
         it(`tokenX ${xDecimals} decimals, tokenY ${yDecimals} decimals (price < 0)`, async () => {
-          const { tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(xDecimals, yDecimals, '0.0741'))
-          expect(await tradeY(100, 2137, 100)).to.eq(toDecimals('2137', xDecimals))
-          expect(await tradeY(99, 2000, 100)).to.eq(toDecimals('2013.49527665317139001349', xDecimals))
-          expect(await tradeY(101, 2000, 100)).to.eq(toDecimals('1986.50472334682860998650', xDecimals))
-          expect(await tradeY(50, 1000000, 100)).to.eq(toDecimals('1000674.76383265856950067476', xDecimals))
-          expect(await tradeY(150, 1000000, 100)).to.eq(toDecimals('999325.23616734143049932523', xDecimals))
+          const { tradeY } = await loadFixture(getTradeFixtureFor(xDecimals, yDecimals, '0.0741'))
+          expect(await tradeY(100, 2137, 100)).to.eq((values2 as any)[xDecimals.toString()][yDecimals.toString()][0])
+          expect(await tradeY(99, 2000, 100)).to.eq((values2 as any)[xDecimals.toString()][yDecimals.toString()][1])
+          expect(await tradeY(101, 2000, 100)).to.eq((values2 as any)[xDecimals.toString()][yDecimals.toString()][2])
+          expect(await tradeY(50, 1000000, 100)).to.eq((values2 as any)[xDecimals.toString()][yDecimals.toString()][3])
+          expect(await tradeY(150, 1000000, 100)).to.eq((values2 as any)[xDecimals.toString()][yDecimals.toString()][4])
           expect(await tradeY('1000000000000', '1000000000000000000', '2000000000000')).to.eq(
-            toDecimals('1000013495276653171.39001349527665317139', xDecimals)
+            (values2 as any)[xDecimals.toString()][yDecimals.toString()][5]
           )
         })
       }
@@ -61,22 +180,22 @@ describe('TwapOracle.tradeY', () => {
   describe('realistic cases', () => {
     it('100 ETH for USDC', async () => {
       const { tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(6, 18, '0.00026'))
-      expect(await tradeY('16003', '90550000', '16130')).to.eq(toDecimals('91038461.538461', 6))
+      expect(await tradeY('16003', '90550000', '16130')).to.eq(toDecimals('91038461.538462', 6))
     })
 
     it('100 WBTC for ETH', async () => {
       const { tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(18, 8, '0.0603'))
-      expect(await tradeY('1630', '57780', '1730')).to.eq(toDecimals('59438.374792703150912106', 18))
+      expect(await tradeY('1630', '57780', '1730')).to.eq(toDecimals('59438.374792703150912107', 18))
     })
 
     it('100000 LINK for ETH', async () => {
       const { tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(18, 18, '148.0713'))
-      expect(await tradeY('1000000', '2270', '10100000')).to.eq(toDecimals('63726.879219673224993634', 18))
+      expect(await tradeY('1000000', '2270', '10100000')).to.eq(toDecimals('63726.879219673224993635', 18))
     })
 
     it('1000000 USDT for USDC', async () => {
       const { tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(6, 6, '1.003'))
-      expect(await tradeY('84050000', '43790000', '85050000')).to.eq(toDecimals('44787008.973080', 6))
+      expect(await tradeY('84050000', '43790000', '85050000')).to.eq(toDecimals('44787008.973081', 6))
     })
   })
 

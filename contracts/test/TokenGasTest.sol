@@ -9,7 +9,7 @@ contract TokenGasTest {
     using TransferHelper for address;
     event GasUsed(uint256 value);
 
-    uint256 public x = 0;
+    uint256 public x;
 
     function bstx() public {}
 

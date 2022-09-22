@@ -31,8 +31,14 @@ export async function tokenSharesFixture([wallet]: Wallet[]) {
     return result.args[0] as BigNumber
   }
 
-  async function sharesToAmount(token: string, amount: BigNumberish) {
-    const tx = await tokenSharesTest.sharesToAmount(token, amount, overrides)
+  async function sharesToAmount(token: string, share: BigNumberish, amountLimit?: BigNumberish, refundTo?: string) {
+    const tx = await tokenSharesTest.sharesToAmount(
+      token,
+      share,
+      amountLimit ?? 0,
+      refundTo ?? constants.AddressZero,
+      overrides
+    )
     const receipt = await tx.wait()
     const result = tokenSharesTest.interface.parseLog(receipt.logs[receipt.logs.length - 1])
     return result.args[0] as BigNumber

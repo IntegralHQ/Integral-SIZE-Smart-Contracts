@@ -72,7 +72,7 @@ abstract contract AbstractERC20 is ITwapERC20 {
         return true;
     }
 
-    function transfer(address to, uint256 value) external override returns (bool) {
+    function transfer(address to, uint256 value) external virtual override returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
     }

@@ -22,7 +22,7 @@ describe('TwapDelay.retryRefund', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
 
-    await expect(delay.retryRefund(1)).to.revertedWith('OS21')
+    await expect(delay.retryRefund(1, overrides)).to.revertedWith('OS21')
   })
 
   it('refunds tokens', async () => {

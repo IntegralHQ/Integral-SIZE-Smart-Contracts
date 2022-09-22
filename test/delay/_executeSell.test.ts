@@ -25,6 +25,7 @@ describe('TwapDelay._executeSell', () => {
           priceAccumulator: BigNumber.from('22222'),
           timestamp: 1111,
         },
+        0,
         overrides
       )
     ).to.be.revertedWith('TD00')

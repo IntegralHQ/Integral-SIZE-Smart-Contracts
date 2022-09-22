@@ -54,4 +54,30 @@ interface ITwapOracle {
         uint256 xBefore,
         bytes calldata data
     ) external view returns (uint256 yIn);
+
+    function getSwapAmount0Out(
+        uint256 swapFee,
+        uint256 amount1In,
+        bytes calldata data
+    ) external view returns (uint256 amount0Out);
+
+    function getSwapAmount1Out(
+        uint256 swapFee,
+        uint256 amount0In,
+        bytes calldata data
+    ) external view returns (uint256 amount1Out);
+
+    function getSwapAmountInMaxOut(
+        bool inverse,
+        uint256 swapFee,
+        uint256 _amountOut,
+        bytes calldata data
+    ) external view returns (uint256 amountIn, uint256 amountOut);
+
+    function getSwapAmountInMinOut(
+        bool inverse,
+        uint256 swapFee,
+        uint256 _amountOut,
+        bytes calldata data
+    ) external view returns (uint256 amountIn, uint256 amountOut);
 }

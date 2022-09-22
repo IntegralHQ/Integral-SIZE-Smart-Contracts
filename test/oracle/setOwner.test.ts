@@ -14,7 +14,7 @@ describe('TwapOracle.setOwner', () => {
 
   it('can be changed', async () => {
     const { oracle, other } = await loadFixture(oracleFixture)
-    await expect(oracle.connect(other.address).setOwner(other.address)).to.be.revertedWith('TO00')
+    await expect(oracle.connect(other).setOwner(other.address, overrides)).to.be.revertedWith('TO00')
 
     await expect(oracle.setOwner(other.address, overrides)).to.emit(oracle, 'OwnerSet').withArgs(other.address)
     expect(await oracle.owner()).to.eq(other.address)

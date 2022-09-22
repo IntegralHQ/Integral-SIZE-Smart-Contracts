@@ -44,6 +44,8 @@ library Orders {
 
     event OrderDisabled(address pair, Orders.OrderType orderType, bool disabled);
 
+    event RefundFailed(address indexed to, address indexed token, uint256 amount, bytes data);
+
     uint8 private constant DEPOSIT_TYPE = 1;
     uint8 private constant WITHDRAW_TYPE = 2;
     uint8 private constant BUY_TYPE = 3;
@@ -68,10 +70,10 @@ library Orders {
 
     // Masks used for setting order disabled
     // Different bits represent different order types
-    uint8 private constant DEPOSIT_MASK = uint8(1) << uint8(OrderType.Deposit); //   00000010
-    uint8 private constant WITHDRAW_MASK = uint8(1) << uint8(OrderType.Withdraw); // 00000100
-    uint8 private constant SELL_MASK = uint8(1) << uint8(OrderType.Sell); //         00001000
-    uint8 private constant BUY_MASK = uint8(1) << uint8(OrderType.Buy); //           00010000
+    uint8 private constant DEPOSIT_MASK = uint8(1 << uint8(OrderType.Deposit)); //   00000010
+    uint8 private constant WITHDRAW_MASK = uint8(1 << uint8(OrderType.Withdraw)); // 00000100
+    uint8 private constant SELL_MASK = uint8(1 << uint8(OrderType.Sell)); //         00001000
+    uint8 private constant BUY_MASK = uint8(1 << uint8(OrderType.Buy)); //           00010000
 
     struct PairInfo {
         address pair;
@@ -116,6 +118,9 @@ library Orders {
         bool swap;
         // slot3
         uint256 priceAccumulator;
+        // slot4
+        uint112 amountLimit0;
+        uint112 amountLimit1;
     }
 
     struct DepositOrder {
@@ -193,17 +198,16 @@ library Orders {
     }
 
     function getOrder(Data storage data, uint256 orderId)
-        public
+        internal
         view
         returns (OrderType orderType, uint32 validAfterTimestamp)
     {
         StoredOrder storage order = data.orderQueue[orderId];
-        uint8 internalType = order.orderType;
         validAfterTimestamp = order.validAfterTimestamp;
-        orderType = decodeType(internalType);
+        orderType = decodeType(order.orderType);
     }
 
-    function getOrderStatus(Data storage data, uint256 orderId) external view returns (OrderStatus orderStatus) {
+    function getOrderStatus(Data storage data, uint256 orderId) internal view returns (OrderStatus orderStatus) {
         if (orderId > data.newestOrderId) {
             return OrderStatus.NonExistent;
         }
@@ -246,7 +250,7 @@ library Orders {
     }
 
     function getPairInfo(Data storage data, uint32 pairId)
-        external
+        internal
         view
         returns (
             address pair,
@@ -260,23 +264,31 @@ library Orders {
         token1 = info.token1;
     }
 
-    function getDepositDisabled(Data storage data, address pair) public view returns (bool) {
+    function getDepositDisabled(Data storage data, address pair) internal view returns (bool) {
         return data.orderDisabled[pair] & DEPOSIT_MASK != 0;
     }
 
-    function getWithdrawDisabled(Data storage data, address pair) public view returns (bool) {
+    function getWithdrawDisabled(Data storage data, address pair) internal view returns (bool) {
         return data.orderDisabled[pair] & WITHDRAW_MASK != 0;
     }
 
-    function getSellDisabled(Data storage data, address pair) public view returns (bool) {
+    function getSellDisabled(Data storage data, address pair) internal view returns (bool) {
         return data.orderDisabled[pair] & SELL_MASK != 0;
     }
 
-    function getBuyDisabled(Data storage data, address pair) public view returns (bool) {
+    function getBuyDisabled(Data storage data, address pair) internal view returns (bool) {
         return data.orderDisabled[pair] & BUY_MASK != 0;
     }
 
-    function getDepositOrder(Data storage data, uint256 index) public view returns (DepositOrder memory order) {
+    function getDepositOrder(Data storage data, uint256 index)
+        public
+        view
+        returns (
+            DepositOrder memory order,
+            uint256 amountLimit0,
+            uint256 amountLimit1
+        )
+    {
         StoredOrder memory stored = data.orderQueue[index];
         require(stored.orderType == DEPOSIT_TYPE, 'OS32');
         order.pairId = stored.pairId;
@@ -292,6 +304,9 @@ library Orders {
         order.validAfterTimestamp = stored.validAfterTimestamp;
         order.priceAccumulator = stored.priceAccumulator;
         order.timestamp = stored.timestamp;
+
+        amountLimit0 = stored.amountLimit0;
+        amountLimit1 = stored.amountLimit1;
     }
 
     function getWithdrawOrder(Data storage data, uint256 index) public view returns (WithdrawOrder memory order) {
@@ -308,7 +323,11 @@ library Orders {
         order.validAfterTimestamp = stored.validAfterTimestamp;
     }
 
-    function getSellOrder(Data storage data, uint256 index) public view returns (SellOrder memory order) {
+    function getSellOrder(Data storage data, uint256 index)
+        public
+        view
+        returns (SellOrder memory order, uint256 amountLimit)
+    {
         StoredOrder memory stored = data.orderQueue[index];
         require(stored.orderType == SELL_TYPE || stored.orderType == SELL_INVERTED_TYPE, 'OS32');
         order.pairId = stored.pairId;
@@ -322,9 +341,15 @@ library Orders {
         order.validAfterTimestamp = stored.validAfterTimestamp;
         order.priceAccumulator = stored.priceAccumulator;
         order.timestamp = stored.timestamp;
+
+        amountLimit = stored.amountLimit0;
     }
 
-    function getBuyOrder(Data storage data, uint256 index) public view returns (BuyOrder memory order) {
+    function getBuyOrder(Data storage data, uint256 index)
+        public
+        view
+        returns (BuyOrder memory order, uint256 amountLimit)
+    {
         StoredOrder memory stored = data.orderQueue[index];
         require(stored.orderType == BUY_TYPE || stored.orderType == BUY_INVERTED_TYPE, 'OS32');
         order.pairId = stored.pairId;
@@ -338,10 +363,12 @@ library Orders {
         order.validAfterTimestamp = stored.validAfterTimestamp;
         order.timestamp = stored.timestamp;
         order.priceAccumulator = stored.priceAccumulator;
+
+        amountLimit = stored.amountLimit0;
     }
 
     function getFailedOrderType(Data storage data, uint256 orderId)
-        external
+        internal
         view
         returns (OrderType orderType, uint32 validAfterTimestamp)
     {
@@ -376,13 +403,13 @@ library Orders {
     function uintToFloat32(uint256 number) internal pure returns (uint32 float32) {
         // Number is encoded on 4 bytes. 3 bytes for mantissa and 1 for exponent.
         // If the number fits in the mantissa we set the exponent to zero and return.
-        if (number < 2 << 24) {
+        if (number < 1 << 24) {
             return uint32(number << 8);
         }
         // We find the exponent by counting the number of trailing zeroes.
         // Simultaneously we remove those zeroes from the number.
         uint32 exponent;
-        for (exponent = 0; exponent < 256 - 24; exponent++) {
+        for (; exponent < 256 - 24; ++exponent) {
             // Last bit is one.
             if (number & 1 == 1) {
                 break;
@@ -390,7 +417,7 @@ library Orders {
             number = number >> 1;
         }
         // The number must fit in the mantissa.
-        require(number < 2 << 24, 'OS1A');
+        require(number < 1 << 24, 'OS1A');
         // Set the first three bytes to the number and the fourth to the exponent.
         float32 = uint32(number << 8) | exponent;
     }
@@ -417,7 +444,7 @@ library Orders {
         uint8 currentSettings = data.orderDisabled[pair];
 
         // zeros with 1 bit set at position specified by orderType
-        uint8 mask = uint8(1) << uint8(orderType);
+        uint8 mask = uint8(1 << uint8(orderType));
 
         // set/unset a bit accordingly to 'disabled' value
         if (disabled) {
@@ -443,8 +470,13 @@ library Orders {
         emit OrderDisabled(pair, orderType, disabled);
     }
 
-    function enqueueDepositOrder(Data storage data, DepositOrder memory depositOrder) internal {
-        data.newestOrderId++;
+    function enqueueDepositOrder(
+        Data storage data,
+        DepositOrder memory depositOrder,
+        uint256 amountIn0,
+        uint256 amountIn1
+    ) internal {
+        ++data.newestOrderId;
         emit DepositEnqueued(data.newestOrderId, depositOrder.validAfterTimestamp, depositOrder.gasPrice);
         data.orderQueue[data.newestOrderId] = StoredOrder(
             DEPOSIT_TYPE,
@@ -461,12 +493,14 @@ library Orders {
             uintToFloat32(depositOrder.minSwapPrice),
             uintToFloat32(depositOrder.maxSwapPrice),
             depositOrder.swap,
-            depositOrder.priceAccumulator
+            depositOrder.priceAccumulator,
+            amountIn0.toUint112(),
+            amountIn1.toUint112()
         );
     }
 
     function enqueueWithdrawOrder(Data storage data, WithdrawOrder memory withdrawOrder) internal {
-        data.newestOrderId++;
+        ++data.newestOrderId;
         emit WithdrawEnqueued(data.newestOrderId, withdrawOrder.validAfterTimestamp, withdrawOrder.gasPrice);
         data.orderQueue[data.newestOrderId] = StoredOrder(
             WITHDRAW_TYPE,
@@ -483,12 +517,18 @@ library Orders {
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            0 // priceAccumulator
+            0, // priceAccumulator
+            0, // amountLimit0
+            0 // amountLimit1
         );
     }
 
-    function enqueueSellOrder(Data storage data, SellOrder memory sellOrder) internal {
-        data.newestOrderId++;
+    function enqueueSellOrder(
+        Data storage data,
+        SellOrder memory sellOrder,
+        uint256 amountIn
+    ) internal {
+        ++data.newestOrderId;
         emit SellEnqueued(data.newestOrderId, sellOrder.validAfterTimestamp, sellOrder.gasPrice);
         data.orderQueue[data.newestOrderId] = StoredOrder(
             sellOrder.inverse ? SELL_INVERTED_TYPE : SELL_TYPE,
@@ -505,12 +545,18 @@ library Orders {
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            sellOrder.priceAccumulator
+            sellOrder.priceAccumulator,
+            amountIn.toUint112(),
+            0 // amountLimit1
         );
     }
 
-    function enqueueBuyOrder(Data storage data, BuyOrder memory buyOrder) internal {
-        data.newestOrderId++;
+    function enqueueBuyOrder(
+        Data storage data,
+        BuyOrder memory buyOrder,
+        uint256 amountInMax
+    ) internal {
+        ++data.newestOrderId;
         emit BuyEnqueued(data.newestOrderId, buyOrder.validAfterTimestamp, buyOrder.gasPrice);
         data.orderQueue[data.newestOrderId] = StoredOrder(
             buyOrder.inverse ? BUY_INVERTED_TYPE : BUY_TYPE,
@@ -527,7 +573,9 @@ library Orders {
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            buyOrder.priceAccumulator
+            buyOrder.priceAccumulator,
+            amountInMax.toUint112(),
+            0 // amountLimit1
         );
     }
 
@@ -539,42 +587,6 @@ library Orders {
     function markRefundFailed(Data storage data) internal {
         StoredOrder storage stored = data.orderQueue[data.lastProcessedOrderId];
         stored.unwrapAndFailure = stored.unwrapAndFailure == UNWRAP_NOT_FAILED ? UNWRAP_FAILED : KEEP_FAILED;
-    }
-
-    function getNextOrder(Data storage data) internal view returns (OrderType orderType, uint256 validAfterTimestamp) {
-        return getOrder(data, data.lastProcessedOrderId + 1);
-    }
-
-    function dequeueCanceledOrder(Data storage data) external {
-        data.lastProcessedOrderId++;
-    }
-
-    function dequeueDepositOrder(Data storage data) external returns (DepositOrder memory order) {
-        data.lastProcessedOrderId++;
-        order = getDepositOrder(data, data.lastProcessedOrderId);
-    }
-
-    function dequeueWithdrawOrder(Data storage data) external returns (WithdrawOrder memory order) {
-        data.lastProcessedOrderId++;
-        order = getWithdrawOrder(data, data.lastProcessedOrderId);
-    }
-
-    function dequeueSellOrder(Data storage data) external returns (SellOrder memory order) {
-        data.lastProcessedOrderId++;
-        order = getSellOrder(data, data.lastProcessedOrderId);
-    }
-
-    function dequeueBuyOrder(Data storage data) external returns (BuyOrder memory order) {
-        data.lastProcessedOrderId++;
-        order = getBuyOrder(data, data.lastProcessedOrderId);
-    }
-
-    function forgetOrder(Data storage data, uint256 orderId) internal {
-        delete data.orderQueue[orderId];
-    }
-
-    function forgetLastProcessedOrder(Data storage data) internal {
-        delete data.orderQueue[data.lastProcessedOrderId];
     }
 
     struct DepositParams {
@@ -596,16 +608,19 @@ library Orders {
         DepositParams calldata depositParams,
         TokenShares.Data storage tokenShares
     ) external {
-        uint256 token0TransferCost = data.transferGasCosts[depositParams.token0];
-        uint256 token1TransferCost = data.transferGasCosts[depositParams.token1];
-        require(token0TransferCost != 0 && token1TransferCost != 0, 'OS0F');
-        checkOrderParams(
-            data,
-            depositParams.to,
-            depositParams.gasLimit,
-            depositParams.submitDeadline,
-            ORDER_BASE_COST.add(token0TransferCost).add(token1TransferCost)
-        );
+        {
+            // scope for checks, avoids stack too deep errors
+            uint256 token0TransferCost = data.transferGasCosts[depositParams.token0];
+            uint256 token1TransferCost = data.transferGasCosts[depositParams.token1];
+            require(token0TransferCost != 0 && token1TransferCost != 0, 'OS0F');
+            checkOrderParams(
+                data,
+                depositParams.to,
+                depositParams.gasLimit,
+                depositParams.submitDeadline,
+                ORDER_BASE_COST.add(token0TransferCost).add(token1TransferCost)
+            );
+        }
         require(depositParams.amount0 != 0 || depositParams.amount1 != 0, 'OS25');
         (address pairAddress, uint32 pairId, bool inverted) = getPair(data, depositParams.token0, depositParams.token1);
         require(!getDepositDisabled(data, pairAddress), 'OS46');
@@ -616,24 +631,32 @@ library Orders {
             // allocate gas refund
             if (depositParams.wrap) {
                 if (depositParams.token0 == tokenShares.weth) {
-                    value = value.sub(depositParams.amount0, 'OS1E');
+                    value = msg.value.sub(depositParams.amount0, 'OS1E');
                 } else if (depositParams.token1 == tokenShares.weth) {
-                    value = value.sub(depositParams.amount1, 'OS1E');
+                    value = msg.value.sub(depositParams.amount1, 'OS1E');
                 }
             }
             allocateGasRefund(data, value, depositParams.gasLimit);
         }
 
-        uint256 shares0 = tokenShares.amountToShares(depositParams.token0, depositParams.amount0, depositParams.wrap);
-        uint256 shares1 = tokenShares.amountToShares(depositParams.token1, depositParams.amount1, depositParams.wrap);
+        uint256 shares0 = tokenShares.amountToShares(
+            inverted ? depositParams.token1 : depositParams.token0,
+            inverted ? depositParams.amount1 : depositParams.amount0,
+            depositParams.wrap
+        );
+        uint256 shares1 = tokenShares.amountToShares(
+            inverted ? depositParams.token0 : depositParams.token1,
+            inverted ? depositParams.amount0 : depositParams.amount1,
+            depositParams.wrap
+        );
 
         (uint256 priceAccumulator, uint32 timestamp) = ITwapOracle(ITwapPair(pairAddress).oracle()).getPriceInfo();
         enqueueDepositOrder(
             data,
             DepositOrder(
                 pairId,
-                inverted ? shares1 : shares0,
-                inverted ? shares0 : shares1,
+                shares0,
+                shares1,
                 depositParams.minSwapPrice,
                 depositParams.maxSwapPrice,
                 depositParams.wrap,
@@ -644,7 +667,9 @@ library Orders {
                 timestamp + data.delay, // validAfterTimestamp
                 priceAccumulator,
                 timestamp
-            )
+            ),
+            inverted ? depositParams.amount1 : depositParams.amount0,
+            inverted ? depositParams.amount0 : depositParams.amount1
         );
     }
 
@@ -722,8 +747,9 @@ library Orders {
 
         // allocate gas refund
         if (sellParams.tokenIn == tokenShares.weth && sellParams.wrapUnwrap) {
-            value = value.sub(sellParams.amountIn, 'OS1E');
+            value = msg.value.sub(sellParams.amountIn, 'OS1E');
         }
+
         allocateGasRefund(data, value, sellParams.gasLimit);
 
         uint256 shares = tokenShares.amountToShares(sellParams.tokenIn, sellParams.amountIn, sellParams.wrapUnwrap);
@@ -743,7 +769,8 @@ library Orders {
                 timestamp + data.delay,
                 priceAccumulator,
                 timestamp
-            )
+            ),
+            sellParams.amountIn
         );
     }
 
@@ -779,8 +806,9 @@ library Orders {
 
         // allocate gas refund
         if (buyParams.tokenIn == tokenShares.weth && buyParams.wrapUnwrap) {
-            value = value.sub(buyParams.amountInMax, 'OS1E');
+            value = msg.value.sub(buyParams.amountInMax, 'OS1E');
         }
+
         allocateGasRefund(data, value, buyParams.gasLimit);
 
         uint256 shares = tokenShares.amountToShares(buyParams.tokenIn, buyParams.amountInMax, buyParams.wrapUnwrap);
@@ -800,7 +828,8 @@ library Orders {
                 timestamp + data.delay,
                 priceAccumulator,
                 timestamp
-            )
+            ),
+            buyParams.amountInMax
         );
     }
 
@@ -867,5 +896,66 @@ library Orders {
         require(gasCost != data.transferGasCosts[token], 'OS01');
         data.transferGasCosts[token] = gasCost;
         emit TransferGasCostSet(token, gasCost);
+    }
+
+    function refundLiquidity(
+        address pair,
+        address to,
+        uint256 liquidity,
+        bytes4 selector
+    ) internal returns (bool) {
+        if (liquidity == 0) {
+            return true;
+        }
+        (bool success, bytes memory data) = address(this).call{ gas: PAIR_TRANSFER_COST }(
+            abi.encodeWithSelector(selector, pair, to, liquidity, false)
+        );
+        if (!success) {
+            emit RefundFailed(to, pair, liquidity, data);
+        }
+        return success;
+    }
+
+    function getNextOrder(Data storage data) internal view returns (OrderType orderType, uint256 validAfterTimestamp) {
+        return getOrder(data, data.lastProcessedOrderId + 1);
+    }
+
+    function dequeueCanceledOrder(Data storage data) internal {
+        ++data.lastProcessedOrderId;
+    }
+
+    function dequeueDepositOrder(Data storage data)
+        external
+        returns (
+            DepositOrder memory order,
+            uint256 amountLimit0,
+            uint256 amountLimit1
+        )
+    {
+        ++data.lastProcessedOrderId;
+        (order, amountLimit0, amountLimit1) = getDepositOrder(data, data.lastProcessedOrderId);
+    }
+
+    function dequeueWithdrawOrder(Data storage data) external returns (WithdrawOrder memory order) {
+        ++data.lastProcessedOrderId;
+        order = getWithdrawOrder(data, data.lastProcessedOrderId);
+    }
+
+    function dequeueSellOrder(Data storage data) external returns (SellOrder memory order, uint256 amountLimit) {
+        ++data.lastProcessedOrderId;
+        (order, amountLimit) = getSellOrder(data, data.lastProcessedOrderId);
+    }
+
+    function dequeueBuyOrder(Data storage data) external returns (BuyOrder memory order, uint256 amountLimit) {
+        ++data.lastProcessedOrderId;
+        (order, amountLimit) = getBuyOrder(data, data.lastProcessedOrderId);
+    }
+
+    function forgetOrder(Data storage data, uint256 orderId) internal {
+        delete data.orderQueue[orderId];
+    }
+
+    function forgetLastProcessedOrder(Data storage data) internal {
+        delete data.orderQueue[data.lastProcessedOrderId];
     }
 }

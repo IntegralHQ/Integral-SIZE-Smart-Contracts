@@ -12,6 +12,9 @@ library TokenShares {
     using SafeMath for uint256;
     using TransferHelper for address;
 
+    uint256 private constant PRECISION = 10**18;
+    uint256 private constant TOLERANCE = 10**18 + 10**16;
+
     event UnwrapFailed(address to, uint256 amount);
 
     struct Data {
@@ -19,14 +22,12 @@ library TokenShares {
         address weth;
     }
 
-    function setWeth(Data storage data, address _weth) internal {
-        data.weth = _weth;
-    }
-
     function sharesToAmount(
         Data storage data,
         address token,
-        uint256 share
+        uint256 share,
+        uint256 amountLimit,
+        address refundTo
     ) external returns (uint256) {
         if (share == 0) {
             return 0;
@@ -34,11 +35,21 @@ library TokenShares {
         if (token == data.weth) {
             return share;
         }
+
         uint256 totalTokenShares = data.totalShares[token];
         require(totalTokenShares >= share, 'TS3A');
         uint256 balance = IERC20(token).balanceOf(address(this));
         uint256 value = balance.mul(share).div(totalTokenShares);
         data.totalShares[token] = totalTokenShares.sub(share);
+
+        if (amountLimit > 0) {
+            uint256 amountLimitWithTolerance = amountLimit.mul(TOLERANCE).div(PRECISION);
+            if (value > amountLimitWithTolerance) {
+                TransferHelper.safeTransfer(token, refundTo, value.sub(amountLimitWithTolerance));
+                return amountLimitWithTolerance;
+            }
+        }
+
         return value;
     }
 

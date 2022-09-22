@@ -9,7 +9,7 @@ describe('TwapPair.setMintFee', () => {
 
   it('can only be called by the factory', async () => {
     const { pair } = await loadFixture(pairFixture)
-    await expect(pair.setMintFee(1111)).to.be.revertedWith('TP00')
+    await expect(pair.setMintFee(1111, overrides)).to.be.revertedWith('TP00')
   })
 
   it('cannot be set to same value', async () => {

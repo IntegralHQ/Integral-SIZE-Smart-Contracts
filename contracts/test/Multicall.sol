@@ -17,10 +17,11 @@ contract Multicall {
         bytes callData;
     }
 
-    function aggregate(Call[] memory calls) public returns (uint256 blockNumber, bytes[] memory returnData) {
+    function aggregate(Call[] calldata calls) public returns (uint256 blockNumber, bytes[] memory returnData) {
         blockNumber = block.number;
-        returnData = new bytes[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
+        uint256 len = calls.length;
+        returnData = new bytes[](len);
+        for (uint256 i; i < len; ++i) {
             (bool success, bytes memory ret) = calls[i].target.call(calls[i].callData);
             require(success);
             returnData[i] = ret;

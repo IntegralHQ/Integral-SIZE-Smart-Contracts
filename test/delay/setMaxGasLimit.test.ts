@@ -19,7 +19,7 @@ describe('TwapDelay.setMaxGasLimit', () => {
 
   it('can be changed', async () => {
     const { delay, other } = await loadFixture(delayFixture)
-    await expect(delay.connect(other.address).setMaxGasLimit(1)).to.be.revertedWith('TD00')
+    await expect(delay.connect(other).setMaxGasLimit(1, overrides)).to.be.revertedWith('TD00')
 
     await expect(delay.setMaxGasLimit(1, overrides)).to.emit(delay, 'MaxGasLimitSet').withArgs(BigNumber.from(1))
     expect(await delay.maxGasLimit()).to.eq(1)

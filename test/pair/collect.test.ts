@@ -10,11 +10,11 @@ describe('TwapPair.collect', () => {
 
   it('can only be called by the factory', async () => {
     const { pair, wallet } = await loadFixture(pairFixture)
-    await expect(pair.collect(wallet.address)).to.be.revertedWith('TP00')
+    await expect(pair.collect(wallet.address, overrides)).to.be.revertedWith('TP00')
   })
 
   it('clears the fees', async () => {
-    const { token0, token1, pair, addLiquidity, setupUniswapPair, factory, getState, PRECISION, wallet } =
+    const { token0, token1, pair, oracle, addLiquidity, setupUniswapPair, factory, getState, PRECISION, wallet } =
       await loadFixture(pairFixture)
 
     const token0Amount = expandTo18Decimals(500)
@@ -27,7 +27,7 @@ describe('TwapPair.collect', () => {
     const { priceInfo } = await setupUniswapPair(1)
     const amountIn = expandTo18Decimals(1)
     await token1.transfer(pair.address, amountIn, overrides)
-    const amountOut = await pair.getSwapAmount0Out(amountIn, priceInfo)
+    const amountOut = await oracle.getSwapAmount0Out(await pair.swapFee(), amountIn, priceInfo)
     const swapFeeAmount = amountIn.mul(swapFee).div(PRECISION)
 
     await pair.swap(amountOut, 0, wallet.address, priceInfo, overrides)

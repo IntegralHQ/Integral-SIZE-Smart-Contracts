@@ -30,15 +30,12 @@ library SafeMath {
 
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b > 0, 'SM43');
-        uint256 c = a / b;
-        return c;
+        return a / b;
     }
 
     function ceil_div(uint256 a, uint256 b) internal pure returns (uint256 c) {
         c = div(a, b);
-        if (c == mul(a, b)) {
-            return c;
-        } else {
+        if (a != mul(b, c)) {
             return add(c, 1);
         }
     }
@@ -60,21 +57,17 @@ library SafeMath {
 
     // int256
 
-    function add(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a + b;
+    function add(int256 a, int256 b) internal pure returns (int256 c) {
+        c = a + b;
         require((b >= 0 && c >= a) || (b < 0 && c < a), 'SM4D');
-
-        return c;
     }
 
-    function sub(int256 a, int256 b) internal pure returns (int256) {
-        int256 c = a - b;
+    function sub(int256 a, int256 b) internal pure returns (int256 c) {
+        c = a - b;
         require((b >= 0 && c <= a) || (b < 0 && c > a), 'SM11');
-
-        return c;
     }
 
-    function mul(int256 a, int256 b) internal pure returns (int256) {
+    function mul(int256 a, int256 b) internal pure returns (int256 c) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
         // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
@@ -84,18 +77,23 @@ library SafeMath {
 
         require(!(a == -1 && b == _INT256_MIN), 'SM29');
 
-        int256 c = a * b;
+        c = a * b;
         require(c / a == b, 'SM29');
-
-        return c;
     }
 
     function div(int256 a, int256 b) internal pure returns (int256) {
         require(b != 0, 'SM43');
         require(!(b == -1 && a == _INT256_MIN), 'SM42');
 
-        int256 c = a / b;
+        return a / b;
+    }
 
-        return c;
+    function neg_floor_div(int256 a, int256 b) internal pure returns (int256 c) {
+        c = div(a, b);
+        if ((a < 0 && b > 0) || (a >= 0 && b < 0)) {
+            if (a != mul(b, c)) {
+                c = sub(c, 1);
+            }
+        }
     }
 }

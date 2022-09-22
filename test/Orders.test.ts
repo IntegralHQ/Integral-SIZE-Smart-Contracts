@@ -172,5 +172,147 @@ describe('Orders', () => {
       const number = BigNumber.from(`0xABCDE000001`)
       await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
     })
+
+    it('nubmer 0x1 can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x1`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x2 can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x2`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x3 can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x3`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x6 can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x6`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0xa can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0xa`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x01000000 can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x01000000`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0xffffff can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0xffffff`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x01fffff0 can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x01fffff0`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0xffffff can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0xffffff${'0'.repeat(64 - 6)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x01fffffe can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x01fffffe`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x00040...zeros... can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x00040${'0'.repeat(64 - 5)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x00080...zeros... can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x80${'0'.repeat(64 - 5)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x40...zeros... can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x40${'0'.repeat(64 - 2)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x80...zeros... can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x80${'0'.repeat(64 - 2)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0xffffff...zeros... can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0xffffff${'0'.repeat(64 - 6)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x01fffffe...zeros... can be encoded and decoded', async () => {
+      const number = BigNumber.from(`0x01fffffe${'0'.repeat(64 - 8)}`)
+      const encoded = await orders.uintToFloat32(number)
+      const decoded = await orders.float32ToUint(encoded)
+      expect(decoded).to.deep.equal(number)
+    })
+
+    it('nubmer 0x01ffffff would result in precision loss cannot be encoded', async () => {
+      const number = BigNumber.from(`0x01ffffff`)
+      await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
+    })
+
+    it('nubmer 0x3fffffe would result in precision loss cannot be encoded', async () => {
+      const number = BigNumber.from(`0x3fffffe`)
+      await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
+    })
+
+    it('nubmer 0x01ffffff00000 would result in precision loss cannot be encoded', async () => {
+      const number = BigNumber.from(`0x01ffffff00000`)
+      await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
+    })
+
+    it('nubmer 0x3fffffe00000 would result in precision loss cannot be encoded', async () => {
+      const number = BigNumber.from(`0x3fffffe00000`)
+      await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
+    })
+
+    it('nubmer 0x01ffffff...zeros... would result in precision loss cannot be encoded', async () => {
+      const number = BigNumber.from(`0x01ffffff${'0'.repeat(64 - 8)}`)
+      await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
+    })
+
+    it('nubmer 0x3fffffe...zeros... would result in precision loss cannot be encoded', async () => {
+      const number = BigNumber.from(`0x3fffffe${'0'.repeat(64 - 7)}`)
+      await expect(orders.uintToFloat32(number)).to.be.revertedWith('OS1A')
+    })
   })
 })

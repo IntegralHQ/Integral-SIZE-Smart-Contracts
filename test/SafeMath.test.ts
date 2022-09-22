@@ -66,4 +66,27 @@ describe('SafeMath', () => {
       expect(await contract.sub(b, a, overrides)).to.eq(utils.parseUnits('0.8'))
     })
   })
+
+  describe('neg_floor_div', () => {
+    it('positive numbers', async () => {
+      const a = utils.parseUnits('1.3')
+      const b = utils.parseUnits('0.5')
+      expect(await contract.neg_floor_div(a, b, overrides)).to.eq(2)
+      expect(await contract.neg_floor_div(b, a, overrides)).to.eq(0)
+    })
+
+    it('mixed numbers', async () => {
+      const a = utils.parseUnits('1.3')
+      const b = utils.parseUnits('-0.5')
+      expect(await contract.neg_floor_div(a, b, overrides)).to.eq(-3)
+      expect(await contract.neg_floor_div(b, a, overrides)).to.eq(-1)
+    })
+
+    it('negative numbers', async () => {
+      const a = utils.parseUnits('-1.3')
+      const b = utils.parseUnits('-0.5')
+      expect(await contract.neg_floor_div(a, b, overrides)).to.eq(2)
+      expect(await contract.neg_floor_div(b, a, overrides)).to.eq(0)
+    })
+  })
 })

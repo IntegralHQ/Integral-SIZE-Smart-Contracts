@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import { BigNumber } from 'ethers'
 import { tokenSharesFixture } from './shared/fixtures'
 import { setupFixtureLoader } from './shared/setup'
 import { overrides } from './shared/utilities'
@@ -132,6 +133,33 @@ describe('TokenShares', () => {
       const { sharesToAmount, weth } = await loadFixture(tokenSharesFixture)
       const shares = await sharesToAmount(weth.address, 200)
       expect(shares).to.equal(200)
+    })
+
+    it('handles amount limit inside of tolerance', async () => {
+      const { adjustableErc20, tokenShares, amountToShares, sharesToAmount, other } = await loadFixture(
+        tokenSharesFixture
+      )
+      const shares = await amountToShares(adjustableErc20.address, 300)
+      const value = await sharesToAmount(adjustableErc20.address, shares, shares, other.address)
+      expect(value).to.equal(300)
+      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(0)
+    })
+
+    it('handles amount limit outside of tolerance', async () => {
+      const { adjustableErc20, tokenShares, amountToShares, sharesToAmount, other } = await loadFixture(
+        tokenSharesFixture
+      )
+      const balanceBefore = await adjustableErc20.balanceOf(other.address)
+      const shares = await amountToShares(adjustableErc20.address, 3000)
+      const tolerance = BigNumber.from(10).pow(18).add(BigNumber.from(10).pow(16))
+      const precision = BigNumber.from(10).pow(18)
+      const amountLimit = shares.div(2)
+      const value = await sharesToAmount(adjustableErc20.address, shares, amountLimit, other.address)
+      const amountOut = amountLimit.mul(tolerance).div(precision)
+      expect(value).to.equal(amountOut)
+      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(0)
+      const balanceAfter = await adjustableErc20.balanceOf(other.address)
+      expect(balanceAfter.sub(balanceBefore)).to.equal(shares.sub(amountOut))
     })
   })
 })

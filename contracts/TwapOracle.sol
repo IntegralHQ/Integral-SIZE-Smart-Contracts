@@ -11,6 +11,9 @@ import '@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol';
 contract TwapOracle is ITwapOracle {
     using SafeMath for uint256;
     using SafeMath for int256;
+
+    uint256 private constant PRECISION = 10**18;
+
     uint8 public immutable override xDecimals;
     uint8 public immutable override yDecimals;
     int256 public immutable override decimalsConverter;
@@ -121,9 +124,9 @@ contract TwapOracle is ITwapOracle {
         int256 yTradedInt = xAfterInt.sub(xBeforeInt).mul(averagePriceInt);
 
         // yAfter = yBefore - yTraded = yBefore - ((xAfter - xBefore) * price)
-        // we are multiplying yBefore by decimalsConverter to push division to the very end
-        int256 yAfterInt = yBeforeInt.mul(decimalsConverter).sub(yTradedInt).div(decimalsConverter);
+        int256 yAfterInt = yBeforeInt.sub(yTradedInt.neg_floor_div(decimalsConverter));
         require(yAfterInt >= 0, 'TO27');
+
         yAfter = uint256(yAfterInt);
     }
 
@@ -141,8 +144,7 @@ contract TwapOracle is ITwapOracle {
         int256 xTradedInt = yAfterInt.sub(yBeforeInt).mul(decimalsConverter);
 
         // xAfter = xBefore - xTraded = xBefore - ((yAfter - yBefore) * price)
-        // we are multiplying xBefore by averagePriceInt to push division to the very end
-        int256 xAfterInt = xBeforeInt.mul(averagePriceInt).sub(xTradedInt).div(averagePriceInt);
+        int256 xAfterInt = xBeforeInt.sub(xTradedInt.neg_floor_div(averagePriceInt));
         require(xAfterInt >= 0, 'TO28');
 
         xAfter = uint256(xAfterInt);
@@ -198,5 +200,89 @@ contract TwapOracle is ITwapOracle {
         }
 
         return yIn;
+    }
+
+    function getSwapAmount0Out(
+        uint256 swapFee,
+        uint256 amount1In,
+        bytes calldata data
+    ) public view override returns (uint256 amount0Out) {
+        uint256 fee = amount1In.mul(swapFee).div(PRECISION);
+        uint256 price = decodePriceInfo(data);
+        amount0Out = amount1In.sub(fee).mul(uint256(decimalsConverter)).div(price);
+    }
+
+    function getSwapAmount1Out(
+        uint256 swapFee,
+        uint256 amount0In,
+        bytes calldata data
+    ) public view override returns (uint256 amount1Out) {
+        uint256 fee = amount0In.mul(swapFee).div(PRECISION);
+        uint256 price = decodePriceInfo(data);
+        amount1Out = amount0In.sub(fee).mul(price).div(uint256(decimalsConverter));
+    }
+
+    function getSwapAmount0InMax(
+        uint256 swapFee,
+        uint256 amount1Out,
+        bytes calldata data
+    ) internal view returns (uint256 amount0In) {
+        uint256 price = decodePriceInfo(data);
+        amount0In = amount1Out.mul(uint256(decimalsConverter)).mul(PRECISION).ceil_div(
+            price.mul(PRECISION.sub(swapFee))
+        );
+    }
+
+    function getSwapAmount0InMin(
+        uint256 swapFee,
+        uint256 amount1Out,
+        bytes calldata data
+    ) internal view returns (uint256 amount0In) {
+        uint256 price = decodePriceInfo(data);
+        amount0In = amount1Out.mul(uint256(decimalsConverter)).div(price).mul(PRECISION).div(PRECISION.sub(swapFee));
+    }
+
+    function getSwapAmount1InMax(
+        uint256 swapFee,
+        uint256 amount0Out,
+        bytes calldata data
+    ) internal view returns (uint256 amount1In) {
+        uint256 price = decodePriceInfo(data);
+        amount1In = amount0Out.mul(price).mul(PRECISION).ceil_div(
+            uint256(decimalsConverter).mul(PRECISION.sub(swapFee))
+        );
+    }
+
+    function getSwapAmount1InMin(
+        uint256 swapFee,
+        uint256 amount0Out,
+        bytes calldata data
+    ) internal view returns (uint256 amount1In) {
+        uint256 price = decodePriceInfo(data);
+        amount1In = amount0Out.mul(price).div(uint256(decimalsConverter)).mul(PRECISION).div(PRECISION.sub(swapFee));
+    }
+
+    function getSwapAmountInMaxOut(
+        bool inverse,
+        uint256 swapFee,
+        uint256 _amountOut,
+        bytes calldata data
+    ) external view override returns (uint256 amountIn, uint256 amountOut) {
+        amountIn = inverse
+            ? getSwapAmount1InMax(swapFee, _amountOut, data)
+            : getSwapAmount0InMax(swapFee, _amountOut, data);
+        amountOut = inverse ? getSwapAmount0Out(swapFee, amountIn, data) : getSwapAmount1Out(swapFee, amountIn, data);
+    }
+
+    function getSwapAmountInMinOut(
+        bool inverse,
+        uint256 swapFee,
+        uint256 _amountOut,
+        bytes calldata data
+    ) external view override returns (uint256 amountIn, uint256 amountOut) {
+        amountIn = inverse
+            ? getSwapAmount1InMin(swapFee, _amountOut, data)
+            : getSwapAmount0InMin(swapFee, _amountOut, data);
+        amountOut = inverse ? getSwapAmount0Out(swapFee, amountIn, data) : getSwapAmount1Out(swapFee, amountIn, data);
     }
 }

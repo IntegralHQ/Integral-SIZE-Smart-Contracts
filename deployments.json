@@ -1,4 +1,123 @@
 {
+  "arbitrum": {
+    "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
+    "delay": {
+      "address": "0x010876b123810718Fa4d93a8DED0BCdF919c436B",
+      "checksum": "d9b811a20dc2314f414011d1396faa5fe3c01fe2bfd5d9e0ba8f7ff6523978e5"
+    },
+    "tokens": {
+      "usdc": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+      "weth": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+    },
+    "uniswapV2": {
+      "factory": ""
+    },
+    "uniswapV3": {
+      "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "weth-usdc": "0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443"
+    },
+    "sushiswapV2": {
+      "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc74C4"
+    },
+    "factory": {
+      "address": "0x717EF162cf831db83c51134734A15D1EBe9E516a",
+      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+    },
+    "tokenShares": {
+      "address": "0x888CC9F7a813E055Bd8Ea8BB74C808C7feBcBAe3",
+      "checksum": "38efe8a53d310f8136ba222e3f1103d61d86e47ebdd2d8f99d0c519fb43cf5b0"
+    },
+    "withdrawHelper": {
+      "address": "0xc1963430691708beE5d24B4E7D66ca8c9191a208",
+      "checksum": "3714afb70aca752078137f27b075e44e4374279cc10df7ac239df140aa85987f"
+    },
+    "addLiquidity": {
+      "address": "0xE8009610734842455289e255349db7f14e90636b",
+      "checksum": "e432330c7f68f2ddfc460b3aff21e450917cf6cffbe64f5a49593b5330a559ac"
+    },
+    "orders": {
+      "address": "0x1724fe9888ff11b7ec6B3d0287676e903cB2304F",
+      "checksum": "a2bb9f38c84bbd28ed480004c7ca77223337c77a1835d78d0594ed706bed111b"
+    },
+    "oraclesV3": {
+      "weth-usdc": {
+        "address": "0x4507f5292Fd6f2458Ed8777039bb2C5B85483A79",
+        "checksum": "3028e97130a3ca25aaa7b595f6d76663cd3644ac63bd52c132cbd28f6e07d7f8"
+      }
+    },
+    "pairs": {
+      "weth-usdc": "0x4BCa34ad27Df83566016B55c60Dd80a9eB14913b"
+    },
+    "reader": {
+      "address": "0xF5C1eE7bE0BBE1d77158b114dC77D8A94F2FeC02",
+      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+    },
+    "multicall": {
+      "address": "0x44366f0eFC3BA7080Baae5174265E2239cd907C9",
+      "checksum": "108776a46445bc18d7009ce938a40b36b4e02feb9d15439aea568c54f1b2ddaa"
+    }
+  },
+  "arbitrum-rinkeby": {
+    "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
+    "tokens": {
+      "usdc": {
+        "address": "0xB36056FCdc4279Ca57dea60b44D476A8190A68Fe",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "weth": "0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681"
+    },
+    "uniswapV2": {
+      "factory": ""
+    },
+    "uniswapV3": {
+      "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "weth-usdc": "0x58d96fC2db61f22089C5a0B06fB576d092d3E941"
+    },
+    "sushiswapV2": {
+      "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc74C4"
+    },
+    "factory": {
+      "address": "0xBbeD89036b2ED9B61388cF50122c8A30E72Ea47d",
+      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+    },
+    "tokenShares": {
+      "address": "0xF28b673623227942275834A4399C433Cb45E90A3",
+      "checksum": "38efe8a53d310f8136ba222e3f1103d61d86e47ebdd2d8f99d0c519fb43cf5b0"
+    },
+    "withdrawHelper": {
+      "address": "0x1E784bb2f94850f0026B80699254d50a92609854",
+      "checksum": "3714afb70aca752078137f27b075e44e4374279cc10df7ac239df140aa85987f"
+    },
+    "addLiquidity": {
+      "address": "0x6DAc400CC1F853cb9f08B1f3F30B8968bd88a140",
+      "checksum": "e432330c7f68f2ddfc460b3aff21e450917cf6cffbe64f5a49593b5330a559ac"
+    },
+    "orders": {
+      "address": "0x439A2aB6fA61cecFB95Fc8246858C4ECd53c43dd",
+      "checksum": "a2bb9f38c84bbd28ed480004c7ca77223337c77a1835d78d0594ed706bed111b"
+    },
+    "delay": {
+      "address": "0x7d0437A8cBfa6ad0cc894E93500EbBB287a45c68",
+      "checksum": "d9b811a20dc2314f414011d1396faa5fe3c01fe2bfd5d9e0ba8f7ff6523978e5"
+    },
+    "oraclesV3": {
+      "weth-usdc": {
+        "address": "0xD297e6b033CbE1Eaf6d588EF92f08334d29d9Cc9",
+        "checksum": "3028e97130a3ca25aaa7b595f6d76663cd3644ac63bd52c132cbd28f6e07d7f8"
+      }
+    },
+    "pairs": {
+      "weth-usdc": "0x1E2F56aA48Ff5CB7B697a5751B8AB78c91adAebE"
+    },
+    "reader": {
+      "address": "0x7190a87E4EB497A5c96B1383dCEc2f7231c75424",
+      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+    },
+    "multicall": {
+      "address": "0x5FCaEC24d5b4D627dFc4e3eD037309A609DD403a",
+      "checksum": "108776a46445bc18d7009ce938a40b36b4e02feb9d15439aea568c54f1b2ddaa"
+    }
+  },
   "ganache": {
     "owner": "",
     "tokens": {
@@ -11,31 +130,169 @@
     "pairs": {},
     "delay": "0x84e924C5E04438D2c1Df1A981f7E7104952e6de1"
   },
+  "goerli": {
+    "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
+    "tokens": {
+      "usdc": {
+        "address": "0xb522ea8dcF3Fc1b46F9b6D8eC02f120F07Bb194D",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "weth": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+      "cvx": {
+        "address": "0xA7465cA9f637cDcc16d33608d3A7899F5D4989FF",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "sushi": {
+        "address": "0x637caEc2D8a6Cc566571a20519e845Daa370295e",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "steth": {
+        "address": "0xCb123C2aEf20083D2a8A9670217F7bEEda07813B",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "matic": {
+        "address": "0xea91BB760d20927c3C29FE83c7b6C00b641F18f4",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      }
+    },
+    "uniswapV2": {
+      "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "weth-usdc": "0xEAA08a8c7b7853Bed3207816D5db0Aae42d819A8",
+      "weth-steth": "0x66648621b5FC5341B303648d40bDaFe60b03E95B"
+    },
+    "uniswapV3": {
+      "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "weth-matic": "0xEC93AD47b4B6C24F6Dbd2b57cF6121DdF8F62a20"
+    },
+    "sushiswapV2": {
+      "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+      "weth-cvx": "0x1002955593cA63C0b62Ea652761544D1E8534E2e",
+      "weth-sushi": "0x6f8FC91E495e48ca56afEaf8141952be780d6EaD"
+    },
+    "factory": {
+      "address": "0xfA8B295a27c5B5DcDEB8Be05dB6414623204940d",
+      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+    },
+    "tokenShares": {
+      "address": "0xeEB3aB7d9DC12788afB5E59474eBC40a3791E3Ac",
+      "checksum": "b4b8498622e19c952aaf1bf8b953143dc37235c0a550368501f14b66b4400f9f"
+    },
+    "withdrawHelper": {
+      "address": "0x69a0CC49EaBE834a5DB052389e10f48F2a9FfA79",
+      "checksum": "3714afb70aca752078137f27b075e44e4374279cc10df7ac239df140aa85987f"
+    },
+    "addLiquidity": {
+      "address": "0x3db72ADa6472Cacae00b24c43f364e3d3C6f5445",
+      "checksum": "2309e154972d59caadd7db8f0d0811b4e8ee5a7cd5f72508931b7a31f1b513cf"
+    },
+    "orders": {
+      "address": "0x9772510d14Ce2E02Edf55df3890cFEdB76719Da4",
+      "checksum": "c6af4767ad6b2ee20bc9af3ea154648428d6f286d35e99e09eb584bfb07322b1"
+    },
+    "delay": {
+      "address": "0xC27e936231a0Df239C75cB109841DD6E8ed3A1E3",
+      "checksum": "9ae066e280e35e854ed88508e73cf96cc97d9a4f8c3a4472a9920dee5602521a"
+    },
+    "oraclesV2": {
+      "weth-usdc": {
+        "address": "0xccE8b807432D76795941B9Ab3a8CdDD22C772565",
+        "checksum": "16c0df4b10771fef7c9689c5a65cbd9f6b3914c645f88b91373bbb65055beb9b"
+      },
+      "weth-cvx": {
+        "address": "0xAaF45d5E078D8A8667eAF35f7c502Cb453539520",
+        "checksum": "16c0df4b10771fef7c9689c5a65cbd9f6b3914c645f88b91373bbb65055beb9b"
+      },
+      "weth-sushi": {
+        "address": "0x50878E07EB4DBE44e2ff0d580B2bdE67d68e6965",
+        "checksum": "16c0df4b10771fef7c9689c5a65cbd9f6b3914c645f88b91373bbb65055beb9b"
+      },
+      "weth-steth": {
+        "address": "0x8190F0bc9392E1F5FAEDF41708BC77B3242520E5",
+        "checksum": "16c0df4b10771fef7c9689c5a65cbd9f6b3914c645f88b91373bbb65055beb9b"
+      }
+    },
+    "oraclesV3": {
+      "weth-matic": {
+        "address": "0x757ADd632542998Ee9Ed5D9c59163364D0d1fDDC",
+        "checksum": "a7a7e3bbe60d301416abda13c4bd0aab20b15af5fd68d88892c5b9a1ac596561"
+      }
+    },
+    "pairs": {
+      "weth-usdc": "0x3A5E3dF47e3033FfF125fa30951fEEA3E3F97515",
+      "weth-cvx": "0x6de29FE8d1b50ce460aed8Ebc0E51a56cd19edf0",
+      "weth-sushi": "0xfbBb64630C9707CbeC5d392C77D9B2Fab308E1E4",
+      "weth-steth": "0x224A019970ded38ff0b07754496653B1C5E368EF",
+      "weth-matic": "0x1C385B734FDF12dCDd6EF9f93c9CcF6cC1e0396A"
+    },
+    "reader": {
+      "address": "0xEB9300B834f0a11644C3336aDF944a05E61C3DA2",
+      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+    },
+    "multicall": {
+      "address": "0x30Ae91AcFD7D9a5ebbf99D56005Ab9F96984C9B3",
+      "checksum": "ec484c4f160f831f8a16fefd706901f5d0523d4e40658fbd25e549d4e9f8eb09"
+    }
+  },
   "kovan": {
     "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
     "tokens": {
       "wbtc": "0x5313e18163a2b66BF23B45d0a838219e1b236957",
-      "usdc": "0xb922e0b5C8fFA89Fe6195a581acC7D292B924142",
+      "usdc": {
+        "address": "0xb922e0b5C8fFA89Fe6195a581acC7D292B924142",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
       "usdt": "0x9EB96a6a675D633D2754d4E6B039b6fCCfB82DC4",
       "dai": "0xa0a8e1221AaF7f4220302C23943c1a60fB386447",
       "weth": "0xd0A1E359811322d97991E03f863a0C30C2cF029C",
       "link": "0xAE1f32bE79026EbfddEe398d8D7B2d9B7dF8891E",
-      "crv": "0xbB94607042C237b9c9d2bB2Cd0fe0c04356993c0"
+      "crv": "0xbB94607042C237b9c9d2bB2Cd0fe0c04356993c0",
+      "cvx": {
+        "address": "0x90F7095b5E2CE820C6e229481E1cE24Bb31d48D4",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "sushi": {
+        "address": "0xA410B701b4e102bb66465C705640b2aD53Ba41E7",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "matic": {
+        "address": "0x849AAf06583246e70797cAe67ae1a60B0f53808d",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      },
+      "steth": {
+        "address": "0x283777D562711BD46392B6B19de4854E2Af2826a",
+        "checksum": "555e0106e38cb903441365694a17b6aecf48dc777313f31f2b4315709c296cd3"
+      }
     },
     "pairs": {
       "weth-usdc": "0x1b1a7E186cf13Db3852f7f5bf19091061f323842",
-      "weth-crv": "0x39356Ee0464C3E815C5a6375ADa3D7580D5F9CbC"
+      "weth-crv": "0x39356Ee0464C3E815C5a6375ADa3D7580D5F9CbC",
+      "weth-cvx": "0xEA1c5a7246F41126879b5AAa4D855e751D6b90d1",
+      "weth-sushi": "0xf30246979bdf0f1Ce8E1337B4E3c951dD7C69Bb7",
+      "weth-matic": "0xc2EcF0FB6161AD6E0fBd40607CC7177c259153Aa",
+      "weth-steth": "0x450480B4388c8c5fB404306D6c29472bFE45Fb32"
     },
-    "factory": "0x1c5cf8f73b1f544E01BA3F665fEE658e291329d9",
-    "reader": "0x1CD25C41Ff4BB6d3dcC147d8f9d1a64dde70b2e6",
+    "factory": {
+      "address": "0x1c5cf8f73b1f544E01BA3F665fEE658e291329d9",
+      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+    },
+    "reader": {
+      "address": "0x1CD25C41Ff4BB6d3dcC147d8f9d1a64dde70b2e6",
+      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+    },
     "delay": "0x5236515d137eAC385F58C945Ec82371dcdb88c84",
     "uniswap": {
       "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
       "weth-usdc": "0x75DB3FC2C1f45d9781B349331eF72AB184c91125"
     },
-    "tokenShares": "0x733C7b85f4dC3e47C3fCe7e402e1B62ffEDc7973",
+    "tokenShares": {
+      "address": "0x733C7b85f4dC3e47C3fCe7e402e1B62ffEDc7973",
+      "checksum": "38efe8a53d310f8136ba222e3f1103d61d86e47ebdd2d8f99d0c519fb43cf5b0"
+    },
     "orders": "0xB47d585DA1eD48C3E6E5A622d08aB90099EC7CdC",
-    "addLiquidity": "0xAC8a1B33C92666fF69afb6d7D46C6c49E01463b8",
+    "addLiquidity": {
+      "address": "0xAC8a1B33C92666fF69afb6d7D46C6c49E01463b8",
+      "checksum": "e432330c7f68f2ddfc460b3aff21e450917cf6cffbe64f5a49593b5330a559ac"
+    },
     "buyHelper": "0x8FB37D93c257053606d92fcD2f12428e826DF04b",
     "withdrawHelper": "0xd172A753075c520E882213E50CF76cdA6E62C960",
     "integralToken": "0x597F10966E918d099Bfc30516ce2368DcCacf321",
@@ -49,11 +306,27 @@
       "weth-link": "0x7e45094b7856B37Bc67d459aCCe6f64875a9f8e0",
       "dai-usdc": "0x36b882992EDCE785fDFfA1ae1aCb318C7D37069e",
       "dai-usdt": "0xA5335f078880840803f162b35B4bf1e221687bB3",
-      "usdc-usdt": "0x805D27Fa0b190a52e4FB2F1b9105A6D41569B81f"
+      "usdc-usdt": "0x805D27Fa0b190a52e4FB2F1b9105A6D41569B81f",
+      "weth-steth": "0xc6d54Dc1a93002A7223d05919CaD11934E475b1F"
     },
     "oraclesV2": {
-      "weth-usdc": "0x1574a91BBc73037D6817B02a0e105DbF11791945",
-      "weth-crv": "0x76e8AD3c7d3593B5da79f744B7BAF7FAE039A1EC"
+      "weth-usdc": {
+        "address": "0x1574a91BBc73037D6817B02a0e105DbF11791945",
+        "checksum": "d9452a63b6f995289f9e45146ff5cbd77f905155a5ce4fcf70e410adb94d7397"
+      },
+      "weth-crv": "0x76e8AD3c7d3593B5da79f744B7BAF7FAE039A1EC",
+      "weth-cvx": {
+        "address": "0x7f1DB87F282BEdE7f73D69FE2cF6885b7ab0d861",
+        "checksum": "d9452a63b6f995289f9e45146ff5cbd77f905155a5ce4fcf70e410adb94d7397"
+      },
+      "weth-sushi": {
+        "address": "0xe7e911A1B612Ce2f119b70Fb470A5f6f539b08cF",
+        "checksum": "d9452a63b6f995289f9e45146ff5cbd77f905155a5ce4fcf70e410adb94d7397"
+      },
+      "weth-steth": {
+        "address": "0x8241A5c3C9d32aEc376B9254542167B620eab05B",
+        "checksum": "d9452a63b6f995289f9e45146ff5cbd77f905155a5ce4fcf70e410adb94d7397"
+      }
     },
     "integralStaking": {
       "sixMonths": "0xd514094E40d9Abf634B7586e6F045b9046aCbc77",
@@ -62,8 +335,21 @@
     "priceReader": "0xB089726BEf3A9a6c336f2701fD630024DA534039",
     "sushiswapV2": {
       "factory": "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
-      "weth-crv": "0xdC07447b81efd0e502c037B3AB41805c5cd1809d"
-    }
+      "weth-crv": "0xdC07447b81efd0e502c037B3AB41805c5cd1809d",
+      "weth-cvx": "0xfac0798bfe2473e393C5d033650282482d868896",
+      "weth-sushi": "0xA34Aa532D9b981De443efC61A60a800F02b2B085"
+    },
+    "uniswapV3": {
+      "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "weth-matic": "0xb68A74a509c19FE47EA02a6493b6bE07F2869Cc1"
+    },
+    "oraclesV3": {
+      "weth-matic": {
+        "address": "0xCd29F7fD910787Fa1f539d322d7AbE011A2663D8",
+        "checksum": "3028e97130a3ca25aaa7b595f6d76663cd3644ac63bd52c132cbd28f6e07d7f8"
+      }
+    },
+    "multicall": "0x2cc8688c5f75e365aaeeb4ea8d6a480405a48d2a"
   },
   "ropsten": {
     "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
@@ -118,19 +404,42 @@
       "usdt": "0xdac17f958d2ee523a2206206994597c13d831ec7",
       "dai": "0x6b175474e89094c44da98b954eedeac495271d0f",
       "weth": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-      "link": "0x514910771af9ca656af840dff83e8264ecf986ca"
+      "link": "0x514910771af9ca656af840dff83e8264ecf986ca",
+      "cvx": "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B",
+      "sushi": "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2",
+      "steth": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+      "matic": "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0"
     },
     "uniswap": {},
     "pairs": {
-      "weth-usdc": "0x2fe16Dd18bba26e457B7dD2080d5674312b026a2"
+      "weth-usdc": "0x2fe16Dd18bba26e457B7dD2080d5674312b026a2",
+      "weth-cvx": "0x43f0E5f2304F261DfA5359a0b74Ff030E498D904",
+      "weth-sushi": "0xD66f214fB49f81Ac5610e0339A351D7e1c67c35e",
+      "weth-steth": "0xD4d2140eD70DCF8794A986F0CFD07560ee738C71"
     },
     "integralToken": "0xD502F487e1841Fdc805130e13eae80c61186Bc98",
     "uniswapV2": {
       "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-      "weth-usdc": "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"
+      "weth-usdc": "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc",
+      "weth-steth": "0x4028DAAC072e492d34a3Afdbef0ba7e35D8b55C4"
     },
     "oraclesV2": {
-      "weth-usdc": "0x842362006863C9BF35A2B7397C3c6dF051DC4C4D"
+      "weth-usdc": {
+        "address": "0xB859c55565D4314218394b3632F1bA95a9E78965",
+        "checksum": "315fe0f931f79c1d66d79dfc71166f5196408e211ff036d04ac0d3bc383b303f"
+      },
+      "weth-cvx": {
+        "address": "0x6402d7909D5052DF45C3faf6915Eac5b9a127D20",
+        "checksum": "315fe0f931f79c1d66d79dfc71166f5196408e211ff036d04ac0d3bc383b303f"
+      },
+      "weth-sushi": {
+        "address": "0x51Ea69EC87ba5282c2B20d177dc71f907fEC1B8B",
+        "checksum": "315fe0f931f79c1d66d79dfc71166f5196408e211ff036d04ac0d3bc383b303f"
+      },
+      "weth-steth": {
+        "address": "0x2FBF594fe41625F554080b9A0477686786bA7BFE",
+        "checksum": "315fe0f931f79c1d66d79dfc71166f5196408e211ff036d04ac0d3bc383b303f"
+      }
     },
     "priceReader": "0x75e4955dd2B608Eb7A821EefCbBacB5f9dC978AF",
     "integralTimeRelease": "0xc8805CeBD927941a3B26e2EDCed20d666Fb118Ba",
@@ -138,12 +447,49 @@
       "sixMonths": "0x36bD665392236b20bd42e161f02Bf0ae1d9441Ff",
       "threeYears": "0xFFc0EAC1a1aE79C697607229Aca43Ef422625a40"
     },
-    "factory": "0xC480b33eE5229DE3FbDFAD1D2DCD3F3BAD0C56c6",
-    "tokenShares": "0xB28c804E3dAcFF80701BbbafD106DBFb416A5168",
-    "withdrawHelper": "0x6195015B38773F468DD43620dD5A64e9bb63c2e3",
-    "addLiquidity": "0xB291730099D3Ac9975Abd4003Ba3BD47401fd2FD",
-    "orders": "0x6336788A85F54d8856782d58c1ca63c7d3844531",
-    "delay": "0x77B1E5D58247bC3300A8e646b018fceBfeE5a59c",
-    "reader": "0xB5C08263c1D2c9651Ea6d91A9908460e40095f7c"
+    "factory": {
+      "address": "0xC480b33eE5229DE3FbDFAD1D2DCD3F3BAD0C56c6",
+      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+    },
+    "tokenShares": {
+      "address": "0x412Da11751B0A36d03B060890F4e41b7ce32971e",
+      "checksum": "b4b8498622e19c952aaf1bf8b953143dc37235c0a550368501f14b66b4400f9f"
+    },
+    "withdrawHelper": {
+      "address": "0x6195015B38773F468DD43620dD5A64e9bb63c2e3",
+      "checksum": "3714afb70aca752078137f27b075e44e4374279cc10df7ac239df140aa85987f"
+    },
+    "addLiquidity": {
+      "address": "0x0eC2323adafbEBC6C80257c7359692bCcEb0B3f1",
+      "checksum": "556ed14ab3a7f9696d16e2c17602a373f6a3fca3454bdf29b50f8707692752f5"
+    },
+    "orders": {
+      "address": "0x9CB505F2b41Aa426257Ed2A0bBa005fFF0af9E9a",
+      "checksum": "c6af4767ad6b2ee20bc9af3ea154648428d6f286d35e99e09eb584bfb07322b1"
+    },
+    "delay": {
+      "address": "0x782534550e2553A42CDFf8D5a94066d8c7B6729B",
+      "checksum": "f416352768133d125886e92ef505ec684d31bed49df698e300124741d93acf64"
+    },
+    "reader": {
+      "address": "0xB5C08263c1D2c9651Ea6d91A9908460e40095f7c",
+      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+    },
+    "sushiswapV2": {
+      "factory": "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
+      "weth-cvx": "0x05767d9EF41dC40689678fFca0608878fb3dE906",
+      "weth-sushi": "0x795065dCc9f64b5614C407a6EFDC400DA6221FB0"
+    },
+    "uniswapV3": {
+      "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+      "weth-matic": "0x290A6a7460B308ee3F19023D2D00dE604bcf5B42"
+    },
+    "multicall": "0xeefba1e63905ef1d7acba5a8513c70307c1ce441",
+    "oraclesV3": {
+      "weth-matic": {
+        "address": "0x87F12125E628c6Ad487B2213DB1CA376B3D20538",
+        "checksum": "bbb1d31dc4c29104b0e6500c44fbbf2e8da1bc1eeaa3223301b6d311cb68cd47"
+      }
+    }
   }
 }

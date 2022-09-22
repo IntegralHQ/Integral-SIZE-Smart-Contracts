@@ -6,7 +6,7 @@ import { expandTo18Decimals, expandToDecimals, overrides } from '../shared/utili
 describe('TwapOracle.getSpotPrice', () => {
   const loadFixture = setupFixtureLoader()
 
-  const decimals = [8, 18, 20]
+  const decimals = [6, 8, 18, 20]
   const cases = [
     { reserve0: 100, reserve1: 200, expected: 2 },
     { reserve0: 100, reserve1: 100, expected: 1 },

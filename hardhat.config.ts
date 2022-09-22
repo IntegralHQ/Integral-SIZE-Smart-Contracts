@@ -13,6 +13,26 @@ export default {
     currency: 'USD',
   },
   networks: {
+    'arbitrum': {
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      timeout: 60 * 30 * 1000,
+      // url: 'https://arb1.arbitrum.io/rpc',
+      url: "https://arbitrum-mainnet.infura.io/v3/" + process.env.INFURA_API_KEY,
+      gas: 5000000,
+    },
+    'arbitrum-rinkeby': {
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      timeout: 60 * 30 * 1000,
+      // url: 'https://rinkeby.arbitrum.io/rpc',
+      url: "https://arbitrum-rinkeby.infura.io/v3/" + process.env.INFURA_API_KEY,
+      gas: 5000000,
+    },
+    goerli: {
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      timeout: 60 * 30 * 1000,
+      url: "https://goerli.infura.io/v3/" + process.env.INFURA_API_KEY,
+      gas: 5000000,
+    },
     ropsten: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
@@ -68,6 +88,6 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: 'xxx'
+    apiKey: ''
   }
 }

@@ -9,7 +9,7 @@ describe('TwapPair.setOracle', () => {
 
   it('can only be called by the factory', async () => {
     const { pair, other } = await loadFixture(pairFixture)
-    await expect(pair.setSwapFee(other.address)).to.be.revertedWith('TP00')
+    await expect(pair.setSwapFee(other.address, overrides)).to.be.revertedWith('TP00')
   })
 
   it('cannot be set to same value', async () => {

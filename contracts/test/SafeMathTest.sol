@@ -15,4 +15,8 @@ contract SafeMathTest {
     function sub(int256 a, int256 b) external pure returns (int256) {
         return a.sub(b);
     }
+
+    function neg_floor_div(int256 a, int256 b) external pure returns (int256) {
+        return a.neg_floor_div(b);
+    }
 }

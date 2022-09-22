@@ -78,6 +78,6 @@ describe('TwapPair.mint', () => {
 
   it('reverts if to is zero', async () => {
     const { pair } = await loadFixture(pairFixture)
-    await expect(pair.mint(constants.AddressZero)).to.revertedWith('TP02')
+    await expect(pair.mint(constants.AddressZero, overrides)).to.revertedWith('TP02')
   })
 })

@@ -35,7 +35,7 @@ describe('TwapPair.sync', () => {
     const { pair, factory, token0, token1, other, another } = await loadFixture(pairFixture)
 
     await factory.setTrader(token0.address, token1.address, other.address, overrides)
-    await expect(pair.connect(another).sync()).to.be.revertedWith('TP0C')
+    await expect(pair.connect(another).sync(overrides)).to.be.revertedWith('TP0C')
     await pair.connect(other).sync()
   })
 

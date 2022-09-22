@@ -1,11 +1,21 @@
 import { Wallet } from 'ethers'
 import { OrderIdTest__factory } from '../../../build/types'
-import { mixedDecimalsTokenPairFixture } from './mixedDecimalsTokenPairFixture'
+import { getMixedDecimalsTokenPairFixture } from './mixedDecimalsTokenPairFixture'
 import { deployDelayAndWeth, setTokenTransferCosts } from './helpers'
 import { overrides } from '../utilities'
 
-export async function delayWithMixedDecimalsPairFixture([wallet]: Wallet[]) {
-  const pair = await mixedDecimalsTokenPairFixture([wallet])
+export async function delayWithMixedDecimalsPairFixture(wallets: Wallet[]) {
+  return getDelayWithMixedDecimalsPairFixture(wallets, 8, 18)
+}
+
+export function getDelayWithMixedDecimalsPairFixtureFor(xDecimals: number, yDecimals: number) {
+  return async function (wallets: Wallet[]) {
+    return getDelayWithMixedDecimalsPairFixture(wallets, xDecimals, yDecimals)
+  }
+}
+
+async function getDelayWithMixedDecimalsPairFixture([wallet]: Wallet[], xDecimals: number, yDecimals: number) {
+  const pair = await getMixedDecimalsTokenPairFixture([wallet], xDecimals, yDecimals)
 
   const { delay, token, wethPair, addLiquidityETH, weth, orders, libraries } = await deployDelayAndWeth(
     wallet,

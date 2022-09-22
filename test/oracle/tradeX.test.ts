@@ -61,20 +61,20 @@ describe('TwapOracle.tradeX', () => {
   describe('correct smallest digits', () => {
     it('6 decimals', async () => {
       const { tradeX, toDecimals } = await loadFixture(getTradeFixtureFor(6, 6, '379.55'))
-      expect(await tradeX('101.987654', '99.101231', '2000.657483')).to.eq(toDecimals('905.11563335', 6))
+      expect(await tradeX('101.987654', '99.101231', '2000.657483')).to.eq(toDecimals('905.115634', 6))
     })
 
     it('18 decimals', async () => {
       const { tradeX, toDecimals } = await loadFixture(getTradeFixtureFor(18, 18, '379.55'))
       expect(await tradeX('101.987654321098765432', '99.101231012341012345', '2000.657483920115627384')).to.eq(
-        toDecimals('905.11551708111044321315', 18)
+        toDecimals('905.115517081110443214', 18)
       )
     })
 
     it('20 decimals', async () => {
       const { tradeX, toDecimals } = await loadFixture(getTradeFixtureFor(20, 20, '379.55'))
       expect(await tradeX('101.98765432109876543219', '99.10123101234101234511', '2000.65748392011562738495')).to.eq(
-        toDecimals('905.115517081110443183736', 20)
+        toDecimals('905.11551708111044318374', 20)
       )
     })
   })
@@ -104,7 +104,7 @@ describe('TwapOracle.tradeX', () => {
   it('tradeX after tradeY returns to initial state', async () => {
     const { tradeX, tradeY, toDecimals } = await loadFixture(getTradeFixtureFor(18, 18, '21.3456'))
     const xAfter = await tradeY(2000, 100000, 1000)
-    expect(await tradeX(100000, formatUnits(xAfter), 2000)).to.eq(toDecimals('999.999999999999999999', 18))
+    expect(await tradeX(100000, formatUnits(xAfter), 2000)).to.eq(toDecimals('1000.000000000000000022', 18))
   })
 
   it('after uniswap price changes', async () => {

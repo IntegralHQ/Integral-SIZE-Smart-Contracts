@@ -99,7 +99,7 @@ describe('TwapDelay.cancelOrder', () => {
     await mineBlock(wallet)
 
     await delay.cancelOrder(1)
-    await expect(delay.cancelOrder(1)).to.be.revertedWith('TD52')
+    await expect(delay.cancelOrder(1, overrides)).to.be.revertedWith('TD52')
 
     expect(await token0.balanceOf(wallet.address)).to.deep.eq(token0Balance)
     expect(await token1.balanceOf(wallet.address)).to.deep.eq(token1Balance)

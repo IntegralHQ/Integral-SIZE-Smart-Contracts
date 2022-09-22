@@ -16,9 +16,9 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
 
     uint256 private constant PRECISION = 10**18;
 
-    uint256 public override mintFee = 0;
-    uint256 public override burnFee = 0;
-    uint256 public override swapFee = 0;
+    uint256 public override mintFee;
+    uint256 public override burnFee;
+    uint256 public override swapFee;
 
     uint256 public constant override MINIMUM_LIQUIDITY = 10**3;
 
@@ -166,7 +166,7 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
         require(_totalSupply > 0, 'TP36');
         address _token0 = token0; // gas savings
         address _token1 = token1; // gas savings
-        (uint256 balance0, uint256 balance1) = getBalances(token0, token1);
+        (uint256 balance0, uint256 balance1) = getBalances(_token0, _token1);
         uint256 liquidityIn = balanceOf[address(this)];
 
         if (msg.sender != factory && burnFee > 0) {
@@ -183,7 +183,7 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
         _safeTransfer(_token0, to, amount0Out);
         _safeTransfer(_token1, to, amount1Out);
 
-        (balance0, balance1) = getBalances(token0, token1);
+        (balance0, balance1) = getBalances(_token0, _token1);
         setReserves(balance0, balance1);
 
         emit Burn(msg.sender, amount0Out, amount1Out, liquidityIn, to);

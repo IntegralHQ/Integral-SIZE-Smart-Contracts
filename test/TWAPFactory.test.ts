@@ -65,23 +65,23 @@ describe('TwapFactory', () => {
   it('performs addresses checkings when creating pair', async () => {
     const { factory, oracle, token0, token1, wallet } = await loadFixture(factoryWithOracleAndTokensFixture)
     await expect(
-      factory.createPair(token0.address, token1.address, constants.AddressZero, wallet.address)
+      factory.createPair(token0.address, token1.address, constants.AddressZero, wallet.address, overrides)
     ).to.revertedWith('TP02')
     await expect(
-      factory.createPair(token0.address, constants.AddressZero, oracle.address, wallet.address)
+      factory.createPair(token0.address, constants.AddressZero, oracle.address, wallet.address, overrides)
     ).to.revertedWith('TF02')
     await expect(
-      factory.createPair(constants.AddressZero, token1.address, oracle.address, wallet.address)
+      factory.createPair(constants.AddressZero, token1.address, oracle.address, wallet.address, overrides)
     ).to.revertedWith('TF02')
-    await expect(factory.createPair(token0.address, token1.address, wallet.address, wallet.address)).to.revertedWith(
-      'TP1D'
-    )
-    await expect(factory.createPair(token0.address, wallet.address, oracle.address, wallet.address)).to.revertedWith(
-      'TP10'
-    )
-    await expect(factory.createPair(wallet.address, token1.address, oracle.address, wallet.address)).to.revertedWith(
-      'TP10'
-    )
+    await expect(
+      factory.createPair(token0.address, token1.address, wallet.address, wallet.address, overrides)
+    ).to.revertedWith('TP1D')
+    await expect(
+      factory.createPair(token0.address, wallet.address, oracle.address, wallet.address, overrides)
+    ).to.revertedWith('TP10')
+    await expect(
+      factory.createPair(wallet.address, token1.address, oracle.address, wallet.address, overrides)
+    ).to.revertedWith('TP10')
   })
 
   it('prevents non-owners from creating pairs', async () => {
@@ -138,6 +138,7 @@ describe('TwapFactory', () => {
       token0,
       token1,
       pair,
+      oracle,
       addLiquidity,
       PRECISION,
       setupUniswapPair,
@@ -151,7 +152,7 @@ describe('TwapFactory', () => {
     const priceInfo = await getEncodedPriceInfo()
 
     const amount1In = expandTo18Decimals(1)
-    const amount0Out = await pair.getSwapAmount0Out(amount1In, priceInfo)
+    const amount0Out = await oracle.getSwapAmount0Out(await pair.swapFee(), amount1In, priceInfo)
 
     const feeAmount = amount1In.mul(swapFee).div(PRECISION)
 

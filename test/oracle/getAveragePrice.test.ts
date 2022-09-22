@@ -40,30 +40,30 @@ describe('TwapOracle.getAveragePrice', () => {
         expect(price).to.be.lt(expected.add(10))
       })
     }
+
+    it('change after swap', async () => {
+      const { pair, addLiquidity, oracle, provider, wallet, token1 } = await loadFixture(fixture)
+      await addLiquidity(expandToDecimals(100, xDecimals), expandToDecimals(50_000, yDecimals))
+      await provider.send('evm_increaseTime', [1])
+      await pair.sync(overrides)
+
+      await oracle.setUniswapPair(pair.address, overrides)
+
+      const { priceAccumulator, priceTimestamp } = await oracle.getPriceInfo()
+      await increaseTime(wallet)
+      const price = await oracle.getAveragePrice(priceAccumulator, priceTimestamp, overrides)
+
+      await increaseTime(wallet)
+
+      await token1.transfer(pair.address, expandToDecimals(500, yDecimals))
+      await pair.swap(expandToDecimals(0.8, xDecimals), 0, wallet.address, [], overrides)
+
+      await increaseTime(wallet)
+
+      const price2 = await oracle.getAveragePrice(priceAccumulator, priceTimestamp, overrides)
+      expect(price).to.lt(price2)
+    })
   }
-
-  it('change after swap', async () => {
-    const { pair, addLiquidity, oracle, provider, wallet, token1 } = await loadFixture(oracleWithUniswapFixture)
-    await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(50_000))
-    await provider.send('evm_increaseTime', [1])
-    await pair.sync(overrides)
-
-    await oracle.setUniswapPair(pair.address, overrides)
-
-    const { priceAccumulator, priceTimestamp } = await oracle.getPriceInfo()
-    await increaseTime(wallet)
-    const price = await oracle.getAveragePrice(priceAccumulator, priceTimestamp, overrides)
-
-    await increaseTime(wallet)
-
-    await token1.transfer(pair.address, expandTo18Decimals(500))
-    await pair.swap(expandTo18Decimals(0.8), 0, wallet.address, [], overrides)
-
-    await increaseTime(wallet)
-
-    const price2 = await oracle.getAveragePrice(priceAccumulator, priceTimestamp, overrides)
-    expect(price).to.lt(price2)
-  })
 
   it('reverts when no time elapsed', async () => {
     const { pair, addLiquidity, oracle } = await loadFixture(oracleWithUniswapFixture)

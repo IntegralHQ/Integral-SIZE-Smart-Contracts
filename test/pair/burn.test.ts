@@ -89,11 +89,11 @@ describe('TwapPair.burn', () => {
 
   it('reverts if to is zero', async () => {
     const { pair } = await loadFixture(pairFixture)
-    await expect(pair.burn(constants.AddressZero)).to.be.revertedWith('TP02')
+    await expect(pair.burn(constants.AddressZero, overrides)).to.be.revertedWith('TP02')
   })
 
   it('reverts if total supply is zero', async () => {
     const { pair, other } = await loadFixture(pairFixture)
-    await expect(pair.burn(other.address)).to.be.revertedWith('TP36')
+    await expect(pair.burn(other.address, overrides)).to.be.revertedWith('TP36')
   })
 })

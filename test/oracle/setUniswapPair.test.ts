@@ -10,18 +10,18 @@ describe('TwapOracle.setUniswapPair', () => {
 
   it('performs security checkings', async () => {
     const { wallet, pair, oracle, other } = await loadFixture(oracleWithUniswapFixture)
-    await expect(oracle.connect(other).setUniswapPair(other.address)).to.be.revertedWith('TO00')
-    await expect(oracle.setUniswapPair(other.address)).to.be.revertedWith('TO0B')
-    await expect(oracle.setUniswapPair(pair.address)).to.be.revertedWith('TO1F')
+    await expect(oracle.connect(other).setUniswapPair(other.address, overrides)).to.be.revertedWith('TO00')
+    await expect(oracle.setUniswapPair(other.address, overrides)).to.be.revertedWith('TO0B')
+    await expect(oracle.setUniswapPair(pair.address, overrides)).to.be.revertedWith('TO1F')
 
     {
       const { pair: mixedDecimalsPair } = await getUniswapPairFixtureFor(18, 6)([wallet])
-      await expect(oracle.setUniswapPair(mixedDecimalsPair.address)).to.be.revertedWith('TO45')
+      await expect(oracle.setUniswapPair(mixedDecimalsPair.address, overrides)).to.be.revertedWith('TO45')
     }
 
     {
       const { pair: mixedDecimalsPair } = await getUniswapPairFixtureFor(6, 18)([wallet])
-      await expect(oracle.setUniswapPair(mixedDecimalsPair.address)).to.be.revertedWith('TO45')
+      await expect(oracle.setUniswapPair(mixedDecimalsPair.address, overrides)).to.be.revertedWith('TO45')
     }
   })
 
@@ -43,6 +43,6 @@ describe('TwapOracle.setUniswapPair', () => {
     await expect(oracle.setUniswapPair(uniswapPair, overrides)).to.be.revertedWith('TO01')
 
     await oracle.setUniswapPair(pair.address, overrides)
-    await expect(oracle.setUniswapPair(constants.AddressZero)).to.be.revertedWith('TO02')
+    await expect(oracle.setUniswapPair(constants.AddressZero, overrides)).to.be.revertedWith('TO02')
   })
 })

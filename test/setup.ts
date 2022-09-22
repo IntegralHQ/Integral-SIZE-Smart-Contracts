@@ -1,4 +1,4 @@
 import chai from 'chai'
-import { solidity } from 'ethereum-waffle'
+import { waffle } from 'hardhat'
 
-chai.use(solidity)
+chai.use(waffle.solidity)

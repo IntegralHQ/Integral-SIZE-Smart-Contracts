@@ -9,7 +9,7 @@ describe('TwapDelay.setTransferGasCost', () => {
 
   it('can be changed', async () => {
     const { delay, other, token0 } = await loadFixture(delayFixture)
-    await expect(delay.connect(other.address).setTransferGasCost(token0.address, 50000)).to.be.revertedWith('TD00')
+    await expect(delay.connect(other).setTransferGasCost(token0.address, 50000, overrides)).to.be.revertedWith('TD00')
 
     await expect(delay.setTransferGasCost(token0.address, 50000, overrides))
       .to.emit(delay, 'TransferGasCostSet')

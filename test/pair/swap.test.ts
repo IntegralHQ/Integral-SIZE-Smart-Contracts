@@ -15,12 +15,12 @@ describe('TwapPair.swap', () => {
     const { wallet, other, pair, addLiquidity } = await loadFixture(pairFixture)
     await addLiquidity(expandTo18Decimals(1), expandTo18Decimals(1))
 
-    await expect(pair.connect(other).swap(0, 1, wallet.address, [])).to.be.revertedWith('TP0C')
-    await expect(pair.swap(0, 1, constants.AddressZero, [])).to.be.revertedWith('TP02')
-    await expect(pair.swap(0, 0, wallet.address, [])).to.be.revertedWith('TP31')
-    await expect(pair.swap(1, 1, wallet.address, [])).to.be.revertedWith('TP31')
-    await expect(pair.swap(constants.MaxUint256, 0, wallet.address, [])).to.be.revertedWith('TP07')
-    await expect(pair.swap(0, constants.MaxUint256, wallet.address, [])).to.be.revertedWith('TP07')
+    await expect(pair.connect(other).swap(0, 1, wallet.address, [], overrides)).to.be.revertedWith('TP0C')
+    await expect(pair.swap(0, 1, constants.AddressZero, [], overrides)).to.be.revertedWith('TP02')
+    await expect(pair.swap(0, 0, wallet.address, [], overrides)).to.be.revertedWith('TP31')
+    await expect(pair.swap(1, 1, wallet.address, [], overrides)).to.be.revertedWith('TP31')
+    await expect(pair.swap(constants.MaxUint256, 0, wallet.address, [], overrides)).to.be.revertedWith('TP07')
+    await expect(pair.swap(0, constants.MaxUint256, wallet.address, [], overrides)).to.be.revertedWith('TP07')
   })
 
   describe('swapping x->y', () => {
@@ -285,7 +285,7 @@ describe('TwapPair.swap', () => {
     const { priceInfo } = await setupUniswapPair(1)
 
     await token0.transfer(pair.address, 1_003_009)
-    await expect(pair.swap(0, 997_000, wallet.address, priceInfo)).to.be.revertedWith('RS09')
+    await expect(pair.swap(0, 997_000, wallet.address, priceInfo, overrides)).to.be.revertedWith('RS09')
   })
 
   it('swap 8-decimals and 18-decimals tokens', async () => {
@@ -396,27 +396,27 @@ describe('TwapPair.swap', () => {
   })
 
   it('token0 liquidity cannot be drained to zero', async () => {
-    const { pair, token1, addLiquidity, wallet, setupUniswapPair } = await loadFixture(pairFixture)
+    const { pair, oracle, token1, addLiquidity, wallet, setupUniswapPair } = await loadFixture(pairFixture)
 
     await addLiquidity(expandTo18Decimals(500), expandTo18Decimals(1000))
 
     const { priceInfo } = await setupUniswapPair(2)
 
     const swapOutput = expandTo18Decimals(500)
-    const swapInput = await pair.getSwapAmount1In(swapOutput, priceInfo)
+    const swapInput = await oracle.testGetSwapAmount1InMax(await pair.swapFee(), swapOutput, priceInfo)
     await token1.transfer(pair.address, swapInput, overrides)
     await expect(pair.swap(swapOutput, 0, wallet.address, priceInfo, overrides)).to.be.revertedWith('TP07')
   })
 
   it('token1 liquidity cannot be drained to zero', async () => {
-    const { pair, token0, addLiquidity, wallet, setupUniswapPair } = await loadFixture(pairFixture)
+    const { pair, oracle, token0, addLiquidity, wallet, setupUniswapPair } = await loadFixture(pairFixture)
 
     await addLiquidity(expandTo18Decimals(1000), expandTo18Decimals(500))
 
     const { priceInfo } = await setupUniswapPair(2)
 
     const swapOutput = expandTo18Decimals(500)
-    const swapInput = await pair.getSwapAmount0In(swapOutput, priceInfo)
+    const swapInput = await oracle.testGetSwapAmount0InMax(await pair.swapFee(), swapOutput, priceInfo)
     await token0.transfer(pair.address, swapInput, overrides)
     await expect(pair.swap(0, swapOutput, wallet.address, priceInfo, overrides)).to.be.revertedWith('TP07')
   })
@@ -426,12 +426,12 @@ describe('TwapPair.swap', () => {
     await setupUniswapPair(1)
     const { priceInfo } = await oracle.testEncodePriceInfo(0, 0, overrides)
     await expect(
-      pair.swap(expandTo18Decimals(1), expandTo18Decimals(2), constants.AddressZero, priceInfo)
+      pair.swap(expandTo18Decimals(1), expandTo18Decimals(2), constants.AddressZero, priceInfo, overrides)
     ).to.revertedWith('TP02')
   })
 
   it('checks weth-dai specific price issue', async () => {
-    const { pair, token0, token1, factory, addLiquidity, wallet, other, setupUniswapPair } = await loadFixture(
+    const { pair, oracle, token0, token1, factory, addLiquidity, wallet, other, setupUniswapPair } = await loadFixture(
       pairFixture
     )
 
@@ -447,7 +447,7 @@ describe('TwapPair.swap', () => {
 
     await addLiquidity(reserve0, reserve1)
 
-    const amountIn = await pair.getSwapAmount1In(amount0Out, priceInfo)
+    const amountIn = await oracle.testGetSwapAmount1InMax(await pair.swapFee(), amount0Out, priceInfo)
     await token1.transfer(pair.address, amountIn, overrides)
     await factory.setTrader(token0.address, token1.address, other.address, overrides)
     await expect(pair.connect(other).swap(amount0Out, amount1Out, wallet.address, priceInfo, overrides))

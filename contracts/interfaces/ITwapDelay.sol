@@ -17,6 +17,7 @@ interface ITwapDelay {
     event GasPriceInertiaSet(uint256 gasPriceInertia);
     event MaxGasPriceImpactSet(uint256 maxGasPriceImpact);
     event TransferGasCostSet(address token, uint256 gasCost);
+    event ToleranceSet(address pair, uint16 amount);
     event OrderDisabled(address pair, Orders.OrderType orderType, bool disabled);
     event UnwrapFailed(address to, uint256 amount);
     event Execute(address sender, uint256 n);
@@ -26,6 +27,8 @@ interface ITwapDelay {
     function owner() external returns (address);
 
     function isBot(address bot) external returns (bool);
+
+    function tolerance(address pair) external returns (uint16);
 
     function gasPriceInertia() external returns (uint256);
 
@@ -59,27 +62,29 @@ interface ITwapDelay {
 
     function getSellDisabled(address pair) external returns (bool);
 
-    function getOrderStatus(uint256 orderId) external returns (Orders.OrderStatus);
+    function getOrderStatus(uint256 orderId) external view returns (Orders.OrderStatus);
 
     function setOrderDisabled(
         address pair,
         Orders.OrderType orderType,
         bool disabled
-    ) external;
+    ) external payable;
 
-    function setOwner(address _owner) external;
+    function setOwner(address _owner) external payable;
 
-    function setBot(address _bot, bool _isBot) external;
+    function setBot(address _bot, bool _isBot) external payable;
 
-    function setMaxGasLimit(uint256 _maxGasLimit) external;
+    function setMaxGasLimit(uint256 _maxGasLimit) external payable;
 
-    function setDelay(uint32 _delay) external;
+    function setDelay(uint32 _delay) external payable;
 
-    function setGasPriceInertia(uint256 _gasPriceInertia) external;
+    function setGasPriceInertia(uint256 _gasPriceInertia) external payable;
 
-    function setMaxGasPriceImpact(uint256 _maxGasPriceImpact) external;
+    function setMaxGasPriceImpact(uint256 _maxGasPriceImpact) external payable;
 
-    function setTransferGasCost(address token, uint256 gasCost) external;
+    function setTransferGasCost(address token, uint256 gasCost) external payable;
+
+    function setTolerance(address pair, uint16 amount) external payable;
 
     function deposit(Orders.DepositParams memory depositParams) external payable returns (uint256 orderId);
 
@@ -89,7 +94,7 @@ interface ITwapDelay {
 
     function buy(Orders.BuyParams memory buyParams) external payable returns (uint256 orderId);
 
-    function execute(uint256 n) external;
+    function execute(uint256 n) external payable;
 
     function retryRefund(uint256 orderId) external;
 

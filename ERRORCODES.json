@@ -1,0 +1,342 @@
+{
+  "00": {
+    "errorMessage": "FORBIDDEN",
+    "userMessage": ""
+  },
+  "01": {
+    "errorMessage": "ALREADY SET",
+    "userMessage": ""
+  },
+  "02": {
+    "errorMessage": "ADDRESS ZERO",
+    "userMessage": ""
+  },
+  "03": {
+    "errorMessage": "INSUFFICIENT AMOUNT",
+    "userMessage": ""
+  },
+  "04": {
+    "errorMessage": "EXPIRED",
+    "userMessage": ""
+  },
+  "05": {
+    "errorMessage": "TRANSFER FAILED",
+    "userMessage": ""
+  },
+  "06": {
+    "errorMessage": "LOCKED",
+    "userMessage": ""
+  },
+  "07": {
+    "errorMessage": "INSUFFICIENT LIQUIDITY",
+    "userMessage": ""
+  },
+  "08": {
+    "errorMessage": "INSUFFICIENT INPUT AMOUNT",
+    "userMessage": ""
+  },
+  "09": {
+    "errorMessage": "ZERO",
+    "userMessage": ""
+  },
+  "0A": {
+    "errorMessage": "WITHDRAW DISABLED",
+    "userMessage": ""
+  },
+  "0B": {
+    "errorMessage": "UNISWAP PAIR MUST BE CONTRACT",
+    "userMessage": ""
+  },
+  "0C": {
+    "errorMessage": "UNAUTHORIZED TRADER",
+    "userMessage": ""
+  },
+  "0D": {
+    "errorMessage": "TRANSFER OOPS",
+    "userMessage": ""
+  },
+  "0E": {
+    "errorMessage": "TRANSFER FROM FAILED",
+    "userMessage": ""
+  },
+  "0F": {
+    "errorMessage": "TOKEN TRANSFER GAS COST UNSET",
+    "userMessage": ""
+  },
+  "10": {
+    "errorMessage": "TOKEN MUST BE CONTRACT",
+    "userMessage": ""
+  },
+  "11": {
+    "errorMessage": "SUBTRACTION OVERFLOW",
+    "userMessage": ""
+  },
+  "12": {
+    "errorMessage": "SUB UNDERFLOW",
+    "userMessage": ""
+  },
+  "13": {
+    "errorMessage": "SELL DISABLED",
+    "userMessage": ""
+  },
+  "14": {
+    "errorMessage": "REFUND FAILED",
+    "userMessage": ""
+  },
+  "15": {
+    "errorMessage": "PRICE TOO LOW",
+    "userMessage": ""
+  },
+  "16": {
+    "errorMessage": "PRICE TOO HIGH",
+    "userMessage": ""
+  },
+  "17": {
+    "errorMessage": "PAIR NONEXISTENT",
+    "userMessage": ""
+  },
+  "18": {
+    "errorMessage": "PAIR EXISTS",
+    "userMessage": ""
+  },
+  "19": {
+    "errorMessage": "PAIR DOES NOT EXIST",
+    "userMessage": ""
+  },
+  "1A": {
+    "errorMessage": "OVERFLOW FLOAT ENCODE",
+    "userMessage": ""
+  },
+  "1B": {
+    "errorMessage": "OVERFLOW FLOAT DECODE",
+    "userMessage": ""
+  },
+  "1C": {
+    "errorMessage": "ORDER NOT EXCEEDED",
+    "userMessage": ""
+  },
+  "1D": {
+    "errorMessage": "ORACLE MUST BE CONTRACT",
+    "userMessage": ""
+  },
+  "1E": {
+    "errorMessage": "NOT ENOUGH FUNDS",
+    "userMessage": ""
+  },
+  "1F": {
+    "errorMessage": "NO UNISWAP RESERVES",
+    "userMessage": ""
+  },
+  "20": {
+    "errorMessage": "NO TIME ELAPSED",
+    "userMessage": ""
+  },
+  "21": {
+    "errorMessage": "NO POSSIBLE REFUND",
+    "userMessage": ""
+  },
+  "22": {
+    "errorMessage": "NO LIQUIDITY",
+    "userMessage": ""
+  },
+  "23": {
+    "errorMessage": "NO AMOUNT OUT",
+    "userMessage": ""
+  },
+  "24": {
+    "errorMessage": "NO AMOUNT IN",
+    "userMessage": ""
+  },
+  "25": {
+    "errorMessage": "NO AMOUNT",
+    "userMessage": ""
+  },
+  "26": {
+    "errorMessage": "NO ADDRESS",
+    "userMessage": ""
+  },
+  "27": {
+    "errorMessage": "NEGATIVE Y BALANCE",
+    "userMessage": ""
+  },
+  "28": {
+    "errorMessage": "NEGATIVE X BALANCE",
+    "userMessage": ""
+  },
+  "29": {
+    "errorMessage": "MULTIPLICATION OVERFLOW",
+    "userMessage": ""
+  },
+  "2A": {
+    "errorMessage": "MUL OVERFLOW",
+    "userMessage": ""
+  },
+  "2B": {
+    "errorMessage": "MAX GAS LIMIT TOO HIGH",
+    "userMessage": ""
+  },
+  "2C": {
+    "errorMessage": "INVALID TRANSFER",
+    "userMessage": ""
+  },
+  "2D": {
+    "errorMessage": "INVALID TO",
+    "userMessage": ""
+  },
+  "2E": {
+    "errorMessage": "INVALID SWAP",
+    "userMessage": ""
+  },
+  "2F": {
+    "errorMessage": "INVALID SIGNATURE",
+    "userMessage": ""
+  },
+  "30": {
+    "errorMessage": "INVALID SHARES",
+    "userMessage": ""
+  },
+  "31": {
+    "errorMessage": "INVALID OUTPUT AMOUNTS",
+    "userMessage": ""
+  },
+  "32": {
+    "errorMessage": "INVALID ORDER TYPE",
+    "userMessage": ""
+  },
+  "33": {
+    "errorMessage": "INVALID MAX GAS PRICE IMPACT",
+    "userMessage": ""
+  },
+  "34": {
+    "errorMessage": "INVALID INT CONVERSION",
+    "userMessage": ""
+  },
+  "35": {
+    "errorMessage": "INVALID INERTIA",
+    "userMessage": ""
+  },
+  "36": {
+    "errorMessage": "INSUFFICIENT TOTAL SUPPLY",
+    "userMessage": ""
+  },
+  "37": {
+    "errorMessage": "INSUFFICIENT OUTPUT AMOUNT",
+    "userMessage": ""
+  },
+  "38": {
+    "errorMessage": "INSUFFICIENT LIQUIDITY MINTED",
+    "userMessage": ""
+  },
+  "39": {
+    "errorMessage": "INSUFFICIENT LIQUIDITY BURNED",
+    "userMessage": ""
+  },
+  "3A": {
+    "errorMessage": "INSUFFICIENT BALANCE",
+    "userMessage": ""
+  },
+  "3B": {
+    "errorMessage": "IDENTICAL ADDRESSES",
+    "userMessage": ""
+  },
+  "3C": {
+    "errorMessage": "GAS PRICE PRECISION",
+    "userMessage": ""
+  },
+  "3D": {
+    "errorMessage": "GAS LIMIT TOO LOW",
+    "userMessage": ""
+  },
+  "3E": {
+    "errorMessage": "GAS LIMIT TOO HIGH",
+    "userMessage": ""
+  },
+  "3F": {
+    "errorMessage": "ETH TRANSFER FAILED",
+    "userMessage": ""
+  },
+  "40": {
+    "errorMessage": "ETH REFUND FAILED",
+    "userMessage": ""
+  },
+  "41": {
+    "errorMessage": "EMPTY ORDER",
+    "userMessage": ""
+  },
+  "42": {
+    "errorMessage": "DIVISION OVERFLOW",
+    "userMessage": ""
+  },
+  "43": {
+    "errorMessage": "DIVISION BY ZERO",
+    "userMessage": ""
+  },
+  "44": {
+    "errorMessage": "INVALID DEADLINE",
+    "userMessage": ""
+  },
+  "45": {
+    "errorMessage": "DIFFERENT DECIMALS",
+    "userMessage": ""
+  },
+  "46": {
+    "errorMessage": "DEPOSIT DISABLED",
+    "userMessage": ""
+  },
+  "47": {
+    "errorMessage": "DECIMALS DIFFERENCE TOO BIG",
+    "userMessage": ""
+  },
+  "48": {
+    "errorMessage": "CANNOT DECREASE",
+    "userMessage": ""
+  },
+  "49": {
+    "errorMessage": "BUY DISABLED",
+    "userMessage": ""
+  },
+  "4A": {
+    "errorMessage": "BALANCE OF OOPS",
+    "userMessage": ""
+  },
+  "4B": {
+    "errorMessage": "APPROVE FAILED",
+    "userMessage": ""
+  },
+  "4C": {
+    "errorMessage": "ALREADY CANCELED",
+    "userMessage": ""
+  },
+  "4D": {
+    "errorMessage": "ADDITION OVERFLOW",
+    "userMessage": ""
+  },
+  "4E": {
+    "errorMessage": "ADD OVERFLOW",
+    "userMessage": ""
+  },
+  "4F": {
+    "errorMessage": "DECIMALS HIGHER THAN 75",
+    "userMessage": ""
+  },
+  "50": {
+    "errorMessage": "SM EXCEEDS 32 BITS",
+    "userMessage": ""
+  },
+  "51": {
+    "errorMessage": "SM EXCEEDS 112 BITS",
+    "userMessage": ""
+  },
+  "52": {
+    "errorMessage": "NOT CANCELLABLE",
+    "userMessage": ""
+  },
+  "53": {
+    "errorMessage": "OUT OF GAS",
+    "userMessage": ""
+  },
+  "54": {
+    "errorMessage": "VALUE TOO HIGH",
+    "userMessage": ""
+  }
+}

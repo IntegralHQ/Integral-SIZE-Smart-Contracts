@@ -18,14 +18,14 @@ describe('TwapPair.getSwapAmount1In', () => {
 
   for (const { reserve0, reserve1, price, amount0Out } of testCases) {
     it(`reserves=${reserve0}/${reserve1} price=${price} amount0Out=${amount0Out}`, async () => {
-      const { addLiquidity, token0, token1, pair, wallet, setupUniswapPair } = await loadFixture(pairFixture)
+      const { addLiquidity, token0, token1, pair, oracle, wallet, setupUniswapPair } = await loadFixture(pairFixture)
 
       const amountOut = expandTo18Decimals(amount0Out)
 
       await addLiquidity(expandTo18Decimals(reserve0), expandTo18Decimals(reserve1))
       const { priceInfo } = await setupUniswapPair(price)
 
-      const amount1In = await pair.getSwapAmount1In(amountOut, priceInfo)
+      const amount1In = await oracle.testGetSwapAmount1InMax(await pair.swapFee(), amountOut, priceInfo)
 
       const balance0Before = await token0.balanceOf(wallet.address)
       await token1.transfer(pair.address, amount1In, overrides)
@@ -37,14 +37,16 @@ describe('TwapPair.getSwapAmount1In', () => {
   }
 
   it('returns correct values', async () => {
-    const { addLiquidity, token1, pair, wallet, getState, setupUniswapPair } = await loadFixture(pairFixture)
+    const { addLiquidity, token1, pair, oracle, wallet, getState, setupUniswapPair } = await loadFixture(pairFixture)
     const { priceInfo } = await setupUniswapPair('379.55')
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(2137))
 
     const outputAmount = expandTo18Decimals(1)
-    const expectedInputAmount = expandTo18Decimals('380.692076228686058175')
+    const expectedInputAmount = expandTo18Decimals('380.692076228686058174')
 
-    expect(await pair.getSwapAmount1In(outputAmount, priceInfo)).to.eq(expectedInputAmount)
+    expect(await oracle.testGetSwapAmount1InMax(await pair.swapFee(), outputAmount, priceInfo)).to.eq(
+      expectedInputAmount
+    )
     const before = await getState()
     expect(before.reserves[0]).to.eq(expandTo18Decimals(100))
     expect(before.reserves[1]).to.eq(expandTo18Decimals(2137))
@@ -53,12 +55,14 @@ describe('TwapPair.getSwapAmount1In', () => {
     await pair.swap(outputAmount, 0, wallet.address, priceInfo, overrides)
 
     const outputAmount2 = expandTo18Decimals(1)
-    const expectedInputAmount2 = expandTo18Decimals('380.692076228686058175')
+    const expectedInputAmount2 = expandTo18Decimals('380.692076228686058174')
 
-    expect(await pair.getSwapAmount1In(outputAmount2, priceInfo)).to.eq(expectedInputAmount2)
+    expect(await oracle.testGetSwapAmount1InMax(await pair.swapFee(), outputAmount2, priceInfo)).to.eq(
+      expectedInputAmount2
+    )
 
     const after = await getState()
-    expect(after.reserves[0]).to.eq(expandTo18Decimals('98.999999999999999999'))
-    expect(after.reserves[1]).to.eq(expandTo18Decimals('2516.550000000000000001'))
+    expect(after.reserves[0]).to.eq(expandTo18Decimals('99.000000000000000000'))
+    expect(after.reserves[1]).to.eq(expandTo18Decimals('2516.550000000000000000'))
   })
 })

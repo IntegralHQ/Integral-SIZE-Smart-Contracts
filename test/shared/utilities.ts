@@ -111,6 +111,10 @@ export async function mineBlocks(wallet: Wallet, n: number) {
   }
 }
 
+export async function mineBlockRPCMethod(wallet: Wallet) {
+  await (wallet.provider as providers.JsonRpcProvider).send('evm_mine', [])
+}
+
 export async function increaseTime(wallet: Wallet, seconds?: number) {
   await (wallet.provider as providers.JsonRpcProvider).send('evm_increaseTime', [seconds || 1])
   await mineBlock(wallet)

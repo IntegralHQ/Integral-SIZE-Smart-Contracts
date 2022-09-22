@@ -28,7 +28,39 @@ contract TwapOracleTest is TwapOracle {
         return abi.encode(price);
     }
 
-    function testDecodePriceInfo(bytes memory data) external pure returns (uint256 price) {
+    function testDecodePriceInfo(bytes calldata data) external pure returns (uint256 price) {
         return decodePriceInfo(data);
+    }
+
+    function testGetSwapAmount0InMax(
+        uint256 swapFee,
+        uint256 amount1Out,
+        bytes calldata data
+    ) external view returns (uint256 amount0In) {
+        return getSwapAmount0InMax(swapFee, amount1Out, data);
+    }
+
+    function testGetSwapAmount0InMin(
+        uint256 swapFee,
+        uint256 amount1Out,
+        bytes calldata data
+    ) external view returns (uint256 amount0In) {
+        return getSwapAmount0InMin(swapFee, amount1Out, data);
+    }
+
+    function testGetSwapAmount1InMax(
+        uint256 swapFee,
+        uint256 amount0Out,
+        bytes calldata data
+    ) external view returns (uint256 amount1In) {
+        return getSwapAmount1InMax(swapFee, amount0Out, data);
+    }
+
+    function testGetSwapAmount1InMin(
+        uint256 swapFee,
+        uint256 amount0Out,
+        bytes calldata data
+    ) external view returns (uint256 amount1In) {
+        return getSwapAmount1InMin(swapFee, amount0Out, data);
     }
 }

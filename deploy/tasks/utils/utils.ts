@@ -1,3 +1,5 @@
+import fs from 'fs'
+import crypto from 'crypto'
 import { BigNumber, utils } from 'ethers'
 import { arrayify, keccak256 } from 'ethers/lib/utils'
 import { TwapFactory, TwapPair__factory } from '../../../build/types'
@@ -76,4 +78,21 @@ export async function checkPairCollision(contract: TwapFactory, params: { name: 
   if (allPairIds.has(pairId)) {
     throw new Error(`A pair id collision exists for ${params.name}`)
   }
+}
+
+export function getFileChecksum(filePath: string): string {
+  const file = fs.readFileSync(filePath)
+  const hashSum = crypto.createHash('sha256').update(file)
+
+  return hashSum.digest('hex')
+}
+
+export function getFilesChecksum(filePaths: string[]): string {
+  const hashSum = crypto.createHash('sha256')
+  for (const filePath of filePaths) {
+    const file = fs.readFileSync(filePath)
+    hashSum.update(file)
+  }
+
+  return hashSum.digest('hex')
 }

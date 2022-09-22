@@ -39,12 +39,12 @@ describe('TwapPair.setTrader', () => {
       .to.emit(pair, 'SetTrader')
       .withArgs(other.address)
 
-    await expect(pair.connect(wallet).mint(other.address)).to.be.revertedWith('TP0C')
-    await expect(pair.connect(wallet).burn(other.address)).to.be.revertedWith('TP0C')
-    await expect(pair.connect(wallet).swap(0, 1, other.address, priceInfo)).to.be.revertedWith('TP0C')
+    await expect(pair.connect(wallet).mint(other.address, overrides)).to.be.revertedWith('TP0C')
+    await expect(pair.connect(wallet).burn(other.address, overrides)).to.be.revertedWith('TP0C')
+    await expect(pair.connect(wallet).swap(0, 1, other.address, priceInfo, overrides)).to.be.revertedWith('TP0C')
 
-    await expect(pair.connect(other).mint(other.address)).not.to.be.revertedWith('TP0C')
-    await expect(pair.connect(other).burn(other.address)).not.to.be.revertedWith('TP0C')
-    await expect(pair.connect(other).swap(0, 1, other.address, priceInfo)).not.to.be.revertedWith('TP0C')
+    await expect(pair.connect(other).mint(other.address, overrides)).not.to.be.revertedWith('TP0C')
+    await expect(pair.connect(other).burn(other.address, overrides)).not.to.be.revertedWith('TP0C')
+    await expect(pair.connect(other).swap(0, 1, other.address, priceInfo, overrides)).not.to.be.revertedWith('TP0C')
   })
 })

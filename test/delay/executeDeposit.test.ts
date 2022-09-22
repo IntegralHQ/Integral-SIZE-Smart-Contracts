@@ -18,6 +18,7 @@ import {
 } from '../shared/utilities'
 import { delayWithMixedDecimalsPairFixture } from '../shared/fixtures/delayWithMixedDecimalsPairFixture'
 import { parseUnits } from 'ethers/lib/utils'
+import { delaySharesTokenFixture } from '../shared/fixtures/delaySharesTokenFixture'
 
 describe('TwapDelay.executeDeposit', () => {
   const loadFixture = setupFixtureLoader()
@@ -207,6 +208,184 @@ describe('TwapDelay.executeDeposit', () => {
       expectBetween(balance1After.sub(balance1Before), 0, 1)
     })
 
+    it('does not lose funds when amount0Left and amount1Left are both non-zero', async () => {
+      const { delay, token0, token1, wallet, factory, pair, addLiquidity } = await loadFixture(delayFixture)
+
+      await factory.setMintFee(token0.address, token1.address, 0, overrides)
+      await factory.setSwapFee(token0.address, token1.address, 0, overrides)
+
+      await addLiquidity(BigNumber.from(10000), BigNumber.from(1000))
+
+      const balance0Before = await token0.balanceOf(wallet.address)
+      const balance1Before = await token1.balanceOf(wallet.address)
+      const balanceLpBefore = await pair.balanceOf(wallet.address)
+
+      await depositAndWait(delay, token0, token1, wallet, {
+        amount0: BigNumber.from(1),
+        amount1: expandTo18Decimals(1000),
+        swap: true,
+      })
+
+      const tx = await delay.execute(1, overrides)
+      const events = await getEvents(tx, 'OrderExecuted')
+      await expect(Promise.resolve(tx))
+        .to.emit(delay, 'OrderExecuted')
+        .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
+
+      const balance0After = await token0.balanceOf(wallet.address)
+      const balance1After = await token1.balanceOf(wallet.address)
+      const balanceLpAfter = await pair.balanceOf(wallet.address)
+
+      const [reserve0, reserve1] = await pair.getReserves()
+      const totalSupply = await pair.totalSupply()
+      const lpTokenDifference = balanceLpAfter.sub(balanceLpBefore)
+      const [lpReserve0, lpReserve1] = [
+        lpTokenDifference.mul(reserve0).div(totalSupply),
+        lpTokenDifference.mul(reserve1).div(totalSupply),
+      ]
+
+      if (lpReserve0.eq(0)) {
+        expect(balance0Before.sub(balance0After)).to.eq(0)
+      }
+      if (lpReserve1.eq(0)) {
+        expect(balance1Before.sub(balance1After)).to.eq(0)
+      }
+    })
+
+    it('non-zero tolerance, matching token balance', async () => {
+      const { delay, token0, token1, wallet, factory, pair, addLiquidity } = await loadFixture(delayFixture)
+
+      await factory.setMintFee(token0.address, token1.address, 0, overrides)
+      await factory.setSwapFee(token0.address, token1.address, 0, overrides)
+      await delay.setTolerance(pair.address, 5)
+
+      await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(100))
+      await depositAndWait(delay, token0, token1, wallet, {
+        amount0: expandTo18Decimals(300),
+        amount1: BigNumber.from(0),
+        swap: true,
+      })
+      await addLiquidity(expandTo18Decimals(1), expandTo18Decimals(300))
+
+      const balance0Before = await token0.balanceOf(wallet.address)
+      const balance1Before = await token1.balanceOf(wallet.address)
+
+      const tx = await delay.execute(1, overrides)
+      const events = await getEvents(tx, 'OrderExecuted')
+      await expect(Promise.resolve(tx))
+        .to.emit(delay, 'OrderExecuted')
+        .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
+
+      const balance0After = await token0.balanceOf(wallet.address)
+      const balance1After = await token1.balanceOf(wallet.address)
+
+      const [reserve0, reserve1] = await pair.getReserves()
+
+      const expectBetween = (a: BigNumber, min: number, max: number) => {
+        const minInWei = expandTo18Decimals(min)
+        const maxInWei = expandTo18Decimals(max)
+        expect(a.gte(minInWei), `Test value ${a.toString()} is smaller than expected minimum of ${minInWei.toString()}`)
+          .to.be.true
+        expect(a.lte(maxInWei), `Test value ${a.toString()} is greater than expected maximum of ${maxInWei.toString()}`)
+          .to.be.true
+      }
+
+      expectBetween(reserve0, 500, 501)
+      expectBetween(reserve1, 399, 400)
+      expectBetween(balance0After.sub(balance0Before), 0, 1)
+      expectBetween(balance1After.sub(balance1Before), 0, 1)
+    })
+
+    it('non-zero tolerance, non-matching token balance', async () => {
+      const { delay, token0, token1, wallet, factory, pair, addLiquidity, sharesToken } = await loadFixture(
+        delaySharesTokenFixture
+      )
+
+      await sharesToken.setVariance(4)
+      await factory.setMintFee(token0.address, token1.address, 0, overrides)
+      await factory.setSwapFee(token0.address, token1.address, 0, overrides)
+      await delay.setTolerance(pair.address, 8)
+
+      await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(200))
+      await depositAndWait(delay, token0, token1, wallet, {
+        amount0: expandTo18Decimals(50),
+        amount1: BigNumber.from(0),
+        swap: true,
+      })
+
+      const balance0Before = await token0.balanceOf(wallet.address)
+      const balance1Before = await token1.balanceOf(wallet.address)
+
+      const tx = await delay.execute(1, overrides)
+      const events = await getEvents(tx, 'OrderExecuted')
+      await expect(Promise.resolve(tx))
+        .to.emit(delay, 'OrderExecuted')
+        .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
+
+      const balance0After = await token0.balanceOf(wallet.address)
+      const balance1After = await token1.balanceOf(wallet.address)
+
+      const [reserve0, reserve1] = await pair.getReserves()
+
+      const expectBetween = (a: BigNumber, min: number, max: number) => {
+        const minInWei = expandTo18Decimals(min)
+        const maxInWei = expandTo18Decimals(max)
+        expect(a.gte(minInWei), `Test value ${a.toString()} is smaller than expected minimum of ${minInWei.toString()}`)
+          .to.be.true
+        expect(a.lte(maxInWei), `Test value ${a.toString()} is greater than expected maximum of ${maxInWei.toString()}`)
+          .to.be.true
+      }
+
+      expectBetween(reserve0, 149, 150)
+      expectBetween(reserve1, 199, 200)
+      expectBetween(balance0After.sub(balance0Before), 0, 1)
+      expectBetween(balance1After.sub(balance1Before), 0, 1)
+    })
+
+    it('non-zero tolerance, swap deposit with correction == tolerance', async () => {
+      const { delay, token0, token1, wallet, factory, pair, addLiquidity } = await loadFixture(delayFixture)
+
+      await factory.setMintFee(token0.address, token1.address, 0, overrides)
+      await factory.setSwapFee(token0.address, token1.address, 0, overrides)
+      await delay.setTolerance(pair.address, 6)
+
+      await addLiquidity(BigNumber.from(100000), BigNumber.from(100000))
+      await depositAndWait(delay, token0, token1, wallet, {
+        amount0: BigNumber.from(1010),
+        amount1: BigNumber.from(1000),
+        swap: true,
+      })
+      await addLiquidity(BigNumber.from(100000), BigNumber.from(100000))
+
+      const balance0Before = await token0.balanceOf(wallet.address)
+      const balance1Before = await token1.balanceOf(wallet.address)
+
+      const tx = await delay.execute(1, overrides)
+      const events = await getEvents(tx, 'OrderExecuted')
+      await expect(Promise.resolve(tx))
+        .to.emit(delay, 'OrderExecuted')
+        .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
+
+      const balance0After = await token0.balanceOf(wallet.address)
+      const balance1After = await token1.balanceOf(wallet.address)
+
+      const [reserve0, reserve1] = await pair.getReserves()
+
+      const expectBetween = (a: BigNumber, min: number, max: number) => {
+        const minInWei = BigNumber.from(min)
+        const maxInWei = BigNumber.from(max)
+        expect(a.gte(minInWei), `Test value ${a.toString()} is smaller than expected minimum of ${minInWei.toString()}`)
+          .to.be.true
+        expect(a.lte(maxInWei), `Test value ${a.toString()} is greater than expected maximum of ${maxInWei.toString()}`)
+          .to.be.true
+      }
+
+      expectBetween(reserve0, 201000, 201010)
+      expectBetween(reserve1, 201000, 201010)
+      expectBetween(balance0After.sub(balance0Before), 0, 10)
+      expectBetween(balance1After.sub(balance1Before), 0, 10)
+    })
+
     it('does not modify the order if tokens are transferred to pair', async () => {
       const { delay, token0, token1, other, pair, addLiquidity } = await loadFixture(delayFixture)
 
@@ -359,7 +538,7 @@ describe('TwapDelay.executeDeposit', () => {
       .withArgs(etherHater.address, false, userRefundEvent.args?.[2])
   })
 
-  it('will not waste to much gas', async () => {
+  it('will not waste too much gas', async () => {
     const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFailingFixture)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
@@ -616,5 +795,51 @@ describe('TwapDelay.executeDeposit', () => {
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
+  })
+
+  it('failure due to tolerance threshold crossed', async () => {
+    const { delay, token0, token1, wallet, factory, pair, addLiquidity, sharesToken } = await loadFixture(
+      delaySharesTokenFixture
+    )
+
+    await sharesToken.setVariance(3)
+    await factory.setMintFee(token0.address, token1.address, 0, overrides)
+    await factory.setSwapFee(token0.address, token1.address, 0, overrides)
+    await delay.setTolerance(pair.address, 2)
+
+    await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(200))
+    await depositAndWait(delay, token0, token1, wallet, {
+      amount0: expandTo18Decimals(50),
+      amount1: BigNumber.from(0),
+      swap: true,
+    })
+
+    const balance0Before = await token0.balanceOf(wallet.address)
+    const balance1Before = await token1.balanceOf(wallet.address)
+
+    const tx = await delay.execute(1, overrides)
+    const events = await getEvents(tx, 'OrderExecuted')
+    await expect(Promise.resolve(tx))
+      .to.emit(delay, 'OrderExecuted')
+      .withArgs(1, false, encodeErrorData('TP2E'), getGasSpent(events[0]), getEthRefund(events[0]))
+
+    const balance0After = await token0.balanceOf(wallet.address)
+    const balance1After = await token1.balanceOf(wallet.address)
+
+    const [reserve0, reserve1] = await pair.getReserves()
+
+    const expectBetween = (a: BigNumber, min: number, max: number) => {
+      const minInWei = expandTo18Decimals(min)
+      const maxInWei = expandTo18Decimals(max)
+      expect(a.gte(minInWei), `Test value ${a.toString()} is smaller than expected minimum of ${minInWei.toString()}`)
+        .to.be.true
+      expect(a.lte(maxInWei), `Test value ${a.toString()} is greater than expected maximum of ${maxInWei.toString()}`)
+        .to.be.true
+    }
+
+    expectBetween(reserve0, 99, 100)
+    expect(reserve1, 'reserve1 has changed').to.eq(expandTo18Decimals(200))
+    expectBetween(balance0After.sub(balance0Before), 49, 50)
+    expect(balance1After, 'balance1 has changed').to.eq(balance1Before)
   })
 })

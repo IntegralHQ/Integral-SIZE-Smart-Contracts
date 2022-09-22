@@ -35,7 +35,7 @@ contract OrdersTest {
     }
 
     function getDepositOrder(uint256 orderId) public view returns (Orders.DepositOrder memory order) {
-        return orders.getDepositOrder(orderId);
+        (order, , ) = orders.getDepositOrder(orderId);
     }
 
     function getWithdrawOrder(uint256 orderId) public view returns (Orders.WithdrawOrder memory order) {
@@ -43,11 +43,11 @@ contract OrdersTest {
     }
 
     function getSellOrder(uint256 orderId) public view returns (Orders.SellOrder memory order) {
-        return orders.getSellOrder(orderId);
+        (order, ) = orders.getSellOrder(orderId);
     }
 
     function getBuyOrder(uint256 orderId) public view returns (Orders.BuyOrder memory order) {
-        return orders.getBuyOrder(orderId);
+        (order, ) = orders.getBuyOrder(orderId);
     }
 
     function _enqueueDepositOrder(
@@ -79,7 +79,9 @@ contract OrdersTest {
                 validAfterTimestamp,
                 priceAccumulator,
                 0
-            )
+            ),
+            0,
+            0
         );
     }
 
@@ -135,7 +137,8 @@ contract OrdersTest {
                 validAfterTimestamp,
                 priceAccumulator,
                 timestamp
-            )
+            ),
+            0
         );
     }
 
@@ -165,24 +168,25 @@ contract OrdersTest {
                 validAfterTimestamp,
                 priceAccumulator,
                 timestamp
-            )
+            ),
+            0
         );
     }
 
     function _dequeueDepositOrder() public returns (Orders.DepositOrder memory order) {
-        return orders.dequeueDepositOrder();
+        (order, , ) = orders.dequeueDepositOrder();
     }
 
     function _dequeueWithdrawOrder() public returns (Orders.WithdrawOrder memory order) {
-        return orders.dequeueWithdrawOrder();
+        order = orders.dequeueWithdrawOrder();
     }
 
     function _dequeueSellOrder() public returns (Orders.SellOrder memory order) {
-        return orders.dequeueSellOrder();
+        (order, ) = orders.dequeueSellOrder();
     }
 
     function _dequeueBuyOrder() public returns (Orders.BuyOrder memory order) {
-        return orders.dequeueBuyOrder();
+        (order, ) = orders.dequeueBuyOrder();
     }
 
     function uintToFloat32(uint256 number) public pure returns (uint32 float32) {
@@ -194,6 +198,6 @@ contract OrdersTest {
     }
 
     function forgetLastProcessedOrder() public {
-        return orders.forgetLastProcessedOrder();
+        orders.forgetLastProcessedOrder();
     }
 }

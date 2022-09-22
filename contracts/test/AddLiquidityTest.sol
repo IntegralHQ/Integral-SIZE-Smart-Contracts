@@ -12,7 +12,15 @@ contract AddLiquidityTest {
         address pair,
         uint256 amount0Desired,
         uint256 amount1Desired
-    ) public view returns (uint256 amount0, uint256 amount1) {
+    )
+        public
+        view
+        returns (
+            uint256 amount0,
+            uint256 amount1,
+            uint256 swapToken
+        )
+    {
         return AddLiquidity.addLiquidity(pair, amount0Desired, amount1Desired);
     }
 }

@@ -24,7 +24,7 @@ describe('TwapDelay.setGasPriceInertia', () => {
 
   it('can be changed', async () => {
     const { delay, other } = await loadFixture(delayFixture)
-    await expect(delay.connect(other.address).setGasPriceInertia(1_000_000)).to.be.revertedWith('TD00')
+    await expect(delay.connect(other).setGasPriceInertia(1_000_000, overrides)).to.be.revertedWith('TD00')
 
     await expect(delay.setGasPriceInertia(1_000_000, overrides))
       .to.emit(delay, 'GasPriceInertiaSet')
