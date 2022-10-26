@@ -17,44 +17,44 @@ export default {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
       // url: 'https://arb1.arbitrum.io/rpc',
-      url: "https://arbitrum-mainnet.infura.io/v3/" + process.env.INFURA_API_KEY,
+      url: "https://arbitrum-mainnet.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
-    'arbitrum-rinkeby': {
+    'arbitrum-goerli': {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      // url: 'https://rinkeby.arbitrum.io/rpc',
-      url: "https://arbitrum-rinkeby.infura.io/v3/" + process.env.INFURA_API_KEY,
+      // url: 'https://goerli-rollup.arbitrum.io/rpc',
+      url: "https://arbitrum-goerli.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
     goerli: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      url: "https://goerli.infura.io/v3/" + process.env.INFURA_API_KEY,
+      url: "https://goerli.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
     ropsten: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      url: "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY,
+      url: "https://ropsten.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
     kovan: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      url: "https://kovan.infura.io/v3/" + process.env.INFURA_API_KEY,
+      url: "https://kovan.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
     rinkeby: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      url: "https://rinkeby.infura.io/v3/" + process.env.INFURA_API_KEY,
+      url: "https://rinkeby.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
     mainnet: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      url: "https://mainnet.infura.io/v3/" + process.env.INFURA_API_KEY,
+      url: "https://mainnet.infura.io/v3/" + (process.env.INFURA_API_KEY || "xxx"),
       gas: 5000000,
     },
   },
@@ -88,6 +88,29 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: ''
+    apiKey: {
+      mainnet: 'xxx',
+      goerli: 'xxx',
+      arbitrum: 'xxx',
+      'arbitrum-goerli': 'xxx',
+    },
+    customChains: [
+      {
+        network: "arbitrum",
+        chainId: 42161,
+        urls: {
+          apiURL: "https://api.arbiscan.io/api",
+          browserURL: "https://arbiscan.io"
+        }
+      },
+      {
+        network: "arbitrum-goerli",
+        chainId: 421613,
+        urls: {
+          apiURL: "https://api-goerli.arbiscan.io/api",
+          browserURL: "https://goerli.arbiscan.io"
+        }
+      },
+    ]
   }
 }

@@ -3,12 +3,12 @@ import { Network } from '../../shared/wallet'
 type Tokens = { [key in Network]: { [symbol: string]: string | undefined } }
 
 export const KNOWN_TOKENS: Tokens = {
-  'arbitrum-rinkeby': {
+  'arbitrum-goerli': {
     wbtc: undefined,
     usdc: undefined,
     usdt: undefined,
     dai: undefined,
-    weth: '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681',
+    weth: '0xe39Ab88f8A4777030A534146A9Ca3B52bd5D43A3',
     crv: undefined,
     cvx: undefined,
     sushi: undefined,
@@ -111,7 +111,7 @@ export const KNOWN_MULTICALL = {
   ganache: '0xBCa5c1cBc034C0AF31D976a4e3a36951A537eD77',
   goerli: undefined,
   arbitrum: undefined,
-  'arbitrum-rinkeby': undefined,
+  'arbitrum-goerli': undefined,
 }
 
 export const UNISWAP_V2_FACTORY = {
@@ -122,7 +122,7 @@ export const UNISWAP_V2_FACTORY = {
   ganache: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
   goerli: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
   arbitrum: '',
-  'arbitrum-rinkeby': '',
+  'arbitrum-goerli': undefined,
 }
 
 export const UNISWAP_V3_FACTORY = {
@@ -133,7 +133,7 @@ export const UNISWAP_V3_FACTORY = {
   ganache: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
   goerli: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
   arbitrum: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
-  'arbitrum-rinkeby': '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+  'arbitrum-goerli': undefined,
 }
 
 // https://github.com/Uniswap/uniswap-v3-periphery/blob/767e779227a4f10fc7f4b4d90b103e9dfd252677/testnet-deploys.md
@@ -145,7 +145,7 @@ export const UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER = {
   ganache: '',
   goerli: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
   arbitrum: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
-  'arbitrum-rinkeby': '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+  'arbitrum-goerli': undefined,
 }
 
 export const SUSHISWAP_V2_FACTORY = {
@@ -156,5 +156,5 @@ export const SUSHISWAP_V2_FACTORY = {
   ganache: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
   goerli: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
   arbitrum: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
-  'arbitrum-rinkeby': '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+  'arbitrum-goerli': undefined,
 }

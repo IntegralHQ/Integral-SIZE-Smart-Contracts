@@ -120,6 +120,15 @@ export async function increaseTime(wallet: Wallet, seconds?: number) {
   await mineBlock(wallet)
 }
 
+// Work around an issue where Hardhat Network increases time by 2 seconds, instead of 1, when we call evm_increaseTime.
+export async function increaseTimeWithWorkaround(wallet: Wallet, seconds?: number) {
+  const currentTimestamp = (await wallet.provider.getBlock('latest')).timestamp
+  await (wallet.provider as providers.JsonRpcProvider).send('evm_setNextBlockTimestamp', [
+    currentTimestamp + (seconds ? seconds : 1),
+  ])
+  await mineBlockRPCMethod(wallet)
+}
+
 export function getFutureTime() {
   return Date.now() + 1000000
 }

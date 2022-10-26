@@ -4,7 +4,7 @@ import { formatUnits } from 'ethers/lib/utils'
 import { oracleFixture, oracleV3WithUniswapFixture } from '../shared/fixtures'
 import { getTradeV3FixtureFor } from '../shared/fixtures/getTradeV3FixtureFor'
 import { setupFixtureLoader } from '../shared/setup'
-import { expandTo18Decimals, increaseTime, overrides } from '../shared/utilities'
+import { expandTo18Decimals, increaseTime, increaseTimeWithWorkaround, overrides } from '../shared/utilities'
 import { FeeAmount } from '../shared/uniswapV3Utilities'
 
 const ONE = BigNumber.from(10).pow(18)
@@ -229,7 +229,8 @@ describe('TwapOracleV3.tradeY', () => {
     })
     const expectedPriceAfterSwap = 100 / 200
 
-    await increaseTime(wallet, 1)
+    // Tests show that this time increase needs to be done with the workaround.
+    await increaseTimeWithWorkaround(wallet, 1)
 
     const { priceInfo } = await oracle.testEncodePriceInfo(0, 0, overrides)
 
