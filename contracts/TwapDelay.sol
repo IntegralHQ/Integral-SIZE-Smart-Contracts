@@ -106,6 +106,7 @@ contract TwapDelay is ITwapDelay {
         return tokenShares.totalShares[token];
     }
 
+    // returns wrapped native currency for particular blockchain (WETH or WMATIC)
     function weth() external view override returns (address) {
         return tokenShares.weth;
     }

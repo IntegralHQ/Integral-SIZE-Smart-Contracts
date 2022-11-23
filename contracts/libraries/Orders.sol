@@ -476,15 +476,17 @@ library Orders {
         uint256 amountIn0,
         uint256 amountIn1
     ) internal {
-        ++data.newestOrderId;
-        emit DepositEnqueued(data.newestOrderId, depositOrder.validAfterTimestamp, depositOrder.gasPrice);
-        data.orderQueue[data.newestOrderId] = StoredOrder(
+        uint256 newestOrderId = ++data.newestOrderId;
+        uint32 validAfterTimestamp = depositOrder.validAfterTimestamp;
+        uint256 gasPrice = depositOrder.gasPrice;
+        emit DepositEnqueued(newestOrderId, validAfterTimestamp, gasPrice);
+        data.orderQueue[newestOrderId] = StoredOrder(
             DEPOSIT_TYPE,
-            depositOrder.validAfterTimestamp,
+            validAfterTimestamp,
             getUnwrapAndFailure(depositOrder.unwrap),
             depositOrder.timestamp,
             depositOrder.gasLimit.toUint32(),
-            gasPriceToUint32(depositOrder.gasPrice),
+            gasPriceToUint32(gasPrice),
             0, // liquidity
             depositOrder.share0.toUint112(),
             depositOrder.share1.toUint112(),
@@ -500,15 +502,17 @@ library Orders {
     }
 
     function enqueueWithdrawOrder(Data storage data, WithdrawOrder memory withdrawOrder) internal {
-        ++data.newestOrderId;
-        emit WithdrawEnqueued(data.newestOrderId, withdrawOrder.validAfterTimestamp, withdrawOrder.gasPrice);
-        data.orderQueue[data.newestOrderId] = StoredOrder(
+        uint256 newestOrderId = ++data.newestOrderId;
+        uint32 validAfterTimestamp = withdrawOrder.validAfterTimestamp;
+        uint256 gasPrice = withdrawOrder.gasPrice;
+        emit WithdrawEnqueued(newestOrderId, validAfterTimestamp, gasPrice);
+        data.orderQueue[newestOrderId] = StoredOrder(
             WITHDRAW_TYPE,
-            withdrawOrder.validAfterTimestamp,
+            validAfterTimestamp,
             getUnwrapAndFailure(withdrawOrder.unwrap),
             0, // timestamp
             withdrawOrder.gasLimit.toUint32(),
-            gasPriceToUint32(withdrawOrder.gasPrice),
+            gasPriceToUint32(gasPrice),
             withdrawOrder.liquidity.toUint112(),
             withdrawOrder.amount0Min.toUint112(),
             withdrawOrder.amount1Min.toUint112(),
@@ -528,15 +532,17 @@ library Orders {
         SellOrder memory sellOrder,
         uint256 amountIn
     ) internal {
-        ++data.newestOrderId;
-        emit SellEnqueued(data.newestOrderId, sellOrder.validAfterTimestamp, sellOrder.gasPrice);
-        data.orderQueue[data.newestOrderId] = StoredOrder(
+        uint256 newestOrderId = ++data.newestOrderId;
+        uint32 validAfterTimestamp = sellOrder.validAfterTimestamp;
+        uint256 gasPrice = sellOrder.gasPrice;
+        emit SellEnqueued(newestOrderId, validAfterTimestamp, gasPrice);
+        data.orderQueue[newestOrderId] = StoredOrder(
             sellOrder.inverse ? SELL_INVERTED_TYPE : SELL_TYPE,
-            sellOrder.validAfterTimestamp,
+            validAfterTimestamp,
             getUnwrapAndFailure(sellOrder.unwrap),
             sellOrder.timestamp,
             sellOrder.gasLimit.toUint32(),
-            gasPriceToUint32(sellOrder.gasPrice),
+            gasPriceToUint32(gasPrice),
             0, // liquidity
             sellOrder.shareIn.toUint112(),
             sellOrder.amountOutMin.toUint112(),
@@ -556,15 +562,17 @@ library Orders {
         BuyOrder memory buyOrder,
         uint256 amountInMax
     ) internal {
-        ++data.newestOrderId;
-        emit BuyEnqueued(data.newestOrderId, buyOrder.validAfterTimestamp, buyOrder.gasPrice);
-        data.orderQueue[data.newestOrderId] = StoredOrder(
+        uint256 newestOrderId = ++data.newestOrderId;
+        uint32 validAfterTimestamp = buyOrder.validAfterTimestamp;
+        uint256 gasPrice = buyOrder.gasPrice;
+        emit BuyEnqueued(newestOrderId, validAfterTimestamp, gasPrice);
+        data.orderQueue[newestOrderId] = StoredOrder(
             buyOrder.inverse ? BUY_INVERTED_TYPE : BUY_TYPE,
-            buyOrder.validAfterTimestamp,
+            validAfterTimestamp,
             getUnwrapAndFailure(buyOrder.unwrap),
             buyOrder.timestamp,
             buyOrder.gasLimit.toUint32(),
-            gasPriceToUint32(buyOrder.gasPrice),
+            gasPriceToUint32(gasPrice),
             0, // liquidity
             buyOrder.shareInMax.toUint112(),
             buyOrder.amountOut.toUint112(),

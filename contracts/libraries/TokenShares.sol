@@ -19,7 +19,7 @@ library TokenShares {
 
     struct Data {
         mapping(address => uint256) totalShares;
-        address weth;
+        address weth; // represents wrapped native currency (WETH or WMATIC)
     }
 
     function sharesToAmount(

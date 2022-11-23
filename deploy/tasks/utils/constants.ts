@@ -14,6 +14,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: undefined,
     steth: undefined,
     matic: undefined,
+    wmatic: undefined,
   },
   arbitrum: {
     wbtc: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
@@ -26,6 +27,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: '0xd4d42F0b6DEF4CE0383636770eF773390d85c61A',
     steth: '', // Unknown
     matic: '', // Unknown
+    wmatic: undefined,
   },
   ganache: {
     wbtc: '0xA193E42526F1FEA8C99AF609dcEabf30C1c29fAA',
@@ -38,6 +40,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: undefined,
     steth: undefined,
     matic: undefined,
+    wmatic: undefined,
   },
   goerli: {
     wbtc: undefined,
@@ -49,7 +52,8 @@ export const KNOWN_TOKENS: Tokens = {
     cvx: undefined,
     sushi: undefined,
     steth: undefined,
-    matic: undefined,
+    matic: '0x499d11E0b6eAC7c0593d8Fb292DCBbF815Fb29Ae',
+    wmatic: undefined,
   },
   kovan: {
     wbtc: undefined,
@@ -62,6 +66,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: undefined,
     steth: undefined,
     matic: undefined,
+    wmatic: undefined,
   },
   ropsten: {
     wbtc: '0x2d80502854fc7304c3e3457084de549f5016b73f',
@@ -74,6 +79,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: undefined,
     steth: undefined,
     matic: undefined,
+    wmatic: undefined,
   },
   rinkeby: {
     wbtc: undefined,
@@ -86,6 +92,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: undefined,
     steth: undefined,
     matic: undefined,
+    wmatic: undefined,
   },
   mainnet: {
     wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
@@ -99,6 +106,7 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
     steth: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
     matic: '0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0',
+    wmatic: '0x7c9f4c87d911613fe9ca58b579f737911aad2d43',
   },
 }
 

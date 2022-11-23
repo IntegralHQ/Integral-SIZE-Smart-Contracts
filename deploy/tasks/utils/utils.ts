@@ -96,3 +96,11 @@ export function getFilesChecksum(filePaths: string[]): string {
 
   return hashSum.digest('hex')
 }
+
+export function getItem(arr: any[], key: string, name: string) {
+  const item = arr.find((item) => item[key].toLowerCase() === name.toLowerCase())
+  if (!item) {
+    throw new Error(`${name} not found in array`)
+  }
+  return item
+}
