@@ -1,8 +1,64 @@
+import { BigNumberish } from 'ethers'
+import { ALL_PAIRS } from '../../config/pairs'
 import { Network } from '../../shared/wallet'
 
 type Tokens = { [key in Network]: { [symbol: string]: string | undefined } }
+type RewardTokensPerSecond = { [key in Network]: BigNumberish }
+type AllocationPoints = { [key in Network]: { [pairName: string]: BigNumberish } }
 
 export const KNOWN_TOKENS: Tokens = {
+  polygon: {
+    wbtc: undefined,
+    usdc: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+    usdt: undefined,
+    dai: undefined,
+    weth: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
+    crv: undefined,
+    cvx: undefined,
+    sushi: undefined,
+    steth: undefined,
+    matic: '0x0000000000000000000000000000000000001010',
+    wmatic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+  },
+  'polygon-mumbai': {
+    wbtc: undefined,
+    usdc: undefined,
+    usdt: undefined,
+    dai: undefined,
+    weth: '0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa',
+    crv: undefined,
+    cvx: undefined,
+    sushi: undefined,
+    steth: undefined,
+    matic: '0x0000000000000000000000000000000000001010',
+    wmatic: '0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889',
+  },
+  'optimism-goerli': {
+    wbtc: undefined,
+    usdc: undefined,
+    usdt: undefined,
+    dai: undefined,
+    weth: '0x4200000000000000000000000000000000000006',
+    crv: undefined,
+    cvx: undefined,
+    sushi: undefined,
+    steth: undefined,
+    matic: undefined,
+    wmatic: undefined,
+  },
+  optimism: {
+    wbtc: undefined,
+    usdc: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+    usdt: undefined,
+    dai: undefined,
+    weth: '0x4200000000000000000000000000000000000006',
+    crv: undefined,
+    cvx: undefined,
+    sushi: undefined,
+    steth: undefined,
+    matic: undefined,
+    wmatic: undefined,
+  },
   'arbitrum-goerli': {
     wbtc: undefined,
     usdc: undefined,
@@ -30,17 +86,18 @@ export const KNOWN_TOKENS: Tokens = {
     wmatic: undefined,
   },
   ganache: {
-    wbtc: '0xA193E42526F1FEA8C99AF609dcEabf30C1c29fAA',
-    usdc: '0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34',
-    usdt: '0xaC8444e7d45c34110B34Ed269AD86248884E78C7',
-    dai: '0x94BA4d5Ebb0e05A50e977FFbF6e1a1Ee3D89299c',
-    weth: '0xFf807885934003A35b1284d7445fc83Fd23417e5',
-    crv: undefined,
-    cvx: undefined,
-    sushi: undefined,
-    steth: undefined,
-    matic: undefined,
-    wmatic: undefined,
+    wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+    usdc: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+    usdt: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+    dai: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    link: '0x514910771af9ca656af840dff83e8264ecf986ca',
+    crv: '0xD533a949740bb3306d119CC777fa900bA034cd52',
+    cvx: '0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B',
+    sushi: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
+    steth: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+    matic: '0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0',
+    wmatic: '0x7c9f4c87d911613fe9ca58b579f737911aad2d43',
   },
   goerli: {
     wbtc: undefined,
@@ -53,6 +110,19 @@ export const KNOWN_TOKENS: Tokens = {
     sushi: undefined,
     steth: undefined,
     matic: '0x499d11E0b6eAC7c0593d8Fb292DCBbF815Fb29Ae',
+    wmatic: undefined,
+  },
+  sepolia: {
+    wbtc: undefined,
+    usdc: undefined,
+    usdt: undefined,
+    dai: undefined,
+    weth: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14',
+    crv: undefined,
+    cvx: undefined,
+    sushi: undefined,
+    steth: undefined,
+    matic: undefined,
     wmatic: undefined,
   },
   kovan: {
@@ -117,9 +187,14 @@ export const KNOWN_MULTICALL = {
   ropsten: '0x53c43764255c17bd724f74c4ef150724ac50a3ed',
   rinkeby: '0x42ad527de7d4e9d9d011ac45b31d8551f8fe9821',
   ganache: '0xBCa5c1cBc034C0AF31D976a4e3a36951A537eD77',
-  goerli: undefined,
+  goerli: '0x30Ae91AcFD7D9a5ebbf99D56005Ab9F96984C9B3',
+  sepolia: undefined,
   arbitrum: undefined,
   'arbitrum-goerli': undefined,
+  polygon: '0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507',
+  'polygon-mumbai': '0x08411ADd0b5AA8ee47563b146743C13b3556c9Cc',
+  optimism: undefined,
+  'optimism-goerli': undefined,
 }
 
 export const UNISWAP_V2_FACTORY = {
@@ -129,8 +204,13 @@ export const UNISWAP_V2_FACTORY = {
   rinkeby: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
   ganache: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
   goerli: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+  sepolia: '0xB7f907f7A9eBC822a80BD25E224be42Ce0A698A0',
   arbitrum: '',
   'arbitrum-goerli': undefined,
+  polygon: '',
+  'polygon-mumbai': '',
+  optimism: undefined,
+  'optimism-goerli': undefined,
 }
 
 export const UNISWAP_V3_FACTORY = {
@@ -140,8 +220,13 @@ export const UNISWAP_V3_FACTORY = {
   rinkeby: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
   ganache: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
   goerli: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+  sepolia: '0x0227628f3F023bb0B980b67D528571c95c6DaC1c',
   arbitrum: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
   'arbitrum-goerli': undefined,
+  polygon: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+  'polygon-mumbai': '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+  optimism: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+  'optimism-goerli': undefined,
 }
 
 // https://github.com/Uniswap/uniswap-v3-periphery/blob/767e779227a4f10fc7f4b4d90b103e9dfd252677/testnet-deploys.md
@@ -150,10 +235,15 @@ export const UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER = {
   kovan: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
   ropsten: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
   rinkeby: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
-  ganache: '',
+  ganache: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
   goerli: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+  sepolia: '0x1238536071E1c677A632429e3655c799b22cDA52',
   arbitrum: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
   'arbitrum-goerli': undefined,
+  polygon: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+  'polygon-mumbai': '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+  optimism: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+  'optimism-goerli': undefined,
 }
 
 export const SUSHISWAP_V2_FACTORY = {
@@ -161,8 +251,53 @@ export const SUSHISWAP_V2_FACTORY = {
   kovan: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
   ropsten: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
   rinkeby: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
-  ganache: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+  ganache: '0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac',
   goerli: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+  sepolia: undefined,
   arbitrum: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
   'arbitrum-goerli': undefined,
+  polygon: '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+  'polygon-mumbai': '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+  optimism: undefined,
+  'optimism-goerli': undefined,
+}
+
+export const REWARD_TOKENS_PER_SECOND: RewardTokensPerSecond = {
+  mainnet: '82671957671957671',
+  kovan: 0,
+  ropsten: 0,
+  rinkeby: 0,
+  ganache: 0,
+  goerli: '82671957671957671',
+  sepolia: 0,
+  arbitrum: 0,
+  'arbitrum-goerli': 0,
+  polygon: 0,
+  'polygon-mumbai': 0,
+  optimism: 0,
+  'optimism-goerli': 0,
+}
+
+export const ALLOCATION_POINTS: AllocationPoints = {
+  mainnet: {
+    [ALL_PAIRS.wethUsdc.name]: 3000,
+    [ALL_PAIRS.wethUsdt.name]: 3000,
+    [ALL_PAIRS.usdcUsdt.name]: 2000,
+    [ALL_PAIRS.wethWbtc.name]: 2000,
+  },
+  kovan: {},
+  ropsten: {},
+  rinkeby: {},
+  ganache: {},
+  goerli: {
+    [ALL_PAIRS.wethUsdc.name]: 1,
+    [ALL_PAIRS.wethUsdt.name]: 1,
+  },
+  sepolia: {},
+  arbitrum: {},
+  'arbitrum-goerli': {},
+  polygon: {},
+  'polygon-mumbai': {},
+  optimism: {},
+  'optimism-goerli': {},
 }

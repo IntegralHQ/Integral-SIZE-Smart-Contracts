@@ -3,6 +3,7 @@ import { Wallet } from 'ethers'
 import { waffle } from 'hardhat'
 
 type FixtureLoader = ReturnType<typeof waffle.createFixtureLoader>
+export type LoadFixture = ReturnType<typeof setupOnce>
 interface FixtureReturns {
   provider: MockProvider
   wallet: Wallet

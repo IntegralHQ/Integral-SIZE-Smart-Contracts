@@ -1,6 +1,7 @@
 import { constants, Contract, providers, utils, Wallet, BigNumberish, BigNumber } from 'ethers'
 import { IERC20, DelayTest } from '../../../build/types'
 import { DELAY, expandTo18Decimals, MAX_UINT_32, overrides } from '../utilities'
+import { getWithdrawOrderData } from './'
 
 export function getDefaultWithdraw(token0: IERC20, token1: IERC20, to: Wallet | Contract) {
   return {
@@ -37,7 +38,9 @@ export async function withdraw(
     ...overrides,
     value: BigNumber.from(withdrawRequest.gasLimit).mul(withdrawRequest.gasPrice),
   })
-  return { ...withdrawRequest, tx }
+  const receipt = await tx.wait()
+  const orderData = getWithdrawOrderData(receipt)
+  return { ...withdrawRequest, orderData, tx }
 }
 
 export async function withdrawAndWait(

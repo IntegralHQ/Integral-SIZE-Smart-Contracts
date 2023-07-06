@@ -17,11 +17,11 @@ interface ITwapOracle {
 
     function uniswapPair() external view returns (address);
 
-    function getPriceInfo() external view returns (uint256 priceAccumulator, uint32 priceTimestamp);
+    function getPriceInfo() external view returns (uint256 priceAccumulator, uint256 priceTimestamp);
 
     function getSpotPrice() external view returns (uint256);
 
-    function getAveragePrice(uint256 priceAccumulator, uint32 priceTimestamp) external view returns (uint256);
+    function getAveragePrice(uint256 priceAccumulator, uint256 priceTimestamp) external view returns (uint256);
 
     function setOwner(address _owner) external;
 

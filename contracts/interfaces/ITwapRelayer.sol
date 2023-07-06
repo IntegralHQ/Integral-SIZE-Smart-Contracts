@@ -8,6 +8,7 @@ import '../libraries/Orders.sol';
 
 interface ITwapRelayer {
     event OwnerSet(address owner);
+    event RebalancerSet(address rebalancer);
     event DelaySet(address delay);
     event PairEnabledSet(address pair, bool enabled);
     event SwapFeeSet(address pair, uint256 fee);
@@ -20,17 +21,41 @@ interface ITwapRelayer {
     event ToleranceSet(address pair, uint16 tolerance);
     event Approve(address token, address to, uint256 amount);
     event Withdraw(address token, address to, uint256 amount);
-    event Swap(
+    event Sell(
         address indexed sender,
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
         uint256 amountOut,
+        uint256 amountOutMin,
         bool wrapUnwrap,
         uint256 fee,
         address indexed to,
+        address orderContract,
         uint256 indexed orderId
     );
+    event Buy(
+        address indexed sender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 amountInMax,
+        uint256 amountOut,
+        bool wrapUnwrap,
+        uint256 fee,
+        address indexed to,
+        address orderContract,
+        uint256 indexed orderId
+    );
+    event RebalanceSellWithDelay(
+        address indexed sender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 indexed delayOrderId
+    );
+    event RebalanceSellWithOneInch(address indexed oneInchRouter, uint256 gas, bytes data);
+    event OneInchRouterWhitelisted(address indexed oneInchRouter, bool whitelisted);
 
     function factory() external view returns (address);
 
@@ -41,6 +66,10 @@ interface ITwapRelayer {
     function weth() external view returns (address);
 
     function owner() external view returns (address);
+
+    function rebalancer() external view returns (address);
+
+    function isOneInchRouterWhitelisted(address oneInchRouter) external view returns (bool);
 
     function setOwner(address _owner) external;
 
@@ -79,6 +108,10 @@ interface ITwapRelayer {
     function tolerance(address pair) external view returns (uint16);
 
     function setTolerance(address pair, uint16 _tolerance) external;
+
+    function setRebalancer(address _rebalancer) external;
+
+    function whitelistOneInchRouter(address oneInchRouter, bool whitelisted) external;
 
     struct SellParams {
         address tokenIn;
@@ -149,5 +182,19 @@ interface ITwapRelayer {
         address token,
         uint256 amount,
         address to
+    ) external;
+
+    function rebalanceSellWithDelay(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) external;
+
+    function rebalanceSellWithOneInch(
+        address tokenIn,
+        uint256 amountIn,
+        address oneInchRouter,
+        uint256 _gas,
+        bytes calldata data
     ) external;
 }

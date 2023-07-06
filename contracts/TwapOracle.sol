@@ -71,16 +71,15 @@ contract TwapOracle is ITwapOracle {
     }
 
     // based on: https://github.com/Uniswap/v2-periphery/blob/master/contracts/libraries/UniswapV2OracleLibrary.sol
-    function getPriceInfo() public view override returns (uint256 priceAccumulator, uint32 priceTimestamp) {
+    function getPriceInfo() public view override returns (uint256 priceAccumulator, uint256 priceTimestamp) {
         IUniswapV2Pair pair = IUniswapV2Pair(uniswapPair);
         priceAccumulator = pair.price0CumulativeLast();
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = pair.getReserves();
 
-        // uint32 can be cast directly until Sun, 07 Feb 2106 06:28:15 GMT
-        priceTimestamp = uint32(block.timestamp);
+        priceTimestamp = block.timestamp;
         if (blockTimestampLast != priceTimestamp) {
             // allow overflow to stay consistent with Uniswap code and save some gas
-            uint32 timeElapsed = priceTimestamp - blockTimestampLast;
+            uint256 timeElapsed = priceTimestamp - blockTimestampLast;
             priceAccumulator += uint256(FixedPoint.fraction(reserve1, reserve0)._x) * timeElapsed;
         }
     }
@@ -96,8 +95,8 @@ contract TwapOracle is ITwapOracle {
         return uint256(reserve1).mul(uint256(decimalsConverter)).div(uint256(reserve0));
     }
 
-    function getAveragePrice(uint256 priceAccumulator, uint32 priceTimestamp) public view override returns (uint256) {
-        (uint256 currentPriceAccumulator, uint32 currentPriceTimestamp) = getPriceInfo();
+    function getAveragePrice(uint256 priceAccumulator, uint256 priceTimestamp) public view override returns (uint256) {
+        (uint256 currentPriceAccumulator, uint256 currentPriceTimestamp) = getPriceInfo();
 
         require(priceTimestamp < currentPriceTimestamp, 'TO20');
 

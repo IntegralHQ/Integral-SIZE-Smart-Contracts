@@ -22,12 +22,11 @@ contract DelayTest is TwapDelay {
         orders.updateGasPrice(gasUsed);
     }
 
-    function testPerformRefund(
-        Orders.OrderType orderType,
-        uint256 validAfterTimestamp,
-        uint256 orderId,
-        bool shouldRefundEth
-    ) public {
-        performRefund(orderType, validAfterTimestamp, orderId, shouldRefundEth);
+    function testPerformRefund(Orders.Order calldata order, bool shouldRefundEth) public {
+        performRefund(order, shouldRefundEth);
+    }
+
+    function getOrderHash(uint256 orderId) public view returns (bytes32) {
+        return orders.orderQueue[orderId];
     }
 }

@@ -9,6 +9,7 @@ const BN_2_64 = BigNumber.from(2).pow(64)
 const BN_2_32 = BigNumber.from(2).pow(32)
 
 export enum FeeAmount {
+  STABLE = 100,
   LOW = 500,
   MEDIUM = 3000,
   HIGH = 10000,

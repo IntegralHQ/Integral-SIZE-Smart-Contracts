@@ -9,6 +9,7 @@ import './interfaces/ITwapDelay.sol';
 import './interfaces/ITwapPair.sol';
 import './interfaces/ITwapOracleV3.sol';
 import './interfaces/ITwapRelayer.sol';
+import './interfaces/ITwapRelayerInitializable.sol';
 import './interfaces/IWETH.sol';
 import './libraries/SafeMath.sol';
 import './libraries/Orders.sol';
@@ -16,16 +17,26 @@ import './libraries/TransferHelper.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import '@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol';
 
-contract TwapRelayer is ITwapRelayer {
+contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     using SafeMath for uint256;
 
     uint256 private constant PRECISION = 10**18;
     uint16 private constant MAX_TOLERANCE = 10;
 
-    address public immutable override factory;
-    address public immutable override weth;
-    address public override delay;
+    /*
+     * DO NOT CHANGE THE BELOW STATE VARIABLES.
+     * REMOVING, REORDERING OR INSERTING STATE VARIABLES WILL CAUSE STORAGE COLLISION.
+     * NEW VARIABLES SHOULD BE ADDED BELOW THESE VARIABLES TO AVOID STORAGE COLLISION.
+     */
+    uint8 public initialized;
+    uint8 private locked;
     address public override owner;
+    address public override factory;
+    address public override weth;
+    address public override delay;
+    uint256 public override ethTransferGasCost;
+    uint256 public override executionGasLimit;
+    uint256 public override gasPriceMultiplier;
 
     mapping(address => uint256) public override swapFee;
     mapping(address => uint32) public override twapInterval;
@@ -33,32 +44,51 @@ contract TwapRelayer is ITwapRelayer {
     mapping(address => uint256) public override tokenLimitMin;
     mapping(address => uint256) public override tokenLimitMaxMultiplier;
     mapping(address => uint16) public override tolerance;
-    uint256 public override ethTransferGasCost;
-    uint256 public override executionGasLimit;
-    uint256 public override gasPriceMultiplier;
 
-    constructor(
+    address public override rebalancer;
+    mapping(address => bool) public override isOneInchRouterWhitelisted;
+
+    /*
+     * DO NOT CHANGE THE ABOVE STATE VARIABLES.
+     * REMOVING, REORDERING OR INSERTING STATE VARIABLES WILL CAUSE STORAGE COLLISION.
+     * NEW VARIABLES SHOULD BE ADDED BELOW THESE VARIABLES TO AVOID STORAGE COLLISION.
+     */
+
+    modifier lock() {
+        require(locked == 0, 'TR06');
+        locked = 1;
+        _;
+        locked = 0;
+    }
+
+    // This contract implements a proxy pattern.
+    // The constructor is to set to prevent abuse of this implementation contract.
+    // Setting locked = 1 forces core fetures, e.g. buy(), to always revert.
+    constructor() {
+        owner = msg.sender;
+        initialized = 1;
+        locked = 1;
+    }
+
+    // This function should be called through the proxy contract to initialize the proxy contract's storage.
+    function initialize(
         address _factory,
         address _delay,
         address _weth
-    ) {
+    ) external override {
+        require(initialized == 0, 'TR5B');
+
+        initialized = 1;
         factory = _factory;
         delay = _delay;
         weth = _weth;
         owner = msg.sender;
         ethTransferGasCost = 2600 + 1504; // EIP-2929 acct access cost + Gnosis Safe receive ETH cost;
 
+        emit Initialized(_factory, _delay, _weth);
         emit DelaySet(_delay);
         emit OwnerSet(msg.sender);
         emit EthTransferGasCostSet(ethTransferGasCost);
-    }
-
-    uint256 private locked;
-    modifier lock() {
-        require(locked == 0, 'TR06');
-        locked = 1;
-        _;
-        locked = 0;
     }
 
     function setDelay(address _delay) external override {
@@ -144,12 +174,27 @@ contract TwapRelayer is ITwapRelayer {
         emit ToleranceSet(pair, _tolerance);
     }
 
+    function setRebalancer(address _rebalancer) external override {
+        require(msg.sender == owner, 'TR00');
+        require(_rebalancer != rebalancer, 'TR01');
+        require(_rebalancer != msg.sender, 'TR5D');
+        rebalancer = _rebalancer;
+        emit RebalancerSet(_rebalancer);
+    }
+
+    function whitelistOneInchRouter(address oneInchRouter, bool whitelisted) external override {
+        require(msg.sender == owner, 'TR00');
+        require(whitelisted != isOneInchRouterWhitelisted[oneInchRouter], 'TR01');
+        isOneInchRouterWhitelisted[oneInchRouter] = whitelisted;
+        emit OneInchRouterWhitelisted(oneInchRouter, whitelisted);
+    }
+
     function sell(SellParams calldata sellParams) external payable override lock returns (uint256 orderId) {
         require(
             sellParams.to != sellParams.tokenIn && sellParams.to != sellParams.tokenOut && sellParams.to != address(0),
             'TR26'
         );
-        // duplicate checks in Orders.sell
+        // Duplicate checks in Orders.sell
         // require(sellParams.amountIn != 0, 'TR24');
 
         if (sellParams.wrapUnwrap && sellParams.tokenIn == weth) {
@@ -158,12 +203,7 @@ contract TwapRelayer is ITwapRelayer {
             require(msg.value == 0, 'TR58');
         }
 
-        (address pair, bool inverted) = getPair(sellParams.tokenIn, sellParams.tokenOut);
-        require(isPairEnabled[pair], 'TR5A');
-
         (uint256 amountIn, uint256 amountOut, uint256 fee) = swapExactIn(
-            pair,
-            inverted,
             sellParams.tokenIn,
             sellParams.tokenOut,
             sellParams.amountIn,
@@ -185,15 +225,17 @@ contract TwapRelayer is ITwapRelayer {
             )
         );
 
-        emit Swap(
+        emit Sell(
             msg.sender,
             sellParams.tokenIn,
             sellParams.tokenOut,
             amountIn,
             amountOut,
+            sellParams.amountOutMin,
             sellParams.wrapUnwrap,
             fee,
             sellParams.to,
+            delay,
             orderId
         );
     }
@@ -203,21 +245,16 @@ contract TwapRelayer is ITwapRelayer {
             buyParams.to != buyParams.tokenIn && buyParams.to != buyParams.tokenOut && buyParams.to != address(0),
             'TR26'
         );
-        // duplicate checks in Orders.sell
+        // Duplicate checks in Orders.sell
         // require(buyParams.amountOut != 0, 'TR23');
 
         if (!buyParams.wrapUnwrap || buyParams.tokenIn != weth) {
             require(msg.value == 0, 'TR58');
         }
 
-        (address pair, bool inverted) = getPair(buyParams.tokenIn, buyParams.tokenOut);
-        require(isPairEnabled[pair], 'TR5A');
-
         uint256 balanceBefore = address(this).balance.sub(msg.value);
 
         (uint256 amountIn, uint256 amountOut, uint256 fee) = swapExactOut(
-            pair,
-            inverted,
             buyParams.tokenIn,
             buyParams.tokenOut,
             buyParams.amountOut,
@@ -239,15 +276,17 @@ contract TwapRelayer is ITwapRelayer {
             )
         );
 
-        emit Swap(
+        emit Buy(
             msg.sender,
             buyParams.tokenIn,
             buyParams.tokenOut,
             amountIn,
+            buyParams.amountInMax,
             amountOut,
             buyParams.wrapUnwrap,
             fee,
             buyParams.to,
+            delay,
             orderId
         );
 
@@ -262,18 +301,17 @@ contract TwapRelayer is ITwapRelayer {
     function getPair(address tokenA, address tokenB) internal view returns (address pair, bool inverted) {
         inverted = tokenA > tokenB;
         pair = ITwapFactory(factory).getPair(tokenA, tokenB);
+
         require(pair != address(0), 'TR17');
     }
 
-    function calculatePrepay() internal returns (uint256) {
+    function calculatePrepay() internal view returns (uint256) {
         require(executionGasLimit > 0, 'TR3D');
         require(gasPriceMultiplier > 0, 'TR3C');
         return ITwapDelay(delay).gasPrice().mul(gasPriceMultiplier).mul(executionGasLimit).div(PRECISION);
     }
 
     function swapExactIn(
-        address pair,
-        bool inverted,
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
@@ -287,6 +325,9 @@ contract TwapRelayer is ITwapRelayer {
             uint256 fee
         )
     {
+        (address pair, bool inverted) = getPair(tokenIn, tokenOut);
+        require(isPairEnabled[pair], 'TR5A');
+
         _amountIn = transferIn(tokenIn, amountIn, wrapUnwrap);
 
         fee = _amountIn.mul(swapFee[pair]).div(PRECISION);
@@ -298,8 +339,6 @@ contract TwapRelayer is ITwapRelayer {
     }
 
     function swapExactOut(
-        address pair,
-        bool inverted,
         address tokenIn,
         address tokenOut,
         uint256 amountOut,
@@ -313,6 +352,9 @@ contract TwapRelayer is ITwapRelayer {
             uint256 fee
         )
     {
+        (address pair, bool inverted) = getPair(tokenIn, tokenOut);
+        require(isPairEnabled[pair], 'TR5A');
+
         _amountOut = transferOut(to, tokenOut, amountOut, wrapUnwrap);
         uint256 calculatedAmountIn = calculateAmountIn(pair, inverted, _amountOut);
 
@@ -462,21 +504,20 @@ contract TwapRelayer is ITwapRelayer {
         require(secondsAgo > 0, 'TR55');
         uint32[] memory secondsAgos = new uint32[](2);
         secondsAgos[0] = secondsAgo;
-        secondsAgos[1] = 0;
         (int56[] memory tickCumulatives, ) = IUniswapV3Pool(uniswapPair).observe(secondsAgos);
 
         int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
         int24 arithmeticMeanTick = int24(tickCumulativesDelta / secondsAgo);
-        if (tickCumulativesDelta < 0 && (tickCumulativesDelta % secondsAgo != 0)) arithmeticMeanTick--;
+        if (tickCumulativesDelta < 0 && (tickCumulativesDelta % secondsAgo != 0)) --arithmeticMeanTick;
 
         uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(arithmeticMeanTick);
 
         if (sqrtRatioX96 <= type(uint128).max) {
             uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-            return FullMath.mulDiv(ratioX192, decimalsConverter, 1 << 192);
+            return FullMath.mulDiv(ratioX192, decimalsConverter, 2**192);
         } else {
-            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
-            return FullMath.mulDiv(ratioX128, decimalsConverter, 1 << 128);
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2**64);
+            return FullMath.mulDiv(ratioX128, decimalsConverter, 2**128);
         }
     }
 
@@ -548,7 +589,9 @@ contract TwapRelayer is ITwapRelayer {
     ) external override lock {
         require(msg.sender == owner, 'TR00');
         require(to != address(0), 'TR02');
-        require(IERC20(token).approve(to, amount), 'TR2F');
+
+        TransferHelper.safeApprove(token, to, amount);
+
         emit Approve(token, to, amount);
     }
 
@@ -565,6 +608,48 @@ contract TwapRelayer is ITwapRelayer {
             TransferHelper.safeTransfer(token, to, amount);
         }
         emit Withdraw(token, to, amount);
+    }
+
+    function rebalanceSellWithDelay(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) external override lock {
+        require(msg.sender == rebalancer, 'TR00');
+
+        uint256 delayOrderId = ITwapDelay(delay).sell{ value: calculatePrepay() }(
+            Orders.SellParams(
+                tokenIn,
+                tokenOut,
+                amountIn,
+                0, // Relax slippage constraints
+                false, // Never wrap/unwrap
+                address(this),
+                executionGasLimit,
+                uint32(block.timestamp)
+            )
+        );
+
+        emit RebalanceSellWithDelay(msg.sender, tokenIn, tokenOut, amountIn, delayOrderId);
+    }
+
+    function rebalanceSellWithOneInch(
+        address tokenIn,
+        uint256 amountIn,
+        address oneInchRouter,
+        uint256 _gas,
+        bytes calldata data
+    ) external override lock {
+        require(msg.sender == rebalancer, 'TR00');
+        require(isOneInchRouterWhitelisted[oneInchRouter], 'TR5F');
+
+        TransferHelper.safeApprove(tokenIn, oneInchRouter, amountIn);
+
+        (bool success, ) = oneInchRouter.call{ gas: _gas }(data);
+        require(success, 'TR5E');
+
+        emit Approve(tokenIn, oneInchRouter, amountIn);
+        emit RebalanceSellWithOneInch(oneInchRouter, _gas, data);
     }
 
     receive() external payable {}

@@ -15,12 +15,12 @@ describe('TwapDelay.refund', () => {
     const etherHater = await new EtherHater__factory(wallet).deploy(overrides)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    await depositAndWait(delay, token0, token1, wallet, {
+    const result = await depositAndWait(delay, token0, token1, wallet, {
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(1),
     })
 
-    await expect(etherHater.callExecute(delay.address, overrides)).to.be.revertedWith('TD40')
+    await expect(etherHater.callExecute(delay.address, result.orderData, overrides)).to.be.revertedWith('TD40')
   })
 
   it('succeeds even if refund fails because of balanceOf', async () => {
@@ -33,7 +33,7 @@ describe('TwapDelay.refund', () => {
     })
 
     await token0.setRevertBalanceOf(true, overrides)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -52,7 +52,7 @@ describe('TwapDelay.refund', () => {
     })
 
     await token0.setRevertAfter(await token0.totalTransfers(), overrides)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -66,12 +66,12 @@ describe('TwapDelay.refund', () => {
     const etherHater = await new EtherHater__factory(wallet).deploy(overrides)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    await depositAndWait(delay, token0, token1, etherHater, {
+    const result = await depositAndWait(delay, token0, token1, etherHater, {
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(1),
     })
 
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(result.orderData, overrides)
     const receipt = await tx.wait()
     const ethRefunds = receipt.events?.filter((x) => x.event === 'EthRefund') ?? []
     const [botRefundEvent, userRefundEvent] = ethRefunds
@@ -90,15 +90,15 @@ describe('TwapDelay.refund', () => {
     const { delay, token, weth, wallet } = await loadFixture(delayFixture)
 
     const [token0, token1] = sortTokens(token, weth)
-    await depositAndWait(delay, token0, token1, wallet, {
+    const result0 = await depositAndWait(delay, token0, token1, wallet, {
       etherAmount: expandTo18Decimals(1),
       wrap: true,
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(1),
     })
-    await delay.execute(1, overrides)
+    await delay.execute(result0.orderData, overrides)
 
-    await depositAndWait(delay, token0, token1, wallet, {
+    const result1 = await depositAndWait(delay, token0, token1, wallet, {
       etherAmount: expandTo18Decimals(2),
       wrap: true,
       amount0: expandTo18Decimals(token0 === weth ? 2 : 1),
@@ -107,7 +107,7 @@ describe('TwapDelay.refund', () => {
     })
 
     const balanceBefore = await wallet.getBalance()
-    await delay.execute(1, overrides)
+    await delay.execute(result1.orderData, overrides)
     const balanceAfter = await wallet.getBalance()
 
     expect(balanceAfter.sub(balanceBefore)).to.be.gt(expandTo18Decimals(2))

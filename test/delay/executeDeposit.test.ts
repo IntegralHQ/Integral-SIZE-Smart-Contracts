@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { BigNumber, providers, utils } from 'ethers'
 import { EtherHater__factory } from '../../build/types'
-import { depositAndWait } from '../shared/orders'
+import { depositAndWait, getOrderDigest } from '../shared/orders'
 import { delayFixture } from '../shared/fixtures'
 import { delayFailingFixture } from '../shared/fixtures/delayFailingFixture'
 import { setupFixtureLoader } from '../shared/setup'
@@ -14,7 +14,6 @@ import {
   makeFloatEncodable,
   ORDER_LIFESPAN_IN_HOURS,
   overrides,
-  pairAddressToPairId,
 } from '../shared/utilities'
 import { delayWithMixedDecimalsPairFixture } from '../shared/fixtures/delayWithMixedDecimalsPairFixture'
 import { parseUnits } from 'ethers/lib/utils'
@@ -33,12 +32,12 @@ describe('TwapDelay.executeDeposit', () => {
       const token0BalanceBefore = await token0.balanceOf(wallet.address)
       const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
-      const depositRequest = await depositAndWait(delay, token0, token1, wallet)
+      const depositResult = await depositAndWait(delay, token0, token1, wallet)
 
-      const expectedLiquidity = depositRequest.amount0
+      const expectedLiquidity = depositResult.amount0
       const expectedFee = expectedLiquidity.sub(MINIMUM_LIQUIDITY).mul(MINT_FEE).div(PRECISION)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -49,8 +48,8 @@ describe('TwapDelay.executeDeposit', () => {
       const token1BalanceAfter = await token1.balanceOf(wallet.address)
 
       expect(balanceAfter.sub(balanceBefore)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY).sub(expectedFee))
-      expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(depositRequest.amount0)
-      expect(token1BalanceBefore.sub(token1BalanceAfter)).to.eq(depositRequest.amount1)
+      expect(token0BalanceBefore.sub(token0BalanceAfter)).to.eq(depositResult.amount0)
+      expect(token1BalanceBefore.sub(token1BalanceAfter)).to.eq(depositResult.amount1)
     })
 
     const cases = [
@@ -97,7 +96,7 @@ describe('TwapDelay.executeDeposit', () => {
         }
 
         await addLiquidity(expandTo18Decimals(reserve0), expandTo18Decimals(reserve1))
-        await depositAndWait(delay, token0, token1, wallet, {
+        const depositResult = await depositAndWait(delay, token0, token1, wallet, {
           amount0: expandTo18Decimals(amount0),
           amount1: expandTo18Decimals(amount1),
           gasLimit: 700_000,
@@ -112,7 +111,7 @@ describe('TwapDelay.executeDeposit', () => {
         const balance0Before = await token0.balanceOf(wallet.address)
         const balance1Before = await token1.balanceOf(wallet.address)
 
-        const tx = await delay.execute(1, overrides)
+        const tx = await delay.execute(depositResult.orderData, overrides)
         const events = await getEvents(tx, 'OrderExecuted')
         await expect(Promise.resolve(tx))
           .to.emit(delay, 'OrderExecuted')
@@ -143,7 +142,7 @@ describe('TwapDelay.executeDeposit', () => {
       await factory.setMintFee(token0.address, token1.address, 0, overrides)
 
       await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(100))
-      await depositAndWait(delay, token0, token1, wallet, {
+      const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: expandTo18Decimals(300),
         amount1: expandTo18Decimals(100),
         swap: false,
@@ -152,7 +151,7 @@ describe('TwapDelay.executeDeposit', () => {
       const balance0Before = await token0.balanceOf(wallet.address)
       const balance1Before = await token1.balanceOf(wallet.address)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -176,7 +175,7 @@ describe('TwapDelay.executeDeposit', () => {
       await factory.setSwapFee(token0.address, token1.address, 0, overrides)
 
       await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(100))
-      await depositAndWait(delay, token0, token1, wallet, {
+      const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: expandTo18Decimals(300),
         amount1: expandTo18Decimals(100),
         swap: true,
@@ -186,7 +185,7 @@ describe('TwapDelay.executeDeposit', () => {
       const balance0Before = await token0.balanceOf(wallet.address)
       const balance1Before = await token1.balanceOf(wallet.address)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -220,13 +219,13 @@ describe('TwapDelay.executeDeposit', () => {
       const balance1Before = await token1.balanceOf(wallet.address)
       const balanceLpBefore = await pair.balanceOf(wallet.address)
 
-      await depositAndWait(delay, token0, token1, wallet, {
+      const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: BigNumber.from(1),
         amount1: expandTo18Decimals(1000),
         swap: true,
       })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -260,7 +259,7 @@ describe('TwapDelay.executeDeposit', () => {
       await delay.setTolerance(pair.address, 5)
 
       await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(100))
-      await depositAndWait(delay, token0, token1, wallet, {
+      const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: expandTo18Decimals(300),
         amount1: BigNumber.from(0),
         swap: true,
@@ -270,7 +269,7 @@ describe('TwapDelay.executeDeposit', () => {
       const balance0Before = await token0.balanceOf(wallet.address)
       const balance1Before = await token1.balanceOf(wallet.address)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -307,7 +306,7 @@ describe('TwapDelay.executeDeposit', () => {
       await delay.setTolerance(pair.address, 8)
 
       await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(200))
-      await depositAndWait(delay, token0, token1, wallet, {
+      const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: expandTo18Decimals(50),
         amount1: BigNumber.from(0),
         swap: true,
@@ -316,7 +315,7 @@ describe('TwapDelay.executeDeposit', () => {
       const balance0Before = await token0.balanceOf(wallet.address)
       const balance1Before = await token1.balanceOf(wallet.address)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -350,7 +349,7 @@ describe('TwapDelay.executeDeposit', () => {
       await delay.setTolerance(pair.address, 6)
 
       await addLiquidity(BigNumber.from(100000), BigNumber.from(100000))
-      await depositAndWait(delay, token0, token1, wallet, {
+      const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: BigNumber.from(1010),
         amount1: BigNumber.from(1000),
         swap: true,
@@ -360,7 +359,7 @@ describe('TwapDelay.executeDeposit', () => {
       const balance0Before = await token0.balanceOf(wallet.address)
       const balance1Before = await token1.balanceOf(wallet.address)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -390,7 +389,7 @@ describe('TwapDelay.executeDeposit', () => {
       const { delay, token0, token1, other, pair, addLiquidity } = await loadFixture(delayFixture)
 
       await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(100))
-      await depositAndWait(delay, token0, token1, other, {
+      const depositResult = await depositAndWait(delay, token0, token1, other, {
         amount0: expandTo18Decimals(2),
         amount1: expandTo18Decimals(1),
       })
@@ -399,7 +398,7 @@ describe('TwapDelay.executeDeposit', () => {
 
       expect(await pair.balanceOf(other.address)).to.equal(0)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -414,13 +413,13 @@ describe('TwapDelay.executeDeposit', () => {
 
       await setUniswapPrice(10)
       await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(200))
-      await depositAndWait(delay, token0, token1, other, {
+      const depositResult = await depositAndWait(delay, token0, token1, other, {
         amount0: expandTo18Decimals(2),
         amount1: expandTo18Decimals(1),
         minSwapPrice: makeFloatEncodable(expandTo18Decimals(5)),
       })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -432,14 +431,14 @@ describe('TwapDelay.executeDeposit', () => {
 
       await setUniswapPrice(10)
       await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(200))
-      await depositAndWait(delay, token0, token1, other, {
+      const depositResult = await depositAndWait(delay, token0, token1, other, {
         gasLimit: 720000,
         amount0: expandTo18Decimals(1),
         amount1: expandTo18Decimals(2),
         maxSwapPrice: makeFloatEncodable(expandTo18Decimals(20)),
       })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(depositResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -456,13 +455,13 @@ describe('TwapDelay.executeDeposit', () => {
     const token0BalanceBefore = await token0.balanceOf(wallet.address)
     const token1BalanceBefore = await token1.balanceOf(wallet.address)
 
-    await depositAndWait(delay, token0, token1, wallet, {
+    const depositResult = await depositAndWait(delay, token0, token1, wallet, {
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(1),
       gasLimit: 200000,
     })
 
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -481,7 +480,7 @@ describe('TwapDelay.executeDeposit', () => {
     const { delay, token0, token1, wallet, other, addLiquidity, orders } = await loadFixture(delayFixture)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    const depositRequest = await depositAndWait(delay, token0, token1, wallet, {
+    const depositResult = await depositAndWait(delay, token0, token1, wallet, {
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(1),
     })
@@ -489,7 +488,7 @@ describe('TwapDelay.executeDeposit', () => {
     const botBalanceBefore = await other.getBalance()
     const userBalanceBefore = await wallet.getBalance()
 
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(depositResult.orderData, overrides)
     const { gasUsed, effectiveGasPrice } = await tx.wait()
     const events = await getEvents(tx, 'OrderExecuted')
 
@@ -500,8 +499,8 @@ describe('TwapDelay.executeDeposit', () => {
     const userRefund = userBalanceAfter.sub(userBalanceBefore)
 
     const tokenTransferCost = 60_000
-    const minRefund = (await orders.ORDER_BASE_COST()).add(2 * tokenTransferCost).mul(depositRequest.gasPrice)
-    const maxRefund = BigNumber.from(depositRequest.gasLimit).mul(depositRequest.gasPrice)
+    const minRefund = (await orders.ORDER_BASE_COST()).add(2 * tokenTransferCost).mul(depositResult.gasPrice)
+    const maxRefund = BigNumber.from(depositResult.gasLimit).mul(depositResult.gasPrice)
     expect(botRefund).not.to.be.below(minRefund)
     expect(botRefund).not.to.be.above(maxRefund)
 
@@ -519,12 +518,12 @@ describe('TwapDelay.executeDeposit', () => {
     const etherHater = await new EtherHater__factory(wallet).deploy(overrides)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    await depositAndWait(delay, token0, token1, etherHater, {
+    const depositResult = await depositAndWait(delay, token0, token1, etherHater, {
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(1),
     })
 
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     const ethRefunds = await getEvents(tx, 'EthRefund')
     const [botRefundEvent, userRefundEvent] = ethRefunds
@@ -548,7 +547,7 @@ describe('TwapDelay.executeDeposit', () => {
     })
 
     await token0.setWasteTransferGas(true)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -560,10 +559,10 @@ describe('TwapDelay.executeDeposit', () => {
   it('hits the 48 hours deadline', async () => {
     const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
 
-    await depositAndWait(delay, token0, token1, wallet)
+    const depositResult = await depositAndWait(delay, token0, token1, wallet)
     await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [ORDER_LIFESPAN_IN_HOURS * 60 * 60])
 
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))
@@ -576,18 +575,18 @@ describe('TwapDelay.executeDeposit', () => {
     await delay.setTransferGasCost(token0.address, 200_000, overrides)
     await delay.setTransferGasCost(token1.address, 200_000, overrides)
 
-    await depositAndWait(delay, token0, token1, wallet)
-    const failingTx = await delay.execute(1, overrides)
+    const depositResult = await depositAndWait(delay, token0, token1, wallet)
+    const failingTx = await delay.execute(depositResult.orderData, overrides)
     let events = await getEvents(failingTx, 'OrderExecuted')
 
     await expect(Promise.resolve(failingTx))
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
 
-    await depositAndWait(delay, token0, token1, wallet, {
+    const depositRequest1 = await depositAndWait(delay, token0, token1, wallet, {
       gasLimit: 1_000_000,
     })
-    const passingTx = await delay.execute(1, overrides)
+    const passingTx = await delay.execute(depositRequest1.orderData, overrides)
     events = await getEvents(passingTx, 'OrderExecuted')
 
     await expect(Promise.resolve(passingTx))
@@ -600,13 +599,13 @@ describe('TwapDelay.executeDeposit', () => {
 
     await setUniswapPrice(10)
     await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(200))
-    await depositAndWait(delay, token0, token1, other, {
+    const depositResult = await depositAndWait(delay, token0, token1, other, {
       amount0: expandTo18Decimals(2),
       amount1: expandTo18Decimals(1),
       minSwapPrice: makeFloatEncodable(expandTo18Decimals(20)),
     })
 
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))
@@ -619,13 +618,13 @@ describe('TwapDelay.executeDeposit', () => {
 
     await setUniswapPrice(10)
     await addLiquidity(expandTo18Decimals(200), expandTo18Decimals(200))
-    await depositAndWait(delay, token0, token1, other, {
+    const depositResult = await depositAndWait(delay, token0, token1, other, {
       amount0: expandTo18Decimals(1),
       amount1: expandTo18Decimals(2),
       maxSwapPrice: makeFloatEncodable(expandTo18Decimals(5)),
     })
 
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))
@@ -643,7 +642,7 @@ describe('TwapDelay.executeDeposit', () => {
     })
 
     await token0.setWasteTransferGas(true, overrides)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -664,7 +663,7 @@ describe('TwapDelay.executeDeposit', () => {
     })
 
     await token1.setWasteTransferGas(true, overrides)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -676,7 +675,7 @@ describe('TwapDelay.executeDeposit', () => {
   })
 
   it('if token refund fails order is still in queue', async () => {
-    const { delay, token0, token1, wallet, addLiquidity, pair } = await loadFixture(delayFailingFixture)
+    const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFailingFixture)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
     const deposit = await depositAndWait(delay, token0, token1, wallet, {
@@ -685,35 +684,21 @@ describe('TwapDelay.executeDeposit', () => {
     })
 
     await token0.setWasteTransferGas(true, overrides)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
 
-    const orderInQueue = await delay.getDepositOrder(1, overrides)
-    const order = [
-      pairAddressToPairId(pair.address),
-      deposit.amount0,
-      deposit.amount1,
-      deposit.minSwapPrice,
-      deposit.maxSwapPrice,
-      deposit.wrap,
-      deposit.swap,
-      deposit.to,
-      deposit.gasPrice,
-      BigNumber.from(deposit.gasLimit),
-      orderInQueue.validAfterTimestamp,
-      orderInQueue.priceAccumulator,
-      orderInQueue.timestamp,
-    ]
-    expect(order).to.deep.eq(orderInQueue)
+    const orderHashOnChain = await delay.getOrderHash(1, overrides)
+    const orderHash = getOrderDigest(deposit.orderData[0])
+    expect(orderHash).to.be.eq(orderHashOnChain)
     expect(await delay.lastProcessedOrderId()).to.eq(1)
     expect(await delay.newestOrderId()).to.eq(1)
   })
 
   it('if ether refund fails order is still in queue', async () => {
-    const { delay, token, wallet, weth, wethPair } = await loadFixture(delayFixture)
+    const { delay, token, wallet, weth } = await loadFixture(delayFixture)
     const etherHater = await new EtherHater__factory(wallet).deploy(overrides)
     const deposit = await depositAndWait(delay, token, weth, wallet, {
       to: etherHater.address,
@@ -724,7 +709,7 @@ describe('TwapDelay.executeDeposit', () => {
     // The order fails due to exceeded time limit.
     await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [ORDER_LIFESPAN_IN_HOURS * 60 * 60])
 
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -734,23 +719,9 @@ describe('TwapDelay.executeDeposit', () => {
       .to.emit(delay, 'RefundFailed')
       .withArgs(etherHater.address, token.address, utils.parseEther('2'), encodeErrorData('TH3F'))
 
-    const orderInQueue = await delay.getDepositOrder(1, overrides)
-    const order = [
-      pairAddressToPairId(wethPair.address),
-      deposit.amount0,
-      deposit.amount1,
-      deposit.minSwapPrice,
-      deposit.maxSwapPrice,
-      deposit.wrap,
-      deposit.swap,
-      deposit.to,
-      deposit.gasPrice,
-      BigNumber.from(deposit.gasLimit),
-      orderInQueue.validAfterTimestamp,
-      orderInQueue.priceAccumulator,
-      orderInQueue.timestamp,
-    ]
-    expect(order).to.deep.eq(orderInQueue)
+    const orderHashOnChain = await delay.getOrderHash(1, overrides)
+    const orderHash = getOrderDigest(deposit.orderData[0])
+    expect(orderHash).to.be.eq(orderHashOnChain)
     expect(await delay.lastProcessedOrderId()).to.eq(1)
     expect(await delay.newestOrderId()).to.eq(1)
   })
@@ -763,13 +734,13 @@ describe('TwapDelay.executeDeposit', () => {
     const decimals1 = await token1.decimals()
     await addLiquidity(parseUnits('200', decimals0), parseUnits('200', decimals1))
     await setupUniswapPair(0.0002)
-    await depositAndWait(delay, token0, token1, wallet, {
+    const depositResult = await depositAndWait(delay, token0, token1, wallet, {
       gasLimit: 650000,
       amount0: parseUnits('2', decimals0),
       amount1: BigNumber.from(0),
       minSwapPrice: makeFloatEncodable(expandTo18Decimals('0.00018')),
     })
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -784,13 +755,13 @@ describe('TwapDelay.executeDeposit', () => {
     const decimals1 = await token1.decimals()
     await addLiquidity(parseUnits('200', decimals0), parseUnits('200', decimals1))
     await setUniswapPrice(10)
-    await depositAndWait(delay, token0, token1, wallet, {
+    const depositResult = await depositAndWait(delay, token0, token1, wallet, {
       gasLimit: 650000,
       amount0: BigNumber.from(0),
       amount1: parseUnits('2', decimals1),
       maxSwapPrice: makeFloatEncodable(expandTo18Decimals('10.2')),
     })
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -808,7 +779,7 @@ describe('TwapDelay.executeDeposit', () => {
     await delay.setTolerance(pair.address, 2)
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(200))
-    await depositAndWait(delay, token0, token1, wallet, {
+    const depositResult = await depositAndWait(delay, token0, token1, wallet, {
       amount0: expandTo18Decimals(50),
       amount1: BigNumber.from(0),
       swap: true,
@@ -817,7 +788,7 @@ describe('TwapDelay.executeDeposit', () => {
     const balance0Before = await token0.balanceOf(wallet.address)
     const balance1Before = await token1.balanceOf(wallet.address)
 
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(depositResult.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')

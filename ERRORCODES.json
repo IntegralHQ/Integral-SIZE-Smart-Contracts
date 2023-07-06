@@ -1,55 +1,94 @@
 {
   "00": {
     "errorMessage": "FORBIDDEN",
-    "userMessages": ["Sender not authorized to call contract", "Please contact support"]
+    "userMessages": [
+      "Sender not authorized to call contract",
+      "Please contact support"
+    ]
   },
   "01": {
     "errorMessage": "ALREADY SET",
-    "userMessages": ["Duplicate operation", "Please contact support"]
+    "userMessages": [
+      "Duplicate operation",
+      "Please contact support"
+    ]
   },
   "02": {
     "errorMessage": "ADDRESS ZERO",
-    "userMessages": ["Address is invalid", "Please contact support"]
+    "userMessages": [
+      "Address is invalid",
+      "Please contact support"
+    ]
   },
   "03": {
     "errorMessage": "INSUFFICIENT AMOUNT",
-    "userMessages": ["Insufficient liquidity to complete withdrawal", "Please contact support"]
+    "userMessages": [
+      "Insufficient liquidity to complete withdrawal",
+      "Please contact support"
+    ]
   },
   "04": {
     "errorMessage": "EXPIRED",
-    "userMessages": ["Order has expired", "Retry the order"]
+    "userMessages": [
+      "Order has expired",
+      "Retry the order"
+    ]
   },
   "05": {
     "errorMessage": "TRANSFER FAILED",
-    "userMessages": ["Token transfer failed for unknown reason", "Please contact support"]
+    "userMessages": [
+      "Token transfer failed for unknown reason",
+      "Please contact support"
+    ]
   },
   "06": {
     "errorMessage": "LOCKED",
-    "userMessages": ["Operation is already in progress", "Wait for the operation to complete"]
+    "userMessages": [
+      "Operation is already in progress",
+      "Wait for the operation to complete"
+    ]
   },
   "07": {
     "errorMessage": "INSUFFICIENT LIQUIDITY",
-    "userMessages": ["Insufficient pool liquidity", "Retry with a smaller order size"]
+    "userMessages": [
+      "Insufficient pool liquidity",
+      "Retry with a smaller order size"
+    ]
   },
   "08": {
     "errorMessage": "INSUFFICIENT INPUT AMOUNT",
-    "userMessages": ["Order slippage exceeded", "Retry with a higher slippage tolerance"]
+    "userMessages": [
+      "Order slippage exceeded",
+      "Retry with a higher slippage tolerance"
+    ]
   },
   "09": {
     "errorMessage": "ZERO",
-    "userMessages": ["Token balance is zero", "Please contact support"]
+    "userMessages": [
+      "Token balance is zero",
+      "Please contact support"
+    ]
   },
   "0A": {
     "errorMessage": "WITHDRAW DISABLED",
-    "userMessages": ["Withdrawing is disabled for this token pair", "Use a different token pair or try again later"]
+    "userMessages": [
+      "Withdrawing is disabled for this token pair",
+      "Use a different token pair or try again later"
+    ]
   },
   "0B": {
     "errorMessage": "UNISWAP PAIR MUST BE CONTRACT",
-    "userMessages": ["Token pair address is not a contract", "Please contact support"]
+    "userMessages": [
+      "Token pair address is not a contract",
+      "Please contact support"
+    ]
   },
   "0C": {
     "errorMessage": "UNAUTHORIZED TRADER",
-    "userMessages": ["Sender not authorized to trade tokens", "Please contact support"]
+    "userMessages": [
+      "Sender not authorized to trade tokens",
+      "Please contact support"
+    ]
   },
   "0D": {
     "errorMessage": "TRANSFER OOPS",
@@ -57,31 +96,52 @@
   },
   "0E": {
     "errorMessage": "TRANSFER FROM FAILED",
-    "userMessages": ["Token transfer failed for unknown reason", "Please contact support"]
+    "userMessages": [
+      "Token transfer failed for unknown reason",
+      "Please contact support"
+    ]
   },
   "0F": {
     "errorMessage": "TOKEN TRANSFER GAS COST UNSET",
-    "userMessages": ["One or more token transfer gas costs is unset", "Please contact support"]
+    "userMessages": [
+      "One or more token transfer gas costs is unset",
+      "Please contact support"
+    ]
   },
   "10": {
     "errorMessage": "TOKEN MUST BE CONTRACT",
-    "userMessages": ["Token address does not point to a contract", "Please contact support"]
+    "userMessages": [
+      "Token address does not point to a contract",
+      "Please contact support"
+    ]
   },
   "11": {
     "errorMessage": "SUBTRACTION OVERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "12": {
     "errorMessage": "SUB UNDERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "13": {
     "errorMessage": "SELL DISABLED",
-    "userMessages": ["Selling is disabled for this token pair", "Use a different token pair or try again later"]
+    "userMessages": [
+      "Selling is disabled for this token pair",
+      "Use a different token pair or try again later"
+    ]
   },
   "14": {
     "errorMessage": "REFUND FAILED",
-    "userMessages": ["Refund transaction failed", "Please contact support"]
+    "userMessages": [
+      "Refund transaction failed",
+      "Please contact support"
+    ]
   },
   "15": {
     "errorMessage": "PRICE TOO LOW",
@@ -99,23 +159,38 @@
   },
   "17": {
     "errorMessage": "PAIR NONEXISTENT",
-    "userMessages": ["Token pair does not exist", "Use a different token pair or try again later"]
+    "userMessages": [
+      "Token pair does not exist",
+      "Use a different token pair or try again later"
+    ]
   },
   "18": {
     "errorMessage": "PAIR EXISTS",
-    "userMessages": ["Token pair cannot be created because it already exists", "Please contact support"]
+    "userMessages": [
+      "Token pair cannot be created because it already exists",
+      "Please contact support"
+    ]
   },
   "19": {
     "errorMessage": "PAIR DOES NOT EXIST",
-    "userMessages": ["Token pair has not yet been created", "Please contact support"]
+    "userMessages": [
+      "Token pair has not yet been created",
+      "Please contact support"
+    ]
   },
   "1A": {
     "errorMessage": "OVERFLOW FLOAT ENCODE",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "1B": {
     "errorMessage": "OVERFLOW FLOAT DECODE",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "1C": {
     "errorMessage": "ORDER NOT EXCEEDED",
@@ -126,35 +201,59 @@
   },
   "1D": {
     "errorMessage": "ORACLE MUST BE CONTRACT",
-    "userMessages": ["Oracle address is not a contract", "Please contact support"]
+    "userMessages": [
+      "Oracle address is not a contract",
+      "Please contact support"
+    ]
   },
   "1E": {
     "errorMessage": "NOT ENOUGH FUNDS",
-    "userMessages": ["Insufficient ETH", "Include additional ETH in your order and try again"]
+    "userMessages": [
+      "Insufficient ETH",
+      "Include additional ETH in your order and try again"
+    ]
   },
   "1F": {
     "errorMessage": "NO UNISWAP RESERVES",
-    "userMessages": ["Token pool has insufficient liquidity", "Use a different token pair or try again later"]
+    "userMessages": [
+      "Token pool has insufficient liquidity",
+      "Use a different token pair or try again later"
+    ]
   },
   "20": {
     "errorMessage": "NO TIME ELAPSED",
-    "userMessages": ["Current price is not more recent than order price", "Wait for more time to elapse"]
+    "userMessages": [
+      "Current price is not more recent than order price",
+      "Wait for more time to elapse"
+    ]
   },
   "21": {
     "errorMessage": "NO POSSIBLE REFUND",
-    "userMessages": ["Refund is not available", "Please contact support"]
+    "userMessages": [
+      "Refund is not available",
+      "Please contact support"
+    ]
   },
   "22": {
     "errorMessage": "NO LIQUIDITY",
-    "userMessages": ["No liquidity available to complete withdrawal", "Please contact support"]
+    "userMessages": [
+      "No liquidity available to complete withdrawal",
+      "Please contact support"
+    ]
   },
   "23": {
     "errorMessage": "NO AMOUNT OUT",
-    "userMessages": ["Output amount for swap cannot be zero", "Increase output token amount and try again"]
+    "userMessages": [
+      "Output amount for swap cannot be zero",
+      "Increase output token amount and try again"
+    ]
   },
   "24": {
     "errorMessage": "NO AMOUNT IN",
-    "userMessages": ["Input amount for swap cannot be zero", "Increase input token amount and try again"]
+    "userMessages": [
+      "Input amount for swap cannot be zero",
+      "Increase input token amount and try again"
+    ]
   },
   "25": {
     "errorMessage": "NO AMOUNT",
@@ -165,123 +264,213 @@
   },
   "26": {
     "errorMessage": "NO ADDRESS",
-    "userMessages": ["Invalid recipient address", "Try again with a different address"]
+    "userMessages": [
+      "Invalid recipient address",
+      "Try again with a different address"
+    ]
   },
   "27": {
     "errorMessage": "NEGATIVE Y BALANCE",
-    "userMessages": ["Insufficient balance to complete transaction", "Adjust token amounts and try again"]
+    "userMessages": [
+      "Insufficient balance to complete transaction",
+      "Adjust token amounts and try again"
+    ]
   },
   "28": {
     "errorMessage": "NEGATIVE X BALANCE",
-    "userMessages": ["Insufficient balance to complete transaction", "Adjust token amounts and try again"]
+    "userMessages": [
+      "Insufficient balance to complete transaction",
+      "Adjust token amounts and try again"
+    ]
   },
   "29": {
     "errorMessage": "MULTIPLICATION OVERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "2A": {
     "errorMessage": "MUL OVERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "2B": {
     "errorMessage": "MAX GAS LIMIT TOO HIGH",
-    "userMessages": ["Maximum gas limit exceeds bounds", "Please contact support"]
+    "userMessages": [
+      "Maximum gas limit exceeds bounds",
+      "Please contact support"
+    ]
   },
   "2C": {
     "errorMessage": "INVALID TRANSFER",
-    "userMessages": ["Token transfer did not complete", "Please contact support"]
+    "userMessages": [
+      "Token transfer did not complete",
+      "Please contact support"
+    ]
   },
   "2D": {
     "errorMessage": "INVALID TO",
-    "userMessages": ["Address is invalid", "Try again with a different address"]
+    "userMessages": [
+      "Address is invalid",
+      "Try again with a different address"
+    ]
   },
   "2E": {
     "errorMessage": "INVALID SWAP",
-    "userMessages": ["Invalid token amount for swap", "Adjust token amounts and try again"]
+    "userMessages": [
+      "Invalid token amount for swap",
+      "Adjust token amounts and try again"
+    ]
   },
   "2F": {
     "errorMessage": "INVALID SIGNATURE",
-    "userMessages": ["Invalid signature for approval", "Please contact support"]
+    "userMessages": [
+      "Invalid signature for approval",
+      "Please contact support"
+    ]
   },
   "30": {
     "errorMessage": "INVALID SHARES",
-    "userMessages": ["Insufficient balance to complete transaction", "Adjust token amounts and try again"]
+    "userMessages": [
+      "Insufficient balance to complete transaction",
+      "Adjust token amounts and try again"
+    ]
   },
   "31": {
     "errorMessage": "INVALID OUTPUT AMOUNTS",
-    "userMessages": ["Invalid token amount for swap", "Adjust token amounts and try again"]
+    "userMessages": [
+      "Invalid token amount for swap",
+      "Adjust token amounts and try again"
+    ]
   },
   "32": {
     "errorMessage": "INVALID ORDER TYPE",
-    "userMessages": ["Order type does not match expected type", "Please contact support"]
+    "userMessages": [
+      "Order type does not match expected type",
+      "Please contact support"
+    ]
   },
   "33": {
     "errorMessage": "INVALID MAX GAS PRICE IMPACT",
-    "userMessages": ["Gas price impact exceeds inertia", "Please contact support"]
+    "userMessages": [
+      "Gas price impact exceeds inertia",
+      "Please contact support"
+    ]
   },
   "34": {
     "errorMessage": "INVALID INT CONVERSION",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "35": {
     "errorMessage": "INVALID INERTIA",
-    "userMessages": ["Gas price inertia too low", "Please contact support"]
+    "userMessages": [
+      "Gas price inertia too low",
+      "Please contact support"
+    ]
   },
   "36": {
     "errorMessage": "INSUFFICIENT TOTAL SUPPLY",
-    "userMessages": ["Insufficient pool liquidity to complete withdrawal", "Please contact support"]
+    "userMessages": [
+      "Insufficient pool liquidity to complete withdrawal",
+      "Please contact support"
+    ]
   },
   "37": {
     "errorMessage": "INSUFFICIENT OUTPUT AMOUNT",
-    "userMessages": ["Order exceeds available tokens", "Retry the order with a different proportion of tokens"]
+    "userMessages": [
+      "Order exceeds available tokens",
+      "Retry the order with a different proportion of tokens"
+    ]
   },
   "38": {
     "errorMessage": "INSUFFICIENT LIQUIDITY MINTED",
-    "userMessages": ["Insufficient liquidity minted to complete deposit", "Please contact support"]
+    "userMessages": [
+      "Insufficient liquidity minted to complete deposit",
+      "Please contact support"
+    ]
   },
   "39": {
     "errorMessage": "INSUFFICIENT LIQUIDITY BURNED",
-    "userMessages": ["Insufficient liquidity burned to complete withdrawal", "Please contact support"]
+    "userMessages": [
+      "Insufficient liquidity burned to complete withdrawal",
+      "Please contact support"
+    ]
   },
   "3A": {
     "errorMessage": "INSUFFICIENT BALANCE",
-    "userMessages": ["Insufficient balance to complete transaction", "Lower LP token amount or try again later"]
+    "userMessages": [
+      "Insufficient balance to complete transaction",
+      "Lower LP token amount or try again later"
+    ]
   },
   "3B": {
     "errorMessage": "IDENTICAL ADDRESSES",
-    "userMessages": ["Invalid token pair", "Please contact support"]
+    "userMessages": [
+      "Invalid token pair",
+      "Please contact support"
+    ]
   },
   "3C": {
     "errorMessage": "GAS PRICE PRECISION",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "3D": {
     "errorMessage": "GAS LIMIT TOO LOW",
-    "userMessages": ["Insufficient gas to complete transaction", "Increase gas amount and try again"]
+    "userMessages": [
+      "Insufficient gas to complete transaction",
+      "Increase gas amount and try again"
+    ]
   },
   "3E": {
     "errorMessage": "GAS LIMIT TOO HIGH",
-    "userMessages": ["Gas exceeds allowed gas amount", "Decrease gas amount and try again"]
+    "userMessages": [
+      "Gas exceeds allowed gas amount",
+      "Decrease gas amount and try again"
+    ]
   },
   "3F": {
     "errorMessage": "ETH TRANSFER FAILED",
-    "userMessages": ["ETH transfer did not complete", "Please contact support"]
+    "userMessages": [
+      "ETH transfer did not complete",
+      "Please contact support"
+    ]
   },
   "40": {
     "errorMessage": "ETH REFUND FAILED",
-    "userMessages": ["ETH refund did not complete", "Please contact support"]
+    "userMessages": [
+      "ETH refund did not complete",
+      "Please contact support"
+    ]
   },
   "41": {
     "errorMessage": "EMPTY ORDER",
-    "userMessages": ["Invalid order type", "Please contact support"]
+    "userMessages": [
+      "Invalid order type",
+      "Please contact support"
+    ]
   },
   "42": {
     "errorMessage": "DIVISION OVERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "43": {
     "errorMessage": "DIVISION BY ZERO",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "44": {
     "errorMessage": "INVALID DEADLINE",
@@ -289,23 +478,38 @@
   },
   "45": {
     "errorMessage": "DIFFERENT DECIMALS",
-    "userMessages": ["Token pair decimal values do not match expected values", "Please contact support"]
+    "userMessages": [
+      "Token pair decimal values do not match expected values",
+      "Please contact support"
+    ]
   },
   "46": {
     "errorMessage": "DEPOSIT DISABLED",
-    "userMessages": ["Depositing is disabled for this token pair", "Use a different token pair or try again later"]
+    "userMessages": [
+      "Depositing is disabled for this token pair",
+      "Use a different token pair or try again later"
+    ]
   },
   "47": {
     "errorMessage": "DECIMALS DIFFERENCE TOO BIG",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "48": {
     "errorMessage": "CANNOT DECREASE",
-    "userMessages": ["Allowance decrease exceeds bounds", "Please contact support"]
+    "userMessages": [
+      "Allowance decrease exceeds bounds",
+      "Please contact support"
+    ]
   },
   "49": {
     "errorMessage": "BUY DISABLED",
-    "userMessages": ["Buying is disabled for this token pair", "Use a different token pair or try again later"]
+    "userMessages": [
+      "Buying is disabled for this token pair",
+      "Use a different token pair or try again later"
+    ]
   },
   "4A": {
     "errorMessage": "BALANCE OF OOPS",
@@ -313,7 +517,10 @@
   },
   "4B": {
     "errorMessage": "APPROVE FAILED",
-    "userMessages": ["Transaction was not approved", "Please contact support"]
+    "userMessages": [
+      "Transaction was not approved",
+      "Please contact support"
+    ]
   },
   "4C": {
     "errorMessage": "ALREADY CANCELED",
@@ -321,27 +528,45 @@
   },
   "4D": {
     "errorMessage": "ADDITION OVERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "4E": {
     "errorMessage": "ADD OVERFLOW",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "4F": {
     "errorMessage": "DECIMALS HIGHER THAN 75",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "50": {
     "errorMessage": "SM EXCEEDS 32 BITS",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "51": {
     "errorMessage": "SM EXCEEDS 112 BITS",
-    "userMessages": ["Calculation exceeded bounds", "Please contact support"]
+    "userMessages": [
+      "Calculation exceeded bounds",
+      "Please contact support"
+    ]
   },
   "52": {
     "errorMessage": "NOT CANCELLABLE",
-    "userMessages": ["Order can no longer be cancelled", "Wait for order to complete"]
+    "userMessages": [
+      "Order can no longer be cancelled",
+      "Wait for order to complete"
+    ]
   },
   "53": {
     "errorMessage": "OUT OF GAS",
@@ -374,5 +599,85 @@
   "5A": {
     "errorMessage": "PAIR NOT ENABLED",
     "userMessages": []
+  },
+  "5B": {
+    "errorMessage": "ALREADY INITIALIZED",
+    "userMessages": []
+  },
+  "5C": {
+    "errorMessage": "INPUT ARRAY LENGTHS DO NOT MATCH",
+    "userMessages": []
+  },
+  "5D": {
+    "errorMessage": "OWNER CANNOT BE REBALANCER",
+    "userMessages": []
+  },
+  "5E": {
+    "errorMessage": "1INCH SWAP FAILED",
+    "userMessages": []
+  },
+  "5F": {
+    "errorMessage": "1INCH ROUTER IS NOT WHITELISTED",
+    "userMessages": []
+  },
+  "60": {
+    "errorMessage": "GAS REQUIRED EXCEEDS PROVIDED",
+    "userMessages": []
+  },
+  "61": {
+    "errorMessage": "ENQUEUE DISABLED",
+    "userMessages": []
+  },
+  "62": {
+    "errorMessage": "LIMIT ORDER DOES NOT EXIST",
+    "userMessages": []
+  },
+  "63": {
+    "errorMessage": "LIMIT ORDER PRICE NOT HIT",
+    "userMessages": []
+  },
+  "64": {
+    "errorMessage": "EXPIRATION TOO LOW",
+    "userMessages": []
+  },
+  "65": {
+    "errorMessage": "EXPIRATION TOO HIGH",
+    "userMessages": []
+  },
+  "66": {
+    "errorMessage": "TWAP INTERVAL TOO LARGE",
+    "userMessages": []
+  },
+  "67": {
+    "errorMessage": "STATUS NOT WAITING",
+    "userMessages": []
+  },
+  "68": {
+    "errorMessage": "SM EXCEEDS 64 BITS",
+    "userMessages": []
+  },
+  "69": {
+    "errorMessage": "POOL ALREADY EXISTS",
+    "userMessages": []
+  },
+  "70": {
+    "errorMessage": "STAKE DISABLED",
+    "userMessages": [
+      "Staking is disabled for this contract"
+    ]
+  },
+  "71": {
+    "errorMessage": "ORDER VERIFICATION FAILED",
+    "userMessages": []
+  },
+  "72": {
+    "errorMessage": "INVALID ORDER ID",
+    "userMessages": []
+  },
+  "73": {
+    "errorMessage": "INPUT AMOUNT TOO BIG",
+    "userMessages": [
+      "Amount is bigger than upper limit"
+    ]
   }
 }

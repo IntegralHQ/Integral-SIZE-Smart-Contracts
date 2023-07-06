@@ -1,6 +1,7 @@
 import { BigNumber, constants, Contract, providers, utils, Wallet, BigNumberish } from 'ethers'
 import { DelayTest, IERC20 } from '../../../build/types'
 import { DELAY, expandTo18Decimals, MAX_UINT_32, overrides } from '../utilities'
+import { getDepositOrderData } from './'
 
 export const getDefaultDeposit = (token0: IERC20, token1: IERC20, wallet: Wallet | Contract) => ({
   gasLimit: 690000,
@@ -38,9 +39,9 @@ export async function deposit(
     ...overrides,
     value: BigNumber.from(depositRequest.gasLimit).mul(depositRequest.gasPrice).add(depositRequest.etherAmount),
   })
-  const newestOrderId = await delay.newestOrderId()
-  const { priceAccumulator, timestamp } = await delay.getDepositOrder(newestOrderId, overrides)
-  return { ...depositRequest, priceAccumulator, timestamp, tx }
+  const receipt = await tx.wait()
+  const orderData = getDepositOrderData(receipt)
+  return { ...depositRequest, orderData, tx }
 }
 
 export async function depositAndWait(

@@ -3,7 +3,7 @@
 
 pragma solidity 0.7.6;
 
-import './libraries/AbstractERC20.sol';
+import './abstracts/AbstractERC20.sol';
 
 contract TwapLPToken is AbstractERC20 {
     constructor() {

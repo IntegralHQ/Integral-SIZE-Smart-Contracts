@@ -5,15 +5,20 @@ const PERMIT_TYPEHASH = utils.keccak256(
   utils.toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
 )
 
+export const MAX_UINT_256 = BigNumber.from(2).pow(256).sub(1)
 export const MAX_UINT_96 = BigNumber.from(2).pow(96).sub(1)
 export const MAX_UINT_32 = 2 ** 32 - 1
 
 export const DELAY = 30 * 60 // 30 minutes
+export const BOT_EXECUTION_TIME = 20 * 60 // 20 minutes
+export const EXPIRATION_UPPER_LIMIT = 24 * 60 * 60 * 90
 export const ORDER_LIFESPAN_IN_HOURS = 48
 
 export const MIN_ALLOWED_GAS_LIMIT = 140_000 // Approximately. May need to be updated if SC code changes.
 
 export const INVALID_ADDRESS = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+
+export const MAX_CONTRACT_BYTECODE_SIZE = 24_576 // As per EIP-170
 
 export function expandTo18Decimals(n: number | string): BigNumber {
   return expandToDecimals(n, 18)
@@ -120,6 +125,10 @@ export async function increaseTime(wallet: Wallet, seconds?: number) {
   await mineBlock(wallet)
 }
 
+export async function increaseTimeWithoutMining(wallet: Wallet, seconds?: number) {
+  await (wallet.provider as providers.JsonRpcProvider).send('evm_increaseTime', [seconds || 1])
+}
+
 // Work around an issue where Hardhat Network increases time by 2 seconds, instead of 1, when we call evm_increaseTime.
 export async function increaseTimeWithWorkaround(wallet: Wallet, seconds?: number) {
   const currentTimestamp = (await wallet.provider.getBlock('latest')).timestamp
@@ -127,6 +136,14 @@ export async function increaseTimeWithWorkaround(wallet: Wallet, seconds?: numbe
     currentTimestamp + (seconds ? seconds : 1),
   ])
   await mineBlockRPCMethod(wallet)
+}
+
+export async function turnOffAutomine(wallet: Wallet) {
+  await (wallet.provider as providers.JsonRpcProvider).send('evm_setAutomine', [false])
+}
+
+export async function turnOnAutomine(wallet: Wallet) {
+  await (wallet.provider as providers.JsonRpcProvider).send('evm_setAutomine', [true])
 }
 
 export function getFutureTime() {

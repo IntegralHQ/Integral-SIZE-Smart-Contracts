@@ -45,6 +45,11 @@ library SafeMath {
         return uint32(n);
     }
 
+    function toUint64(uint256 n) internal pure returns (uint64) {
+        require(n <= type(uint64).max, 'SM54');
+        return uint64(n);
+    }
+
     function toUint112(uint256 n) internal pure returns (uint112) {
         require(n <= type(uint112).max, 'SM51');
         return uint112(n);

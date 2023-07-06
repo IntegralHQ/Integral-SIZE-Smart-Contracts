@@ -5,7 +5,7 @@ import { delayFixture } from '../shared/fixtures'
 import { delayFailingFixture } from '../shared/fixtures/delayFailingFixture'
 import { getDelayWithMixedDecimalsPairFixtureFor } from '../shared/fixtures/delayWithMixedDecimalsPairFixture'
 import { getDelayForPriceFixture } from '../shared/fixtures/getDelayForPriceFixture'
-import { sellAndWait } from '../shared/orders'
+import { getOrderDigest, sellAndWait } from '../shared/orders'
 import { setupFixtureLoader } from '../shared/setup'
 import { encodeErrorData } from '../shared/solidityError'
 import {
@@ -18,7 +18,6 @@ import {
   MIN_ALLOWED_GAS_LIMIT,
   ORDER_LIFESPAN_IN_HOURS,
   overrides,
-  pairAddressToPairId,
 } from '../shared/utilities'
 
 describe('TwapDelay.executeSell', () => {
@@ -29,10 +28,10 @@ describe('TwapDelay.executeSell', () => {
       const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFixture)
 
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
-      await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
       })
-      await delay.execute(1, overrides)
+      await delay.execute(sellResult.orderData, overrides)
 
       expect(await delay.lastProcessedOrderId()).to.equal(1)
     })
@@ -44,16 +43,16 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
       const balanceBefore = await token1.balanceOf(wallet.address)
-      const sellRequest = await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
       })
 
       const expectedAmountOut = await oracle.getSwapAmount1Out(
         await pair.swapFee(),
-        sellRequest.amountIn,
+        sellResult.amountIn,
         await getEncodedPriceInfo()
       )
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const balanceAfter = await token1.balanceOf(wallet.address)
 
       const events = await getEvents(tx, 'OrderExecuted')
@@ -70,16 +69,16 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
       const balanceBefore = await token0.balanceOf(wallet.address)
-      const sellRequest = await sellAndWait(delay, token1, token0, wallet, {
+      const sellResult = await sellAndWait(delay, token1, token0, wallet, {
         gasLimit: 450000,
       })
 
       const expectedAmountOut = await oracle.getSwapAmount0Out(
         await pair.swapFee(),
-        sellRequest.amountIn,
+        sellResult.amountIn,
         await getEncodedPriceInfo()
       )
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const balanceAfter = await token0.balanceOf(wallet.address)
 
       const events = await getEvents(tx, 'OrderExecuted')
@@ -96,16 +95,16 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidityETH(expandTo18Decimals(10), expandTo18Decimals(10))
 
       const tokenFirst = weth.address.toLowerCase() > token.address.toLowerCase()
-      const sellRequest = await sellAndWait(delay, token, weth, wallet, {
+      const sellResult = await sellAndWait(delay, token, weth, wallet, {
         gasLimit: 450000,
         wrapUnwrap: true,
       })
 
       const expectedAmountOut = tokenFirst
-        ? await oracle.getSwapAmount1Out(await wethPair.swapFee(), sellRequest.amountIn, await getEncodedPriceInfo())
-        : await oracle.getSwapAmount0Out(await wethPair.swapFee(), sellRequest.amountIn, await getEncodedPriceInfo())
+        ? await oracle.getSwapAmount1Out(await wethPair.swapFee(), sellResult.amountIn, await getEncodedPriceInfo())
+        : await oracle.getSwapAmount0Out(await wethPair.swapFee(), sellResult.amountIn, await getEncodedPriceInfo())
       const balanceBefore = await wallet.getBalance()
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const balanceAfter = await wallet.getBalance()
 
       const events = await getEvents(tx, 'OrderExecuted')
@@ -121,7 +120,7 @@ describe('TwapDelay.executeSell', () => {
 
       await token0.transfer(other.address, expandTo18Decimals(100), overrides)
 
-      await sellAndWait(delay, token0, token1, other, {
+      const sellResult = await sellAndWait(delay, token0, token1, other, {
         amountIn: expandTo18Decimals(1),
         amountOutMin: expandTo18Decimals(0),
         gasLimit: 450000,
@@ -129,7 +128,7 @@ describe('TwapDelay.executeSell', () => {
       await increaseTime(other)
       await token0.transfer(pair.address, expandTo18Decimals(100), overrides)
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -151,7 +150,7 @@ describe('TwapDelay.executeSell', () => {
         await token0.balanceOf(wallet.address),
         await token1.balanceOf(wallet.address),
       ]
-      await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
         amountIn: expandTo18Decimals(11),
         amountOutMin: expandTo18Decimals(11),
@@ -168,7 +167,7 @@ describe('TwapDelay.executeSell', () => {
         await getEncodedPriceInfo()
       )
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const [balanceAfter0, balanceAfter1] = [
         await token0.balanceOf(wallet.address),
         await token1.balanceOf(wallet.address),
@@ -194,7 +193,7 @@ describe('TwapDelay.executeSell', () => {
         await token0.balanceOf(wallet.address),
         await token1.balanceOf(wallet.address),
       ]
-      await sellAndWait(delay, token1, token0, wallet, {
+      const sellResult = await sellAndWait(delay, token1, token0, wallet, {
         gasLimit: 450000,
         amountIn: expandTo18Decimals(200),
         amountOutMin: expandTo18Decimals(90),
@@ -211,7 +210,7 @@ describe('TwapDelay.executeSell', () => {
         await getEncodedPriceInfo()
       )
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const [balanceAfter0, balanceAfter1] = [
         await token0.balanceOf(wallet.address),
         await token1.balanceOf(wallet.address),
@@ -234,7 +233,7 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidityETH(reserveToken, reserveEth)
 
       const balanceBeforeToken = await token.balanceOf(wallet.address)
-      await sellAndWait(delay, token, weth, wallet, {
+      const sellResult = await sellAndWait(delay, token, weth, wallet, {
         gasLimit: 450000,
         amountIn: expandTo18Decimals(200),
         amountOutMin: expandTo18Decimals(200),
@@ -254,7 +253,7 @@ describe('TwapDelay.executeSell', () => {
         await getEncodedPriceInfo()
       )
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const [balanceAfterEth, balanceAfterToken] = [await wallet.getBalance(), await token.balanceOf(wallet.address)]
 
       const events = await getEvents(tx, 'OrderExecuted')
@@ -274,7 +273,7 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidityETH(reserveToken, reserveEth)
 
       const balanceBeforeToken = await token.balanceOf(wallet.address)
-      await sellAndWait(delay, weth, token, wallet, {
+      const sellResult = await sellAndWait(delay, weth, token, wallet, {
         gasLimit: 450000,
         etherAmount: expandTo18Decimals(200),
         amountIn: expandTo18Decimals(200),
@@ -298,7 +297,7 @@ describe('TwapDelay.executeSell', () => {
         await getEncodedPriceInfo()
       )
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const balanceAfterToken = await token.balanceOf(wallet.address)
 
       const events = await getEvents(tx, 'OrderExecuted')
@@ -320,12 +319,12 @@ describe('TwapDelay.executeSell', () => {
       const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFixture)
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
-      await sellAndWait(delay, token1, token0, wallet, {
+      const sellResult = await sellAndWait(delay, token1, token0, wallet, {
         amountOutMin: expandTo18Decimals(2),
         gasLimit: 450000,
       })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -336,12 +335,12 @@ describe('TwapDelay.executeSell', () => {
       const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFixture)
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
-      await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         amountOutMin: expandTo18Decimals(2),
         gasLimit: 450000,
       })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -351,12 +350,12 @@ describe('TwapDelay.executeSell', () => {
     it('hits the 48 hours deadline', async () => {
       const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
 
-      await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
       })
       await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [ORDER_LIFESPAN_IN_HOURS * 60 * 60])
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -367,9 +366,9 @@ describe('TwapDelay.executeSell', () => {
       const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFixture)
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
-      await sellAndWait(delay, token1, token0, wallet, { gasLimit: MIN_ALLOWED_GAS_LIMIT })
+      const sellResult = await sellAndWait(delay, token1, token0, wallet, { gasLimit: MIN_ALLOWED_GAS_LIMIT })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sellResult.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -379,7 +378,7 @@ describe('TwapDelay.executeSell', () => {
     })
 
     it('if token refund fails order is still in queue', async () => {
-      const { delay, token0, token1, wallet, addLiquidity, pair } = await loadFixture(delayFailingFixture)
+      const { delay, token0, token1, wallet, addLiquidity } = await loadFixture(delayFailingFixture)
 
       await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
       const sell = await sellAndWait(delay, token0, token1, wallet, {
@@ -387,7 +386,7 @@ describe('TwapDelay.executeSell', () => {
       })
 
       await token0.setWasteTransferGas(true, overrides)
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sell.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -395,21 +394,9 @@ describe('TwapDelay.executeSell', () => {
         .to.emit(delay, 'RefundFailed')
         .withArgs(sell.to, token0.address, sell.amountIn, encodeErrorData('TH05'))
 
-      const orderInQueue = await delay.getSellOrder(1, overrides)
-      const order = [
-        pairAddressToPairId(pair.address),
-        false,
-        sell.amountIn,
-        sell.amountOutMin,
-        sell.wrapUnwrap,
-        sell.to,
-        sell.gasPrice,
-        BigNumber.from(sell.gasLimit),
-        orderInQueue.validAfterTimestamp,
-        orderInQueue.priceAccumulator,
-        orderInQueue.timestamp,
-      ]
-      expect(order).to.deep.eq(orderInQueue)
+      const orderHashOnChain = await delay.getOrderHash(1, overrides)
+      const orderHash = getOrderDigest(sell.orderData[0])
+      expect(orderHash).to.be.eq(orderHashOnChain)
       expect(await delay.lastProcessedOrderId()).to.eq(1)
       expect(await delay.newestOrderId()).to.eq(1)
     })
@@ -420,7 +407,7 @@ describe('TwapDelay.executeSell', () => {
 
       const etherHater = await new EtherHater__factory(wallet).deploy(overrides)
 
-      const sellRequest = await sellAndWait(delay, token, weth, etherHater, {
+      const sellResult = await sellAndWait(delay, token, weth, etherHater, {
         gasLimit: 470000,
         amountOutMin: expandTo18Decimals(1),
         wrapUnwrap: true,
@@ -428,7 +415,7 @@ describe('TwapDelay.executeSell', () => {
 
       const wethBalanceBefore = await weth.balanceOf(etherHater.address)
       const balanceBefore = await wallet.provider.getBalance(etherHater.address)
-      const tx = await delay.connect(other).execute(1, overrides)
+      const tx = await delay.connect(other).execute(sellResult.orderData, overrides)
       const wethBalanceAfter = await weth.balanceOf(etherHater.address)
       const balanceAfter = await wallet.provider.getBalance(etherHater.address)
 
@@ -444,7 +431,7 @@ describe('TwapDelay.executeSell', () => {
         .withArgs(etherHater.address, getAmount(event))
 
       expect(balanceBefore).to.eq(balanceAfter)
-      expect(wethBalanceAfter.sub(wethBalanceBefore).gt(sellRequest.amountOutMin)).to.be.true
+      expect(wethBalanceAfter.sub(wethBalanceBefore).gt(sellResult.amountOutMin)).to.be.true
     })
   })
 
@@ -453,17 +440,17 @@ describe('TwapDelay.executeSell', () => {
       const { delay, token0, token1, wallet, other, addLiquidity, orders } = await loadFixture(delayFixture)
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
-      const sellRequest = await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
       })
       const botBalanceBefore = await other.getBalance()
-      const tx = await delay.connect(other).execute(1, overrides)
+      const tx = await delay.connect(other).execute(sellResult.orderData, overrides)
       const { gasUsed, effectiveGasPrice } = await tx.wait()
       const botBalanceAfter = await other.getBalance()
       const botRefund = botBalanceAfter.sub(botBalanceBefore).add(gasUsed.mul(effectiveGasPrice))
       const tokenTransferCost = 60_000
-      const minRefund = (await orders.ORDER_BASE_COST()).add(tokenTransferCost).mul(sellRequest.gasPrice)
-      const maxRefund = BigNumber.from(sellRequest.gasLimit).mul(sellRequest.gasPrice)
+      const minRefund = (await orders.ORDER_BASE_COST()).add(tokenTransferCost).mul(sellResult.gasPrice)
+      const maxRefund = BigNumber.from(sellResult.gasLimit).mul(sellResult.gasPrice)
 
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
@@ -479,11 +466,11 @@ describe('TwapDelay.executeSell', () => {
       const { delay, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayFixture)
       await addLiquidity(expandTo18Decimals(10), expandTo18Decimals(10))
 
-      await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
       })
       const userBalanceBefore = await wallet.getBalance()
-      const tx = await delay.connect(other).execute(1, overrides)
+      const tx = await delay.connect(other).execute(sellResult.orderData, overrides)
       const userBalanceAfter = await wallet.getBalance()
       const userRefund = userBalanceAfter.sub(userBalanceBefore)
 
@@ -500,19 +487,19 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
 
       const balanceBefore = await token0.balanceOf(wallet.address)
-      const sellRequest = await sellAndWait(delay, token0, token1, wallet, {
+      const sellResult = await sellAndWait(delay, token0, token1, wallet, {
         gasLimit: 450000,
         amountOutMin: expandTo18Decimals(10),
       })
       const balanceBetween = await token0.balanceOf(wallet.address)
-      const tx = await delay.connect(other).execute(1, overrides)
+      const tx = await delay.connect(other).execute(sellResult.orderData, overrides)
       const balanceAfter = await token0.balanceOf(wallet.address)
 
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
         .withArgs(1, false, encodeErrorData('TD37'), getGasSpent(events[0]), getEthRefund(events[0]))
-      expect(balanceBefore.sub(balanceBetween)).to.eq(sellRequest.amountIn)
+      expect(balanceBefore.sub(balanceBetween)).to.eq(sellResult.amountIn)
       expect(balanceAfter.sub(balanceBefore)).to.eq(0)
     })
 
@@ -521,19 +508,19 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
 
       const balanceBefore = await token1.balanceOf(wallet.address)
-      const sellRequest = await sellAndWait(delay, token1, token0, wallet, {
+      const sellResult = await sellAndWait(delay, token1, token0, wallet, {
         gasLimit: 450000,
         amountOutMin: expandTo18Decimals(10),
       })
       const balanceBetween = await token1.balanceOf(wallet.address)
-      const tx = await delay.connect(other).execute(1, overrides)
+      const tx = await delay.connect(other).execute(sellResult.orderData, overrides)
       const balanceAfter = await token1.balanceOf(wallet.address)
 
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
         .withArgs(1, false, encodeErrorData('TD37'), getGasSpent(events[0]), getEthRefund(events[0]))
-      expect(balanceBefore.sub(balanceBetween)).to.eq(sellRequest.amountIn)
+      expect(balanceBefore.sub(balanceBetween)).to.eq(sellResult.amountIn)
       expect(balanceAfter.sub(balanceBefore)).to.eq(0)
     })
 
@@ -542,7 +529,7 @@ describe('TwapDelay.executeSell', () => {
       await addLiquidityETH(expandTo18Decimals(100), expandTo18Decimals(100))
 
       const balanceBefore = await wallet.getBalance()
-      const sellRequest = await sellAndWait(delay, weth, token, wallet, {
+      const sellResult = await sellAndWait(delay, weth, token, wallet, {
         gasLimit: 450000,
         amountOutMin: expandTo18Decimals(10),
         etherAmount: expandTo18Decimals(1),
@@ -550,19 +537,19 @@ describe('TwapDelay.executeSell', () => {
         gasPrice: 0,
       })
       const balanceBetween = await wallet.getBalance()
-      const tx = await delay.connect(other).execute(1, overrides)
+      const tx = await delay.connect(other).execute(sellResult.orderData, overrides)
       const balanceAfter = await wallet.getBalance()
 
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
         .withArgs(1, false, encodeErrorData('TD37'), getGasSpent(events[0]), getEthRefund(events[0]))
-      expect(balanceBefore.sub(balanceBetween)).to.be.above(sellRequest.amountIn)
+      expect(balanceBefore.sub(balanceBetween)).to.be.above(sellResult.amountIn)
       expect(balanceAfter.sub(balanceBetween)).to.eq(expandTo18Decimals(1))
     })
 
     it('if ether refund fails order is still in queue', async () => {
-      const { delay, token, wallet, weth, addLiquidityETH, wethPair } = await loadFixture(delayFixture)
+      const { delay, token, wallet, weth, addLiquidityETH } = await loadFixture(delayFixture)
       await addLiquidityETH(expandTo18Decimals(100), expandTo18Decimals(100))
       const etherHater = await new EtherHater__factory(wallet).deploy(overrides)
 
@@ -574,7 +561,7 @@ describe('TwapDelay.executeSell', () => {
         amountIn: utils.parseEther('2'),
       })
 
-      const tx = await delay.execute(1, overrides)
+      const tx = await delay.execute(sell.orderData, overrides)
       const events = await getEvents(tx, 'OrderExecuted')
       await expect(Promise.resolve(tx))
         .to.emit(delay, 'OrderExecuted')
@@ -582,21 +569,9 @@ describe('TwapDelay.executeSell', () => {
         .to.emit(delay, 'RefundFailed')
         .withArgs(etherHater.address, weth.address, utils.parseEther('2'), encodeErrorData('TH3F'))
 
-      const orderInQueue = await delay.getSellOrder(1, overrides)
-      const order = [
-        pairAddressToPairId(wethPair.address),
-        BigNumber.from(weth.address).gt(BigNumber.from(token.address)),
-        sell.amountIn,
-        sell.amountOutMin,
-        sell.wrapUnwrap,
-        sell.to,
-        sell.gasPrice,
-        BigNumber.from(sell.gasLimit),
-        orderInQueue.validAfterTimestamp,
-        orderInQueue.priceAccumulator,
-        orderInQueue.timestamp,
-      ]
-      expect(order).to.deep.eq(orderInQueue)
+      const orderHashOnChain = await delay.getOrderHash(1, overrides)
+      const orderHash = getOrderDigest(sell.orderData[0])
+      expect(orderHash).to.be.eq(orderHashOnChain)
       expect(await delay.lastProcessedOrderId()).to.eq(1)
       expect(await delay.newestOrderId()).to.eq(1)
     })
@@ -674,7 +649,7 @@ describe('TwapDelay.executeSell', () => {
               await token0.balanceOf(wallet.address),
               await token1.balanceOf(wallet.address),
             ]
-            await sellAndWait(delay, token0, token1, wallet, {
+            const sellResult = await sellAndWait(delay, token0, token1, wallet, {
               gasLimit: 450000,
               amountIn: expandToDecimals(r0, xDecimals),
               amountOutMin: expandToDecimals(r1, yDecimals).add(1),
@@ -691,7 +666,7 @@ describe('TwapDelay.executeSell', () => {
               await getEncodedPriceInfo()
             )
 
-            const tx = await delay.execute(1, overrides)
+            const tx = await delay.execute(sellResult.orderData, overrides)
             const [balanceAfter0, balanceAfter1] = [
               await token0.balanceOf(wallet.address),
               await token1.balanceOf(wallet.address),
@@ -716,7 +691,7 @@ describe('TwapDelay.executeSell', () => {
               await token0.balanceOf(wallet.address),
               await token1.balanceOf(wallet.address),
             ]
-            await sellAndWait(delay, token1, token0, wallet, {
+            const sellResult = await sellAndWait(delay, token1, token0, wallet, {
               gasLimit: 450000,
               amountIn: expandToDecimals(r1, yDecimals).mul(2),
               amountOutMin: expandToDecimals(r0, xDecimals).add(1),
@@ -733,7 +708,7 @@ describe('TwapDelay.executeSell', () => {
               await getEncodedPriceInfo()
             )
 
-            const tx = await delay.execute(1, overrides)
+            const tx = await delay.execute(sellResult.orderData, overrides)
             const [balanceAfter0, balanceAfter1] = [
               await token0.balanceOf(wallet.address),
               await token1.balanceOf(wallet.address),

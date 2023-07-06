@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { constants, BigNumber, utils } from 'ethers'
-import { delayFixture } from '../shared/fixtures'
-import { getDefaultBuy } from '../shared/orders'
-import { OrderType } from '../shared/OrderType'
+import { delayFixture, delayWithMaxTokenSupplyFixture } from '../shared/fixtures'
+import { getBuyOrderData, getDefaultBuy, getOrderDigest } from '../shared/orders'
+import { OrderInternalType, OrderType } from '../shared/OrderType'
 import { setupFixtureLoader } from '../shared/setup'
-import { INVALID_ADDRESS, overrides, pairAddressToPairId } from '../shared/utilities'
+import { INVALID_ADDRESS, overrides } from '../shared/utilities'
 
 describe('TwapDelay.buy', () => {
   const loadFixture = setupFixtureLoader()
@@ -147,7 +147,7 @@ describe('TwapDelay.buy', () => {
   })
 
   it('enqueues an order', async () => {
-    const { delay, token0, token1, wallet, pair } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
     const gasPrice = await delay.gasPrice()
     const buyRequest = getDefaultBuy(token0, token1, wallet)
 
@@ -157,50 +157,83 @@ describe('TwapDelay.buy', () => {
       value: gasPrice.mul(buyRequest.gasLimit),
     })
 
-    const { timestamp } = await wallet.provider.getBlock((await tx.wait()).blockHash)
+    const receipt = await tx.wait()
+    const orderData = getBuyOrderData(receipt)
+    const { timestamp } = await wallet.provider.getBlock(receipt.blockHash)
     const newestOrderId = await delay.newestOrderId()
-    const { orderType, validAfterTimestamp } = await delay.getOrder(newestOrderId)
-    const result = await delay.getBuyOrder(newestOrderId)
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(orderData[0])
 
-    expect(orderType).to.equal(OrderType.Buy)
-    expect(validAfterTimestamp).to.equal((await delay.delay()) + timestamp)
-    expect([...result]).to.deep.eq([
-      pairAddressToPairId(pair.address),
-      false,
-      buyRequest.amountInMax,
-      buyRequest.amountOut,
-      buyRequest.wrapUnwrap,
-      buyRequest.to,
-      gasPrice,
-      BigNumber.from(buyRequest.gasLimit),
-      result.validAfterTimestamp,
-      result.priceAccumulator,
-      result.timestamp,
-    ])
+    expect(orderHash).to.be.eq(orderHashOnChain)
+    expect(orderData[0].orderType).to.equal(OrderInternalType.BUY_TYPE)
+    expect(orderData[0].validAfterTimestamp).to.equal((await delay.delay()).add(timestamp))
+  })
+
+  it('reverts due to amountIn is too big (with balance)', async () => {
+    const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+    const gasPrice = await delay.gasPrice()
+    const buyRequest = getDefaultBuy(token0, token1, wallet)
+    buyRequest.amountInMax = BigNumber.from('340282366920938463463374607431768211456')
+
+    await token0.approve(delay.address, constants.MaxUint256, overrides)
+    await token0.transfer(delay.address, 1)
+
+    await expect(
+      delay.buy(buyRequest, {
+        ...overrides,
+        value: gasPrice.mul(buyRequest.gasLimit),
+      })
+    ).to.be.revertedWith('TS73')
+  })
+
+  it('reverts due to amountIn is too big (with very large balance)', async () => {
+    const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+    const gasPrice = await delay.gasPrice()
+    const buyRequest = getDefaultBuy(token0, token1, wallet)
+    buyRequest.amountInMax = BigNumber.from('340282366920938463463374607431768211456')
+
+    await token0.approve(delay.address, constants.MaxUint256, overrides)
+    await token0.transfer(delay.address, BigNumber.from('340282366920938463463374607431768211456'))
+
+    await expect(
+      delay.buy(buyRequest, {
+        ...overrides,
+        value: gasPrice.mul(buyRequest.gasLimit),
+      })
+    ).to.be.revertedWith('SM2A')
+  })
+
+  it('reverts due to amountIn is too big (without balance)', async () => {
+    const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+    const gasPrice = await delay.gasPrice()
+    const buyRequest = getDefaultBuy(token0, token1, wallet)
+    buyRequest.amountInMax = BigNumber.from('340282366920938463463374607431768211456')
+
+    await token0.approve(delay.address, constants.MaxUint256, overrides)
+
+    await expect(
+      delay.buy(buyRequest, {
+        ...overrides,
+        value: gasPrice.mul(buyRequest.gasLimit),
+      })
+    ).to.be.revertedWith('TS73')
   })
 
   it('enqueues an inverted order', async () => {
-    const { delay, token0, token1, wallet, pair } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
     await delay.setGasPrice(0)
     const buyRequest = getDefaultBuy(token1, token0, wallet)
 
     await token1.approve(delay.address, constants.MaxUint256, overrides)
-    await delay.buy(buyRequest, overrides)
+    const tx = await delay.buy(buyRequest, overrides)
+    const receipt = await tx.wait()
 
-    const result = await delay.getBuyOrder(await delay.newestOrderId())
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      true,
-      buyRequest.amountInMax,
-      buyRequest.amountOut,
-      buyRequest.wrapUnwrap,
-      buyRequest.to,
-      BigNumber.from(0),
-      BigNumber.from(buyRequest.gasLimit),
-      result.validAfterTimestamp,
-      result.priceAccumulator,
-      result.timestamp,
-    ])
+    const orderData = getBuyOrderData(receipt)
+    const orderHashOnChain = await delay.getOrderHash(await delay.newestOrderId(), overrides)
+    const orderHash = getOrderDigest(orderData[0])
+
+    expect(orderHash).to.be.eq(orderHashOnChain)
+    expect(orderData[0].orderType).to.equal(OrderInternalType.BUY_INVERTED_TYPE)
   })
 
   it('returns orderId', async () => {

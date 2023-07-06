@@ -1,9 +1,15 @@
 import { constants, Wallet } from 'ethers'
-import { FailingERC20, FailingERC20__factory, DelayTest__factory } from '../../../build/types'
+import {
+  FailingERC20,
+  FailingERC20__factory,
+  DelayTest__factory,
+  TwapLimitOrderMockTwapInterval__factory,
+} from '../../../build/types'
 import { expandTo18Decimals, overrides } from '../utilities'
 import { factoryFixture } from './factoryFixture'
 import { oracleWithUniswapFixture } from './oracleWithUniswapFixture'
 import { deployLibraries, deployPairForTokens, setTokenTransferCosts } from './helpers'
+import { buildEmptyOrder } from '../orders'
 
 export async function delayFailingFixture([wallet]: Wallet[]) {
   const { oracle, pair: uniswapPair, addLiquidity, setUniswapPrice } = await oracleWithUniswapFixture([wallet])
@@ -17,6 +23,13 @@ export async function delayFailingFixture([wallet]: Wallet[]) {
   const delay = await new DelayTest__factory(libraries, wallet).deploy(
     factory.address,
     constants.AddressZero,
+    constants.AddressZero,
+    overrides
+  )
+  const limitOrder = await new TwapLimitOrderMockTwapInterval__factory(libraries, wallet).deploy(
+    delay.address,
+    factory.address,
+    factory.address,
     constants.AddressZero,
     overrides
   )
@@ -36,5 +49,7 @@ export async function delayFailingFixture([wallet]: Wallet[]) {
     return { token2, token3, addAnotherLiquidity: pair.addLiquidity }
   }
 
-  return { delay, ...pair, token0, token1, deployAnotherPair, orders, tokenShares, oracle }
+  const emptyOrder = buildEmptyOrder()
+
+  return { delay, limitOrder, ...pair, token0, token1, deployAnotherPair, orders, tokenShares, oracle, emptyOrder }
 }

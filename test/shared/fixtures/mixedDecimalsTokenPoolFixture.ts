@@ -16,11 +16,11 @@ export async function getMixedDecimalsTokenPoolFixture([wallet]: Wallet[], xDeci
     pool,
     addLiquidity: addLiquidityPool,
     setUniswapPrice,
-    setupUniswapPair,
+    setupUniswapPool,
     getEncodedPriceInfo,
   } = await getOracleV3WithUniswapFixtureFor(xDecimals, yDecimals)([wallet])
   const { factory } = await factoryFixture([wallet])
 
   const pair = await deployPairForTokens(wallet, oracle.address, factory, token0, token1, wallet.address)
-  return { ...pair, oracle, pool, addLiquidityPool, setUniswapPrice, setupUniswapPair, getEncodedPriceInfo }
+  return { ...pair, oracle, pool, addLiquidityPool, setUniswapPrice, setupUniswapPool, getEncodedPriceInfo }
 }

@@ -17,7 +17,7 @@ export function getOracleV3WithUniswapFixtureFor(xDecimals: number, yDecimals: n
       await initializePrice(token0Amount, token1Amount)
     }
 
-    async function setupUniswapPair(token0Amount: BigNumber, token1Amount: BigNumber) {
+    async function setupUniswapPool(token0Amount: BigNumber, token1Amount: BigNumber) {
       await setUniswapPrice(token0Amount, token1Amount)
       await addLiquidity(token0Amount, token1Amount)
       if ((await oracle.uniswapPair()) !== pool.address) {
@@ -51,7 +51,7 @@ export function getOracleV3WithUniswapFixtureFor(xDecimals: number, yDecimals: n
       oracle,
       router,
       setUniswapPrice,
-      setupUniswapPair,
+      setupUniswapPool,
       addLiquidity,
       createObservations,
       getEncodedPriceInfo,

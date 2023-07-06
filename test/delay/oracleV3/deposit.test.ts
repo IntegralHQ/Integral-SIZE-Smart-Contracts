@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { constants, BigNumber, utils } from 'ethers'
 import { delayOracleV3Fixture } from '../../shared/fixtures'
-import { OrderType } from '../../shared/OrderType'
+import { OrderInternalType } from '../../shared/OrderType'
 import { setupFixtureLoader } from '../../shared/setup'
-import { overrides, pairAddressToPairId } from '../../shared/utilities'
-import { getDefaultDeposit, sortTokens, depositAndWait } from '../../shared/orders'
+import { overrides } from '../../shared/utilities'
+import { getDefaultDeposit, sortTokens, depositAndWait, getDepositOrderData, getOrderDigest } from '../../shared/orders'
 
 describe('TwapDelay.deposit.oracleV3', () => {
   const loadFixture = setupFixtureLoader()
@@ -41,7 +41,7 @@ describe('TwapDelay.deposit.oracleV3', () => {
   })
 
   it('enqueues an order', async () => {
-    const { delay, token0, token1, wallet, pair } = await loadFixture(delayOracleV3Fixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayOracleV3Fixture)
 
     const gasPrice = utils.parseUnits('69.420', 'gwei')
     await delay.setGasPrice(gasPrice)
@@ -56,54 +56,28 @@ describe('TwapDelay.deposit.oracleV3', () => {
       ...overrides,
       value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
     })
-    const { timestamp } = await wallet.provider.getBlock((await tx.wait()).blockHash)
+    const receipt = await tx.wait()
+    const orderData = getDepositOrderData(receipt)
+    const { timestamp } = await wallet.provider.getBlock(receipt.blockHash)
 
     const newestOrderId = await delay.newestOrderId()
-    const { orderType, validAfterTimestamp } = await delay.getOrder(newestOrderId)
-    const result = await delay.getDepositOrder(newestOrderId)
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(orderData[0])
 
-    expect(orderType).to.equal(OrderType.Deposit)
-    expect(validAfterTimestamp).to.equal((await delay.delay()) + timestamp)
-
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      depositRequest.amount0,
-      depositRequest.amount1,
-      depositRequest.minSwapPrice,
-      depositRequest.maxSwapPrice,
-      depositRequest.wrap,
-      depositRequest.swap,
-      wallet.address,
-      BigNumber.from(depositRequest.gasPrice),
-      BigNumber.from(depositRequest.gasLimit),
-      validAfterTimestamp,
-      result.priceAccumulator,
-      result.timestamp,
-    ])
+    expect(orderHash).to.be.eq(orderHashOnChain)
+    expect(orderData[0].orderType).to.equal(OrderInternalType.DEPOSIT_TYPE)
+    expect(orderData[0].validAfterTimestamp).to.equal((await delay.delay()).add(timestamp))
   })
 
   it('enqueues an order with reverse tokens', async () => {
-    const { delay, token0, token1, wallet, pair } = await loadFixture(delayOracleV3Fixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayOracleV3Fixture)
 
     const depositRequest = await depositAndWait(delay, token1, token0, wallet)
-    const result = await delay.getDepositOrder(await delay.newestOrderId())
+    const newestOrderId = await delay.newestOrderId()
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(depositRequest.orderData[0])
 
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      // because we swapped before this is actually 0 and 1, not 1 and 0
-      depositRequest.amount1,
-      depositRequest.amount0,
-      depositRequest.minSwapPrice,
-      depositRequest.maxSwapPrice,
-      depositRequest.wrap,
-      depositRequest.swap,
-      wallet.address,
-      BigNumber.from(depositRequest.gasPrice),
-      BigNumber.from(depositRequest.gasLimit),
-      result.validAfterTimestamp,
-      result.priceAccumulator,
-      result.timestamp,
-    ])
+    expect(orderHash).to.be.eq(orderHashOnChain)
   })
 
   it('returns orderId', async () => {

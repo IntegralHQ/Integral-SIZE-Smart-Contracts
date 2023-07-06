@@ -20,7 +20,6 @@ interface ITwapDelay {
     event ToleranceSet(address pair, uint16 amount);
     event OrderDisabled(address pair, Orders.OrderType orderType, bool disabled);
     event UnwrapFailed(address to, uint256 amount);
-    event Execute(address sender, uint256 n);
 
     function factory() external returns (address);
 
@@ -32,27 +31,19 @@ interface ITwapDelay {
 
     function gasPriceInertia() external returns (uint256);
 
-    function gasPrice() external returns (uint256);
+    function gasPrice() external view returns (uint256);
 
     function maxGasPriceImpact() external returns (uint256);
 
     function maxGasLimit() external returns (uint256);
 
-    function delay() external returns (uint32);
+    function delay() external returns (uint256);
 
     function totalShares(address token) external returns (uint256);
 
     function weth() external returns (address);
 
     function getTransferGasCost(address token) external returns (uint256);
-
-    function getDepositOrder(uint256 orderId) external returns (Orders.DepositOrder memory order);
-
-    function getWithdrawOrder(uint256 orderId) external returns (Orders.WithdrawOrder memory order);
-
-    function getSellOrder(uint256 orderId) external returns (Orders.SellOrder memory order);
-
-    function getBuyOrder(uint256 orderId) external returns (Orders.BuyOrder memory order);
 
     function getDepositDisabled(address pair) external returns (bool);
 
@@ -62,7 +53,7 @@ interface ITwapDelay {
 
     function getSellDisabled(address pair) external returns (bool);
 
-    function getOrderStatus(uint256 orderId) external view returns (Orders.OrderStatus);
+    function getOrderStatus(uint256 orderId, uint256 validAfterTimestamp) external view returns (Orders.OrderStatus);
 
     function setOrderDisabled(
         address pair,
@@ -94,9 +85,9 @@ interface ITwapDelay {
 
     function buy(Orders.BuyParams memory buyParams) external payable returns (uint256 orderId);
 
-    function execute(uint256 n) external payable;
+    function execute(Orders.Order[] calldata orders) external payable;
 
-    function retryRefund(uint256 orderId) external;
+    function retryRefund(Orders.Order calldata order) external;
 
-    function cancelOrder(uint256 orderId) external;
+    function cancelOrder(Orders.Order calldata order) external;
 }

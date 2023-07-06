@@ -32,7 +32,7 @@ describe('integrationV2', () => {
     } = await loadFixture(uniswapFixture)
 
     async function deposit(tokenX: IERC20, tokenY: IERC20, amount0: number, amount1: number) {
-      await depositOrder(delay, tokenX, tokenY, wallet, {
+      return await depositOrder(delay, tokenX, tokenY, wallet, {
         amount0: expandTo18Decimals(amount0),
         amount1: expandTo18Decimals(amount1),
         gasLimit: 750000,
@@ -40,21 +40,21 @@ describe('integrationV2', () => {
     }
 
     async function withdraw(tokenX: IERC20, tokenY: IERC20, pair: TwapPair, liquidity: number) {
-      await withdrawOrder(delay, pair, tokenX, tokenY, wallet, {
+      return await withdrawOrder(delay, pair, tokenX, tokenY, wallet, {
         liquidity: expandTo18Decimals(liquidity),
         gasLimit: 600000,
       })
     }
 
     async function buy(tokenIn: IERC20, tokenOut: IERC20, amountInMax: number, amountOut: number) {
-      await buyOrder(delay, tokenIn, tokenOut, wallet, {
+      return await buyOrder(delay, tokenIn, tokenOut, wallet, {
         amountInMax: expandTo18Decimals(amountInMax),
         amountOut: expandTo18Decimals(amountOut),
       })
     }
 
     async function sell(tokenIn: IERC20, tokenOut: IERC20, amountIn: number, amountOutMin: number) {
-      await sellOrder(delay, tokenIn, tokenOut, wallet, {
+      return await sellOrder(delay, tokenIn, tokenOut, wallet, {
         amountIn: expandTo18Decimals(amountIn),
         amountOutMin: expandTo18Decimals(amountOutMin),
       })
@@ -65,15 +65,16 @@ describe('integrationV2', () => {
     const deposit0 = { amount0: 10, amount1: 15 }
     const deposit1 = { amount0: 2, amount1: 5 }
 
-    await deposit(token0, token1, deposit0.amount0, deposit0.amount1)
+    const result0 = await deposit(token0, token1, deposit0.amount0, deposit0.amount1)
     const token0MaxIn = 10
     const token1Out = 3
-    await buy(token0, token1, token0MaxIn, token1Out)
-    await deposit(token0, token1, deposit1.amount0, deposit1.amount1)
+    const result1 = await buy(token0, token1, token0MaxIn, token1Out)
+    const result2 = await deposit(token0, token1, deposit1.amount0, deposit1.amount1)
+    const orderData0 = result0.orderData.concat(result1.orderData).concat(result2.orderData)
 
     await increaseTime(wallet, DELAY + 1)
 
-    let tx = await delay.execute(3, overrides)
+    let tx = await delay.execute(orderData0, overrides)
     let events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))
@@ -100,14 +101,15 @@ describe('integrationV2', () => {
       initialToken1Amount.sub(token1Deposited).add(expandTo18Decimals(token1Out)).add(excessedToken1Deposit)
     )
 
-    await sell(token0, token1, 3, 4)
+    const result3 = await sell(token0, token1, 3, 4)
     const amount0BeforeWithdraw = await token0.balanceOf(wallet.address)
     const amount1BeforeWithdraw = await token1.balanceOf(wallet.address)
-    await withdraw(token0, token1, pair01, 5)
+    const result4 = await withdraw(token0, token1, pair01, 5)
+    const orderData1 = result3.orderData.concat(result4.orderData)
 
     await increaseTime(wallet, DELAY + 1)
 
-    tx = await delay.execute(2, overrides)
+    tx = await delay.execute(orderData1, overrides)
     events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))
@@ -121,17 +123,18 @@ describe('integrationV2', () => {
 
     let initialToken2Amount = await token2.balanceOf(wallet.address)
     let initialToken3Amount = await token3.balanceOf(wallet.address)
-    await deposit(token2, token3, 20, 30)
-    await sell(token2, token3, 4, 1)
+    const result5 = await deposit(token2, token3, 20, 30)
+    const result6 = await sell(token2, token3, 4, 1)
 
     await swapOnUniswapPair(uniswapPair23, 50, token3)
 
-    await buy(token2, token3, 4, 1)
-    await deposit(token2, token3, 15, 15)
+    const result7 = await buy(token2, token3, 4, 1)
+    const result8 = await deposit(token2, token3, 15, 15)
+    const orderData2 = result5.orderData.concat(result6.orderData).concat(result7.orderData).concat(result8.orderData)
 
     await increaseTime(wallet, DELAY + 1)
 
-    tx = await delay.execute(4, overrides)
+    tx = await delay.execute(orderData2, overrides)
     events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))
@@ -152,27 +155,29 @@ describe('integrationV2', () => {
     initialToken2Amount = await token2.balanceOf(wallet.address)
     initialToken3Amount = await token3.balanceOf(wallet.address)
 
-    await withdraw(token2, token3, pair23, 5)
-    await sell(token3, token2, 4, 1)
+    const results = []
+    results.push(await withdraw(token2, token3, pair23, 5))
+    results.push(await sell(token3, token2, 4, 1))
 
     await swapOnUniswapPair(uniswapPair01, 30, token1)
 
-    await deposit(token0, token1, 10, 10)
-    await buy(token1, token0, 10, 3)
+    results.push(await deposit(token0, token1, 10, 10))
+    results.push(await buy(token1, token0, 10, 3))
 
     await swapOnUniswapPair(uniswapPair01, 80, token0)
 
-    await buy(token2, token3, 10, 2)
-    await withdraw(token2, token3, pair23, 10)
+    results.push(await buy(token2, token3, 10, 2))
+    results.push(await withdraw(token2, token3, pair23, 10))
 
     await swapOnUniswapPair(uniswapPair23, 40, token2)
 
-    await buy(token3, token2, 5, 1)
-    await sell(token1, token0, 7, 2)
+    results.push(await buy(token3, token2, 5, 1))
+    results.push(await sell(token1, token0, 7, 2))
+    const orderData3 = results.map((result) => result.orderData).flat()
 
     await increaseTime(wallet, DELAY + 1)
 
-    tx = await delay.execute(8, overrides)
+    tx = await delay.execute(orderData3, overrides)
     events = await getEvents(tx, 'OrderExecuted')
 
     await expect(Promise.resolve(tx))

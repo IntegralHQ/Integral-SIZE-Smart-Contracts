@@ -2,7 +2,7 @@
 
 pragma solidity 0.7.6;
 
-import '../libraries/AbstractERC20.sol';
+import '../abstracts/AbstractERC20.sol';
 
 contract CustomERC20 is AbstractERC20 {
     constructor(

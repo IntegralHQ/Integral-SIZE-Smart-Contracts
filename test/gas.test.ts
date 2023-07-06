@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import chalk from 'chalk'
 import { BigNumber, providers, utils } from 'ethers'
-import { delayFixture } from './shared/fixtures'
-import { factoryWithOracleAndTokensFixture } from './shared/fixtures/factoryWithOracleAndTokensFixture'
+import { delayOracleV3Fixture } from './shared/fixtures'
+import { factoryWithOracleV3AndTokensFixture } from './shared/fixtures/factoryWithOracleV3AndTokensFixture'
 import { getEthUsdPrice } from './shared/getEthUsdPrice'
 import { INFURA_PROJECT_ID } from './shared/infura'
 import { buy, buyAndWait, deposit, depositAndWait, sell, sellAndWait, withdraw, withdrawAndWait } from './shared/orders'
@@ -63,14 +63,14 @@ describe('Gas costs', () => {
   }
 
   it('factory.createPair', async () => {
-    const { factory, oracle, token0, token1, other } = await loadFixture(factoryWithOracleAndTokensFixture)
+    const { factory, oracle, token0, token1, other } = await loadFixture(factoryWithOracleV3AndTokensFixture)
 
     const tx = await factory.createPair(token0.address, token1.address, oracle.address, other.address, overrides)
     await reportGas('factory.createPair', tx)
   })
 
   it('delay.deposit', async () => {
-    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayOracleV3Fixture)
     const { tx } = await deposit(delay, token0, token1, wallet)
     await reportGas('delay.deposit', tx)
     const { tx: tx2 } = await deposit(delay, token0, token1, wallet)
@@ -78,12 +78,12 @@ describe('Gas costs', () => {
   })
 
   it('delay.executeDeposit', async () => {
-    const { delay, token0, token1, wallet, other } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet, other } = await loadFixture(delayOracleV3Fixture)
 
-    await depositAndWait(delay, token0, token1, wallet)
+    const result = await depositAndWait(delay, token0, token1, wallet)
 
     const userBalanceBefore = await wallet.getBalance()
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(result.orderData, overrides)
     const userBalanceAfter = await wallet.getBalance()
     const userRefund = userBalanceAfter.sub(userBalanceBefore)
 
@@ -96,7 +96,7 @@ describe('Gas costs', () => {
   })
 
   it('delay.withdraw', async () => {
-    const { delay, pair, token0, token1, wallet, addLiquidity } = await loadFixture(delayFixture)
+    const { delay, pair, token0, token1, wallet, addLiquidity } = await loadFixture(delayOracleV3Fixture)
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
     const { tx } = await withdraw(delay, pair, token0, token1, wallet)
     await reportGas('delay.withdraw', tx)
@@ -105,14 +105,14 @@ describe('Gas costs', () => {
   })
 
   it('delay.executeWithdraw', async () => {
-    const { delay, pair, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayFixture)
+    const { delay, pair, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayOracleV3Fixture)
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    await withdrawAndWait(delay, pair, token0, token1, wallet, {
+    const result = await withdrawAndWait(delay, pair, token0, token1, wallet, {
       gasLimit: 500000,
     })
 
     const userBalanceBefore = await wallet.getBalance()
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(result.orderData, overrides)
     const userBalanceAfter = await wallet.getBalance()
     const userRefund = userBalanceAfter.sub(userBalanceBefore)
 
@@ -125,7 +125,7 @@ describe('Gas costs', () => {
   })
 
   it('delay.buy', async () => {
-    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayOracleV3Fixture)
     const { tx } = await buy(delay, token0, token1, wallet, {
       amountInMax: expandTo18Decimals(4),
       amountOut: expandTo18Decimals(1),
@@ -139,16 +139,16 @@ describe('Gas costs', () => {
   })
 
   it('delay.executeBuy', async () => {
-    const { delay, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayOracleV3Fixture)
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    await buyAndWait(delay, token0, token1, wallet, {
+    const result = await buyAndWait(delay, token0, token1, wallet, {
       amountInMax: expandTo18Decimals(4),
       amountOut: expandTo18Decimals(1),
       gasLimit: 500000,
     })
 
     const userBalanceBefore = await wallet.getBalance()
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(result.orderData, overrides)
     const userBalanceAfter = await wallet.getBalance()
     const userRefund = userBalanceAfter.sub(userBalanceBefore)
 
@@ -161,7 +161,7 @@ describe('Gas costs', () => {
   })
 
   it('delay.sell', async () => {
-    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayOracleV3Fixture)
     const { tx } = await sell(delay, token0, token1, wallet, {
       amountIn: expandTo18Decimals(4),
       amountOutMin: expandTo18Decimals(1),
@@ -175,16 +175,16 @@ describe('Gas costs', () => {
   })
 
   it('delay.executeSell', async () => {
-    const { delay, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet, other, addLiquidity } = await loadFixture(delayOracleV3Fixture)
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
-    await sellAndWait(delay, token0, token1, wallet, {
+    const result = await sellAndWait(delay, token0, token1, wallet, {
       amountIn: expandTo18Decimals(4),
       amountOutMin: expandTo18Decimals(1),
       gasLimit: 500000,
     })
 
     const userBalanceBefore = await wallet.getBalance()
-    const tx = await delay.connect(other).execute(1, overrides)
+    const tx = await delay.connect(other).execute(result.orderData, overrides)
     const userBalanceAfter = await wallet.getBalance()
     const userRefund = userBalanceAfter.sub(userBalanceBefore)
 

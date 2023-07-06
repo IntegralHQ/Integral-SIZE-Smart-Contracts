@@ -12,10 +12,11 @@ describe('TwapDelay.updateGasPrice', () => {
   it('is set to deployment tx gas price', async () => {
     const { delay } = await loadFixture(delayFixture)
     const { effectiveGasPrice } = await delay.deployTransaction.wait()
-    expect(await delay.gasPrice()).to.equal(effectiveGasPrice.div(1000000).mul(1000000))
+    expect(await delay.gasPrice()).to.equal(effectiveGasPrice)
+    // expect(await delay.gasPrice()).to.equal(effectiveGasPrice.div(1000000).mul(1000000))
   })
 
-  it('cut the initial gasPrice precision', async () => {
+  it.skip('cut the initial gasPrice precision', async () => {
     const { factory, weth, libraries, wallet } = await loadFixture(delayFixture)
     const delay = await new DelayTest__factory(libraries, wallet).deploy(
       factory.address,
@@ -30,12 +31,12 @@ describe('TwapDelay.updateGasPrice', () => {
 
   it('updates on execute', async () => {
     const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
-    await depositAndWait(delay, token0, token1, wallet, {
+    const result = await depositAndWait(delay, token0, token1, wallet, {
       gasPrice: utils.parseUnits('20', 'gwei'),
     })
     expect(await delay.gasPrice()).to.equal(utils.parseUnits('20', 'gwei'))
 
-    const tx = await delay.execute(1, {
+    const tx = await delay.execute(result.orderData, {
       ...overrides,
       gasPrice: utils.parseUnits('40', 'gwei'),
     })
@@ -47,10 +48,10 @@ describe('TwapDelay.updateGasPrice', () => {
 
   it('can lower gas price', async () => {
     const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
-    await depositAndWait(delay, token0, token1, wallet, {
+    const result = await depositAndWait(delay, token0, token1, wallet, {
       gasPrice: utils.parseUnits('20', 'gwei'),
     })
-    const tx = await delay.execute(1, {
+    const tx = await delay.execute(result.orderData, {
       ...overrides,
       gasPrice: utils.parseUnits('10', 'gwei'),
     })
@@ -59,7 +60,7 @@ describe('TwapDelay.updateGasPrice', () => {
     expect(await delay.gasPrice()).to.lt(maxResult.div(1e6).mul(1e6))
   })
 
-  it('has a precision of 0.001 gwei', async () => {
+  it.skip('has a precision of 0.001 gwei', async () => {
     const { delay } = await loadFixture(delayFixture)
     await delay.setGasPrice(utils.parseUnits('20', 'gwei'), overrides)
     await delay.testUpdateGasPrice(500_000, {
@@ -67,6 +68,25 @@ describe('TwapDelay.updateGasPrice', () => {
       gasPrice: utils.parseUnits('21.95', 'gwei'),
     })
     expect(await delay.gasPrice()).to.equal(utils.parseUnits('20.048', 'gwei'))
+  })
+
+  it('has a precision of 1 wei', async () => {
+    const { delay } = await loadFixture(delayFixture)
+
+    const oldGasPrice = utils.parseUnits('20', 'gwei')
+    const inertia = await delay.gasPriceInertia()
+    const maxGasPriceImpact = await delay.maxGasPriceImpact()
+    const gasUsed = maxGasPriceImpact.div(2)
+    const gasPrice = utils.parseUnits('21.987654321', 'gwei')
+
+    await delay.setGasPrice(oldGasPrice, overrides)
+    await delay.testUpdateGasPrice(gasUsed, {
+      ...overrides,
+      gasPrice,
+    })
+    expect(await delay.gasPrice()).to.equal(
+      oldGasPrice.mul(inertia.sub(gasUsed)).add(gasPrice.mul(gasUsed)).div(inertia)
+    )
   })
 
   const testCases = [

@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { constants, BigNumber, utils } from 'ethers'
 import { delayFixture } from '../shared/fixtures'
-import { getDefaultWithdraw, withdrawAndWait } from '../shared/orders'
-import { OrderType } from '../shared/OrderType'
+import { getDefaultWithdraw, getOrderDigest, getWithdrawOrderData, withdrawAndWait } from '../shared/orders'
+import { OrderInternalType, OrderType } from '../shared/OrderType'
 import { setupFixtureLoader } from '../shared/setup'
-import { expandTo18Decimals, overrides, pairAddressToPairId } from '../shared/utilities'
+import { expandTo18Decimals, overrides } from '../shared/utilities'
 
 describe('TwapDelay.withdraw', () => {
   const loadFixture = setupFixtureLoader()
@@ -163,26 +163,17 @@ describe('TwapDelay.withdraw', () => {
       ...overrides,
       value: gasPrice.mul(withdrawRequest.gasLimit),
     })
-    const { timestamp } = await wallet.provider.getBlock((await tx.wait()).blockHash)
+    const receipt = await tx.wait()
+    const orderData = getWithdrawOrderData(receipt)
+    const { timestamp } = await wallet.provider.getBlock(receipt.blockHash)
 
     const newestOrderId = await delay.newestOrderId()
-    const { orderType, validAfterTimestamp } = await delay.getOrder(newestOrderId)
-    const result = await delay.getWithdrawOrder(newestOrderId)
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(orderData[0])
 
-    expect(orderType).to.equal(OrderType.Withdraw)
-    expect(validAfterTimestamp).to.equal((await delay.delay()) + timestamp)
-
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      withdrawRequest.liquidity,
-      withdrawRequest.amount0Min,
-      withdrawRequest.amount1Min,
-      withdrawRequest.unwrap,
-      wallet.address,
-      BigNumber.from(gasPrice),
-      BigNumber.from(withdrawRequest.gasLimit),
-      validAfterTimestamp,
-    ])
+    expect(orderHash).to.be.eq(orderHashOnChain)
+    expect(orderData[0].orderType).to.equal(OrderInternalType.WITHDRAW_TYPE)
+    expect(orderData[0].validAfterTimestamp).to.equal((await delay.delay()).add(timestamp))
   })
 
   it('enqueues an order with reverse tokens', async () => {
@@ -190,20 +181,12 @@ describe('TwapDelay.withdraw', () => {
 
     await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
     const withdrawRequest = await withdrawAndWait(delay, pair, token1, token0, wallet)
-    const result = await delay.getWithdrawOrder(await delay.newestOrderId())
 
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      withdrawRequest.liquidity,
-      // because we swapped before this is actually 0 and 1, not 1 and 0
-      withdrawRequest.amount1Min,
-      withdrawRequest.amount0Min,
-      withdrawRequest.unwrap,
-      wallet.address,
-      BigNumber.from(withdrawRequest.gasPrice),
-      BigNumber.from(withdrawRequest.gasLimit),
-      result.validAfterTimestamp,
-    ])
+    const newestOrderId = await delay.newestOrderId()
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(withdrawRequest.orderData[0])
+
+    expect(orderHash).to.be.eq(orderHashOnChain)
   })
 
   it('returns orderId', async () => {

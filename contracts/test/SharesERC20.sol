@@ -2,7 +2,7 @@
 
 pragma solidity 0.7.6;
 
-import '../libraries/AbstractERC20.sol';
+import '../abstracts/AbstractERC20.sol';
 import '../libraries/SafeMath.sol';
 
 contract SharesERC20 is AbstractERC20 {

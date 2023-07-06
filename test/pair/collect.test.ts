@@ -45,6 +45,8 @@ describe('TwapPair.collect', () => {
 
   it('reverts if to is zero', async () => {
     const { factory, token0, token1 } = await loadFixture(pairFixture)
-    await expect(factory.collect(token0.address, token1.address, constants.AddressZero)).to.revertedWith('TP02')
+    await expect(factory.collect(token0.address, token1.address, constants.AddressZero, overrides)).to.revertedWith(
+      'TP02'
+    )
   })
 })

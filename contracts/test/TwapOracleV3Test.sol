@@ -9,7 +9,7 @@ contract TwapOracleV3Test is TwapOracleV3 {
     constructor(uint8 _xDecimals, uint8 _yDecimals) TwapOracleV3(_xDecimals, _yDecimals) {}
 
     function testGetAveragePriceForNoTimeElapsed() external view returns (uint256) {
-        (uint256 priceAccumulator, uint32 priceTimestamp) = getPriceInfo();
+        (uint256 priceAccumulator, uint256 priceTimestamp) = getPriceInfo();
         return getAveragePrice(priceAccumulator, priceTimestamp);
     }
 

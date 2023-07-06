@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { constants, BigNumber, utils } from 'ethers'
-import { delayFixture } from '../shared/fixtures'
-import { OrderType } from '../shared/OrderType'
+import { delayFixture, delayWithMaxTokenSupplyFixture } from '../shared/fixtures'
+import { OrderInternalType, OrderType } from '../shared/OrderType'
 import { setupFixtureLoader } from '../shared/setup'
-import { INVALID_ADDRESS, overrides, pairAddressToPairId } from '../shared/utilities'
-import { getDefaultDeposit, sortTokens, depositAndWait } from '../shared/orders'
+import { INVALID_ADDRESS, overrides } from '../shared/utilities'
+import { getDefaultDeposit, sortTokens, depositAndWait, getDepositOrderData, getOrderDigest } from '../shared/orders'
 
 describe('TwapDelay.deposit', () => {
   const loadFixture = setupFixtureLoader()
@@ -24,6 +24,140 @@ describe('TwapDelay.deposit', () => {
       depositRequest.amount1 = BigNumber.from(0)
 
       await expect(delay.deposit(depositRequest, overrides)).to.revertedWith('OS25')
+    })
+
+    it('reverts when amount0 is too big (with balance)', async () => {
+      const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+
+      const gasPrice = utils.parseUnits('69.420', 'gwei')
+      await delay.setGasPrice(gasPrice)
+
+      await token0.transfer(delay.address, 1)
+
+      const depositRequest = getDefaultDeposit(token0, token1, wallet)
+      depositRequest.gasPrice = gasPrice
+      depositRequest.amount0 = BigNumber.from('340282366920938463463374607431768211456')
+      depositRequest.amount1 = BigNumber.from(0)
+
+      await token0.approve(delay.address, constants.MaxUint256, overrides)
+
+      await expect(
+        delay.deposit(depositRequest, {
+          ...overrides,
+          value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+        })
+      ).to.revertedWith('TS73')
+    })
+
+    it('reverts when amount1 is too big (with balance)', async () => {
+      const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+
+      const gasPrice = utils.parseUnits('69.420', 'gwei')
+      await delay.setGasPrice(gasPrice)
+
+      const depositRequest = getDefaultDeposit(token0, token1, wallet)
+      depositRequest.gasPrice = gasPrice
+      depositRequest.amount0 = BigNumber.from(0)
+      depositRequest.amount1 = BigNumber.from('340282366920938463463374607431768211456')
+
+      await token1.approve(delay.address, constants.MaxUint256, overrides)
+
+      await expect(
+        delay.deposit(depositRequest, {
+          ...overrides,
+          value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+        })
+      ).to.revertedWith('TS73')
+    })
+
+    it('reverts when amount0 is too big (with very large balance)', async () => {
+      const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+
+      const gasPrice = utils.parseUnits('69.420', 'gwei')
+      await delay.setGasPrice(gasPrice)
+
+      await token0.transfer(delay.address, BigNumber.from('340282366920938463463374607431768211456'))
+
+      const depositRequest = getDefaultDeposit(token0, token1, wallet)
+      depositRequest.gasPrice = gasPrice
+      depositRequest.amount0 = BigNumber.from('340282366920938463463374607431768211456')
+      depositRequest.amount1 = BigNumber.from(0)
+
+      await token0.approve(delay.address, constants.MaxUint256, overrides)
+
+      await expect(
+        delay.deposit(depositRequest, {
+          ...overrides,
+          value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+        })
+      ).to.revertedWith('SM2A')
+    })
+
+    it('reverts when amount1 is too big (with very large balance)', async () => {
+      const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+
+      const gasPrice = utils.parseUnits('69.420', 'gwei')
+      await delay.setGasPrice(gasPrice)
+
+      await token1.transfer(delay.address, BigNumber.from('340282366920938463463374607431768211456'))
+
+      const depositRequest = getDefaultDeposit(token0, token1, wallet)
+      depositRequest.gasPrice = gasPrice
+      depositRequest.amount0 = BigNumber.from(0)
+      depositRequest.amount1 = BigNumber.from('340282366920938463463374607431768211456')
+
+      await token1.approve(delay.address, constants.MaxUint256, overrides)
+
+      await expect(
+        delay.deposit(depositRequest, {
+          ...overrides,
+          value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+        })
+      ).to.revertedWith('SM2A')
+    })
+
+    it('reverts when amount0 is too big (without balance)', async () => {
+      const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+
+      const gasPrice = utils.parseUnits('69.420', 'gwei')
+      await delay.setGasPrice(gasPrice)
+
+      await token0.transfer(delay.address, 1)
+
+      const depositRequest = getDefaultDeposit(token0, token1, wallet)
+      depositRequest.gasPrice = gasPrice
+      depositRequest.amount0 = BigNumber.from('340282366920938463463374607431768211456')
+      depositRequest.amount1 = BigNumber.from(0)
+
+      await token0.approve(delay.address, constants.MaxUint256, overrides)
+
+      await expect(
+        delay.deposit(depositRequest, {
+          ...overrides,
+          value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+        })
+      ).to.revertedWith('TS73')
+    })
+
+    it('reverts when amount1 is too big (without balance)', async () => {
+      const { delay, token0, token1, wallet } = await loadFixture(delayWithMaxTokenSupplyFixture)
+
+      const gasPrice = utils.parseUnits('69.420', 'gwei')
+      await delay.setGasPrice(gasPrice)
+
+      const depositRequest = getDefaultDeposit(token0, token1, wallet)
+      depositRequest.gasPrice = gasPrice
+      depositRequest.amount0 = BigNumber.from(0)
+      depositRequest.amount1 = BigNumber.from('340282366920938463463374607431768211456')
+
+      await token1.approve(delay.address, constants.MaxUint256, overrides)
+
+      await expect(
+        delay.deposit(depositRequest, {
+          ...overrides,
+          value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+        })
+      ).to.revertedWith('TS73')
     })
 
     it('reverts when address to is not set', async () => {
@@ -152,7 +286,7 @@ describe('TwapDelay.deposit', () => {
   })
 
   it('enqueues an order', async () => {
-    const { delay, token0, token1, wallet, pair } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
 
     const gasPrice = utils.parseUnits('69.420', 'gwei')
     await delay.setGasPrice(gasPrice)
@@ -167,54 +301,28 @@ describe('TwapDelay.deposit', () => {
       ...overrides,
       value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
     })
-    const { timestamp } = await wallet.provider.getBlock((await tx.wait()).blockHash)
+    const receipt = await tx.wait()
+    const orderData = getDepositOrderData(receipt)
+    const { timestamp } = await wallet.provider.getBlock(receipt.blockHash)
 
     const newestOrderId = await delay.newestOrderId()
-    const { orderType, validAfterTimestamp } = await delay.getOrder(newestOrderId)
-    const result = await delay.getDepositOrder(newestOrderId)
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(orderData[0])
 
-    expect(orderType).to.equal(OrderType.Deposit)
-    expect(validAfterTimestamp).to.equal((await delay.delay()) + timestamp)
-
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      depositRequest.amount0,
-      depositRequest.amount1,
-      depositRequest.minSwapPrice,
-      depositRequest.maxSwapPrice,
-      depositRequest.wrap,
-      depositRequest.swap,
-      wallet.address,
-      BigNumber.from(depositRequest.gasPrice),
-      BigNumber.from(depositRequest.gasLimit),
-      validAfterTimestamp,
-      result.priceAccumulator,
-      result.timestamp,
-    ])
+    expect(orderHash).to.be.eq(orderHashOnChain)
+    expect(orderData[0].orderType).to.equal(OrderInternalType.DEPOSIT_TYPE)
+    expect(orderData[0].validAfterTimestamp).to.equal((await delay.delay()).add(timestamp))
   })
 
   it('enqueues an order with reverse tokens', async () => {
-    const { delay, token0, token1, wallet, pair } = await loadFixture(delayFixture)
+    const { delay, token0, token1, wallet } = await loadFixture(delayFixture)
 
     const depositRequest = await depositAndWait(delay, token1, token0, wallet)
-    const result = await delay.getDepositOrder(await delay.newestOrderId())
+    const newestOrderId = await delay.newestOrderId()
+    const orderHashOnChain = await delay.getOrderHash(newestOrderId, overrides)
+    const orderHash = getOrderDigest(depositRequest.orderData[0])
 
-    expect([...result]).to.deep.equal([
-      pairAddressToPairId(pair.address),
-      // because we swapped before this is actually 0 and 1, not 1 and 0
-      depositRequest.amount1,
-      depositRequest.amount0,
-      depositRequest.minSwapPrice,
-      depositRequest.maxSwapPrice,
-      depositRequest.wrap,
-      depositRequest.swap,
-      wallet.address,
-      BigNumber.from(depositRequest.gasPrice),
-      BigNumber.from(depositRequest.gasLimit),
-      result.validAfterTimestamp,
-      result.priceAccumulator,
-      result.timestamp,
-    ])
+    expect(orderHash).to.be.eq(orderHashOnChain)
   })
 
   it('returns orderId', async () => {

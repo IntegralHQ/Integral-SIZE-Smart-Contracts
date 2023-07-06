@@ -1,5 +1,5 @@
 import { constants, Wallet } from 'ethers'
-import { DelayTest__factory, TwapFactory, WETH9 } from '../../../../build/types'
+import { DelayTest__factory, TwapFactory, TwapLimitOrderTest__factory, WETH9 } from '../../../../build/types'
 import { overrides } from '../../utilities'
 import { deployLibraries } from './deployLibraries'
 
@@ -11,5 +11,13 @@ export async function deployDelay(wallet: Wallet, factory: TwapFactory, weth: WE
     constants.AddressZero,
     overrides
   )
-  return { delay, ...delayLibraries }
+  const limitOrderLibraries = await deployLibraries(wallet)
+  const limitOrder = await new TwapLimitOrderTest__factory(limitOrderLibraries.libraries, wallet).deploy(
+    delay.address,
+    factory.address,
+    weth.address,
+    wallet.address,
+    overrides
+  )
+  return { delay, limitOrder, ...delayLibraries }
 }

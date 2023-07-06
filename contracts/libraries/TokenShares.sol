@@ -82,9 +82,11 @@ library TokenShares {
             require(balanceAfter > balanceBefore, 'TS2C');
             if (balanceBefore > 0) {
                 uint256 newShares = totalTokenShares.mul(balanceAfter).div(balanceBefore);
+                require(balanceAfter < type(uint256).max.div(newShares), 'TS73'); // to prevent overflow at execution
                 data.totalShares[token] = newShares;
                 return newShares - totalTokenShares;
             } else {
+                require(balanceAfter < type(uint256).max.div(balanceAfter), 'TS73'); // to prevent overflow at execution
                 data.totalShares[token] = balanceAfter;
                 return balanceAfter;
             }

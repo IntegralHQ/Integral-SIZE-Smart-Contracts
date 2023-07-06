@@ -1,25 +1,13 @@
 import { waffle } from 'hardhat'
 import { BigNumber, Wallet } from 'ethers'
 import { CustomERC20__factory, IUniswapV2Factory__factory, IUniswapV2Pair__factory } from '../../../build/types'
-import { expandToDecimals, overrides } from '../utilities'
+import { MAX_UINT_256, overrides } from '../utilities'
 import UniswapFactory from '../../uniswap/UniswapFactory.json'
 
 export function getUniswapPairFixtureFor(xDecimals: number, yDecimals: number) {
   return async function ([wallet]: Wallet[]) {
-    const tokenA = await new CustomERC20__factory(wallet).deploy(
-      'Token',
-      'TKN',
-      xDecimals,
-      expandToDecimals(10000000, xDecimals),
-      overrides
-    )
-    const tokenB = await new CustomERC20__factory(wallet).deploy(
-      'Token',
-      'TKN',
-      yDecimals,
-      expandToDecimals(10000000, yDecimals),
-      overrides
-    )
+    const tokenA = await new CustomERC20__factory(wallet).deploy('Token', 'TKN', xDecimals, MAX_UINT_256, overrides)
+    const tokenB = await new CustomERC20__factory(wallet).deploy('Token', 'TKN', yDecimals, MAX_UINT_256, overrides)
 
     const factoryAsContract = await waffle.deployContract(wallet, UniswapFactory, [wallet.address])
     const factory = IUniswapV2Factory__factory.connect(factoryAsContract.address, wallet)

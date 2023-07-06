@@ -4,54 +4,47 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import '../libraries/Orders.sol';
+import '../libraries/SafeMath.sol';
 
 contract OrdersTest {
+    using SafeMath for uint256;
     using Orders for Orders.Data;
     Orders.Data orders;
 
-    event DepositEnqueued(uint256 indexed orderId, uint32 validAfterTimestamp, uint256 gasPrice);
-    event WithdrawEnqueued(uint256 indexed orderId, uint32 validAfterTimestamp, uint256 gasPrice);
-    event SellEnqueued(uint256 indexed orderId, uint32 validAfterTimestamp, uint256 gasPrice);
-    event BuyEnqueued(uint256 indexed orderId, uint32 validAfterTimestamp, uint256 gasPrice);
+    event DepositEnqueued(uint256 indexed orderId, Orders.Order order);
+    event WithdrawEnqueued(uint256 indexed orderId, Orders.Order order);
+    event SellEnqueued(uint256 indexed orderId, Orders.Order order);
+    event BuyEnqueued(uint256 indexed orderId, Orders.Order order);
+
+    uint256 private constant DEPOSIT_TYPE = 1;
+    uint256 private constant WITHDRAW_TYPE = 2;
+    uint256 private constant BUY_TYPE = 3;
+    uint256 private constant BUY_INVERTED_TYPE = 4;
+    uint256 private constant SELL_TYPE = 5;
+    uint256 private constant SELL_INVERTED_TYPE = 6;
 
     constructor() {
         orders.delay = 1 weeks;
     }
 
-    function delay() public view returns (uint32) {
+    function delay() external view returns (uint256) {
         return orders.delay;
     }
 
-    function lastProcessedOrderId() public view returns (uint256) {
+    function lastProcessedOrderId() external view returns (uint256) {
         return orders.lastProcessedOrderId;
     }
 
-    function newestOrderId() public view returns (uint256) {
+    function newestOrderId() external view returns (uint256) {
         return orders.newestOrderId;
     }
 
-    function getOrder(uint256 orderId) public view returns (Orders.OrderType orderType, uint32 validAfterTimestamp) {
-        return orders.getOrder(orderId);
-    }
-
-    function getDepositOrder(uint256 orderId) public view returns (Orders.DepositOrder memory order) {
-        (order, , ) = orders.getDepositOrder(orderId);
-    }
-
-    function getWithdrawOrder(uint256 orderId) public view returns (Orders.WithdrawOrder memory order) {
-        return orders.getWithdrawOrder(orderId);
-    }
-
-    function getSellOrder(uint256 orderId) public view returns (Orders.SellOrder memory order) {
-        (order, ) = orders.getSellOrder(orderId);
-    }
-
-    function getBuyOrder(uint256 orderId) public view returns (Orders.BuyOrder memory order) {
-        (order, ) = orders.getBuyOrder(orderId);
+    function getOrderHash(uint256 orderId) external view returns (bytes32) {
+        return orders.orderQueue[orderId];
     }
 
     function _enqueueDepositOrder(
-        uint32 pairId,
+        address[2] calldata tokens,
         uint256 share0,
         uint256 share1,
         uint256 minSwapPrice,
@@ -63,30 +56,35 @@ contract OrdersTest {
         uint256 gasLimit,
         uint32 validAfterTimestamp,
         uint256 priceAccumulator
-    ) public {
-        orders.enqueueDepositOrder(
-            Orders.DepositOrder(
-                pairId,
-                share0,
-                share1,
-                minSwapPrice,
-                maxSwapPrice,
-                unwrap,
-                swap,
-                to,
-                gasPrice,
-                gasLimit,
-                validAfterTimestamp,
-                priceAccumulator,
-                0
-            ),
+    ) external {
+        Orders.Order memory order = Orders.Order(
+            0,
+            DEPOSIT_TYPE,
+            validAfterTimestamp,
+            unwrap,
+            0,
+            gasLimit,
+            gasPrice,
+            0,
+            share0,
+            share1,
+            tokens[0],
+            tokens[1],
+            to,
+            minSwapPrice,
+            maxSwapPrice,
+            swap,
+            priceAccumulator,
             0,
             0
         );
+        orders.enqueueOrder(order);
+
+        emit DepositEnqueued(order.orderId, order);
     }
 
     function _enqueueWithdrawOrder(
-        uint32 pairId,
+        address[2] calldata tokens,
         uint256 amount,
         uint256 amountAMin,
         uint256 amountBMin,
@@ -95,24 +93,35 @@ contract OrdersTest {
         uint256 gasPrice,
         uint256 gasLimit,
         uint32 validAfterTimestamp
-    ) public {
-        orders.enqueueWithdrawOrder(
-            Orders.WithdrawOrder(
-                pairId,
-                amount,
-                amountAMin,
-                amountBMin,
-                unwrap,
-                to,
-                gasPrice,
-                gasLimit,
-                validAfterTimestamp
-            )
+    ) external {
+        Orders.Order memory order = Orders.Order(
+            0,
+            WITHDRAW_TYPE,
+            validAfterTimestamp,
+            unwrap,
+            0,
+            gasLimit,
+            gasPrice,
+            amount,
+            amountAMin,
+            amountBMin,
+            tokens[0],
+            tokens[1],
+            to,
+            0, // minSwapPrice
+            0, // maxSwapPrice
+            false, // swap
+            0, // priceAccumulator
+            0, // amountLimit0
+            0 // amountLimit1
         );
+        orders.enqueueOrder(order);
+
+        emit WithdrawEnqueued(order.orderId, order);
     }
 
     function _enqueueSellOrder(
-        uint32 pairId,
+        address[2] calldata tokens,
         bool inverse,
         uint256 shareIn,
         uint256 amountOutMin,
@@ -123,27 +132,35 @@ contract OrdersTest {
         uint32 validAfterTimestamp,
         uint256 priceAccumulator,
         uint32 timestamp
-    ) public {
-        orders.enqueueSellOrder(
-            Orders.SellOrder(
-                pairId,
-                inverse,
-                shareIn,
-                amountOutMin,
-                unwrap,
-                to,
-                gasPrice,
-                gasLimit,
-                validAfterTimestamp,
-                priceAccumulator,
-                timestamp
-            ),
-            0
+    ) external {
+        Orders.Order memory order = Orders.Order(
+            0,
+            inverse ? SELL_INVERTED_TYPE : SELL_TYPE,
+            validAfterTimestamp,
+            unwrap,
+            timestamp,
+            gasLimit,
+            gasPrice,
+            0, // liquidity
+            shareIn,
+            amountOutMin,
+            tokens[0],
+            tokens[1],
+            to,
+            0, // minSwapPrice
+            0, // maxSwapPrice
+            false, // swap
+            priceAccumulator,
+            0, // amountLimit0
+            0 // amountLimit1
         );
+        orders.enqueueOrder(order);
+
+        emit SellEnqueued(order.orderId, order);
     }
 
     function _enqueueBuyOrder(
-        uint32 pairId,
+        address[2] calldata tokens,
         bool inverse,
         uint256 shareInMax,
         uint256 amountOut,
@@ -154,50 +171,38 @@ contract OrdersTest {
         uint32 validAfterTimestamp,
         uint256 priceAccumulator,
         uint32 timestamp
-    ) public {
-        orders.enqueueBuyOrder(
-            Orders.BuyOrder(
-                pairId,
-                inverse,
-                shareInMax,
-                amountOut,
-                unwrap,
-                to,
-                gasPrice,
-                gasLimit,
-                validAfterTimestamp,
-                priceAccumulator,
-                timestamp
-            ),
-            0
+    ) external {
+        Orders.Order memory order = Orders.Order(
+            0,
+            inverse ? BUY_INVERTED_TYPE : BUY_TYPE,
+            validAfterTimestamp,
+            unwrap,
+            timestamp,
+            gasLimit,
+            gasPrice,
+            0, // liquidity
+            shareInMax,
+            amountOut,
+            tokens[0],
+            tokens[1],
+            to,
+            0, // minSwapPrice
+            0, // maxSwapPrice
+            false, // swap
+            priceAccumulator,
+            0, // amountLimit0
+            0 // amountLimit1
         );
+        orders.enqueueOrder(order);
+
+        emit BuyEnqueued(order.orderId, order);
     }
 
-    function _dequeueDepositOrder() public returns (Orders.DepositOrder memory order) {
-        (order, , ) = orders.dequeueDepositOrder();
+    function _dequeueOrder(uint256 orderId) external {
+        orders.dequeueOrder(orderId);
     }
 
-    function _dequeueWithdrawOrder() public returns (Orders.WithdrawOrder memory order) {
-        order = orders.dequeueWithdrawOrder();
-    }
-
-    function _dequeueSellOrder() public returns (Orders.SellOrder memory order) {
-        (order, ) = orders.dequeueSellOrder();
-    }
-
-    function _dequeueBuyOrder() public returns (Orders.BuyOrder memory order) {
-        (order, ) = orders.dequeueBuyOrder();
-    }
-
-    function uintToFloat32(uint256 number) public pure returns (uint32 float32) {
-        return Orders.uintToFloat32(number);
-    }
-
-    function float32ToUint(uint32 float32) public pure returns (uint256 number) {
-        return Orders.float32ToUint(float32);
-    }
-
-    function forgetLastProcessedOrder() public {
+    function forgetLastProcessedOrder() external {
         orders.forgetLastProcessedOrder();
     }
 }

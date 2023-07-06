@@ -4,7 +4,7 @@
 pragma solidity 0.7.6;
 
 import '../interfaces/ITwapERC20.sol';
-import './SafeMath.sol';
+import '../libraries/SafeMath.sol';
 
 abstract contract AbstractERC20 is ITwapERC20 {
     using SafeMath for uint256;

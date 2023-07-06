@@ -75,8 +75,8 @@ contract TwapOracleV3 is ITwapOracleV3 {
         emit UniswapPairSet(_uniswapPair);
     }
 
-    function getPriceInfo() public view override returns (uint256 priceAccumulator, uint32 priceTimestamp) {
-        return (0, uint32(block.timestamp));
+    function getPriceInfo() public view override returns (uint256 priceAccumulator, uint256 priceTimestamp) {
+        return (0, block.timestamp);
     }
 
     function decodePriceInfo(bytes memory data) internal pure returns (uint256 price) {
@@ -97,7 +97,7 @@ contract TwapOracleV3 is ITwapOracleV3 {
         }
     }
 
-    function getAveragePrice(uint256, uint32) public view override returns (uint256) {
+    function getAveragePrice(uint256, uint256) public view override returns (uint256) {
         uint32 secondsAgo = twapInterval;
         uint32[] memory secondsAgos = new uint32[](2);
         secondsAgos[0] = secondsAgo;

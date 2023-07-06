@@ -15,14 +15,38 @@ describe('TwapDelay.retryRefund', () => {
     await token0.transfer(other.address, expandTo18Decimals(10), overrides)
     await token1.transfer(other.address, expandTo18Decimals(10), overrides)
 
-    await depositAndWait(delay.connect(other), token0.connect(other), token1.connect(other), other)
-    const tx = await delay.execute(1, overrides)
+    const result = await depositAndWait(delay.connect(other), token0.connect(other), token1.connect(other), other)
+    const tx = await delay.execute(result.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, true, '0x', getGasSpent(events[0]), getEthRefund(events[0]))
 
-    await expect(delay.retryRefund(1, overrides)).to.revertedWith('OS21')
+    await expect(delay.retryRefund(result.orderData[0], overrides)).to.revertedWith('OS71')
+  })
+
+  it('reverts for enqueued orders', async () => {
+    const { delay, token0, token1, addLiquidity, other } = await loadFixture(delayFixture)
+    await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
+    await token0.transfer(other.address, expandTo18Decimals(10), overrides)
+    await token1.transfer(other.address, expandTo18Decimals(10), overrides)
+
+    const result = await depositAndWait(delay.connect(other), token0.connect(other), token1.connect(other), other)
+    await expect(delay.retryRefund(result.orderData[0], overrides)).to.revertedWith('TD21')
+  })
+
+  it('reverts on unsuccessful retry refunds', async () => {
+    const { delay, token0, token1, addLiquidity, other } = await loadFixture(delayFailingFixture)
+    await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
+    await token0.transfer(other.address, expandTo18Decimals(10), overrides)
+    await token1.transfer(other.address, expandTo18Decimals(10), overrides)
+
+    const deposit = await depositAndWait(delay.connect(other), token0.connect(other), token1.connect(other), other)
+
+    await token0.setWasteTransferGas(true, overrides)
+    await delay.execute(deposit.orderData, overrides)
+
+    await expect(delay.retryRefund(deposit.orderData[0], overrides)).to.revertedWith('TD14')
   })
 
   it('refunds tokens', async () => {
@@ -36,7 +60,7 @@ describe('TwapDelay.retryRefund', () => {
     const deposit = await depositAndWait(delay.connect(other), token0.connect(other), token1.connect(other), other)
 
     await token0.setWasteTransferGas(true, overrides)
-    const tx = await delay.execute(1, overrides)
+    const tx = await delay.execute(deposit.orderData, overrides)
     const events = await getEvents(tx, 'OrderExecuted')
     await expect(Promise.resolve(tx))
       .to.emit(delay, 'OrderExecuted')
@@ -49,7 +73,7 @@ describe('TwapDelay.retryRefund', () => {
 
     await token0.setWasteTransferGas(false, overrides)
 
-    await delay.retryRefund(1, overrides)
+    await delay.retryRefund(deposit.orderData[0], overrides)
 
     expect(await token0.balanceOf(other.address)).to.deep.eq(token0InitialBalance)
     expect(await token1.balanceOf(other.address)).to.deep.eq(token1InitialBalance)

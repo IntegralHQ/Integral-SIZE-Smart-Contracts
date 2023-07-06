@@ -39,7 +39,7 @@ contract TwapDelay is ITwapDelay {
         orders.factory = _factory;
         owner = msg.sender;
         isBot[_bot] = true;
-        orders.gasPrice = tx.gasprice - (tx.gasprice % 1e6);
+        orders.gasPrice = tx.gasprice;
         tokenShares.weth = _weth;
         orders.delay = 30 minutes;
         orders.maxGasLimit = 5_000_000;
@@ -52,22 +52,6 @@ contract TwapDelay is ITwapDelay {
 
     function getTransferGasCost(address token) external view override returns (uint256 gasCost) {
         return orders.transferGasCosts[token];
-    }
-
-    function getDepositOrder(uint256 orderId) external view override returns (Orders.DepositOrder memory order) {
-        (order, , ) = orders.getDepositOrder(orderId);
-    }
-
-    function getWithdrawOrder(uint256 orderId) external view override returns (Orders.WithdrawOrder memory order) {
-        return orders.getWithdrawOrder(orderId);
-    }
-
-    function getSellOrder(uint256 orderId) external view override returns (Orders.SellOrder memory order) {
-        (order, ) = orders.getSellOrder(orderId);
-    }
-
-    function getBuyOrder(uint256 orderId) external view override returns (Orders.BuyOrder memory order) {
-        (order, ) = orders.getBuyOrder(orderId);
     }
 
     function getDepositDisabled(address pair) external view override returns (bool) {
@@ -86,8 +70,13 @@ contract TwapDelay is ITwapDelay {
         return orders.getSellDisabled(pair);
     }
 
-    function getOrderStatus(uint256 orderId) external view override returns (Orders.OrderStatus) {
-        return orders.getOrderStatus(orderId);
+    function getOrderStatus(uint256 orderId, uint256 validAfterTimestamp)
+        external
+        view
+        override
+        returns (Orders.OrderStatus)
+    {
+        return orders.getOrderStatus(orderId, validAfterTimestamp);
     }
 
     uint256 private locked;
@@ -111,7 +100,7 @@ contract TwapDelay is ITwapDelay {
         return tokenShares.weth;
     }
 
-    function delay() external view override returns (uint32) {
+    function delay() external view override returns (uint256) {
         return orders.delay;
     }
 
@@ -121,10 +110,6 @@ contract TwapDelay is ITwapDelay {
 
     function newestOrderId() external view returns (uint256) {
         return orders.newestOrderId;
-    }
-
-    function getOrder(uint256 orderId) external view returns (Orders.OrderType orderType, uint32 validAfterTimestamp) {
-        return orders.getOrder(orderId);
     }
 
     function isOrderCanceled(uint256 orderId) external view returns (bool) {
@@ -237,30 +222,37 @@ contract TwapDelay is ITwapDelay {
         return orders.newestOrderId;
     }
 
-    function execute(uint256 n) external payable override lock {
-        emit Execute(msg.sender, n);
+    /// @dev This implementation processes orders sequentially and skips orders that have already been executed.
+    /// If it encounters an order that is not yet valid, it stops execution since subsequent orders will also be invalid
+    /// at the time.
+    function execute(Orders.Order[] calldata _orders) external payable override lock {
+        uint256 ordersLength = _orders.length;
         uint256 gasBefore = gasleft();
         bool orderExecuted;
         bool senderCanExecute = isBot[msg.sender] || isBot[address(0)];
-        for (uint256 i; i < n; ++i) {
-            if (orders.canceled[orders.lastProcessedOrderId + 1]) {
-                orders.dequeueCanceledOrder();
+        for (uint256 i; i < ordersLength; ++i) {
+            if (_orders[i].orderId <= orders.lastProcessedOrderId) {
                 continue;
             }
-            (Orders.OrderType orderType, uint256 validAfterTimestamp) = orders.getNextOrder();
-            if (orderType == Orders.OrderType.Empty || validAfterTimestamp >= block.timestamp) {
+            if (orders.canceled[_orders[i].orderId]) {
+                orders.dequeueOrder(_orders[i].orderId);
+                continue;
+            }
+            orders.verifyOrder(_orders[i]);
+            uint256 validAfterTimestamp = _orders[i].validAfterTimestamp;
+            if (validAfterTimestamp >= block.timestamp) {
                 break;
             }
             require(senderCanExecute || block.timestamp >= validAfterTimestamp + BOT_EXECUTION_TIME, 'TD00');
             orderExecuted = true;
-            if (orderType == Orders.OrderType.Deposit) {
-                executeDeposit();
-            } else if (orderType == Orders.OrderType.Withdraw) {
-                executeWithdraw();
-            } else if (orderType == Orders.OrderType.Sell) {
-                executeSell();
-            } else if (orderType == Orders.OrderType.Buy) {
-                executeBuy();
+            if (_orders[i].orderType == Orders.DEPOSIT_TYPE) {
+                executeDeposit(_orders[i]);
+            } else if (_orders[i].orderType == Orders.WITHDRAW_TYPE) {
+                executeWithdraw(_orders[i]);
+            } else if (_orders[i].orderType == Orders.SELL_TYPE || _orders[i].orderType == Orders.SELL_INVERTED_TYPE) {
+                executeSell(_orders[i]);
+            } else if (_orders[i].orderType == Orders.BUY_TYPE || _orders[i].orderType == Orders.BUY_INVERTED_TYPE) {
+                executeBuy(_orders[i]);
             }
         }
         if (orderExecuted) {
@@ -268,107 +260,87 @@ contract TwapDelay is ITwapDelay {
         }
     }
 
-    function executeDeposit() internal {
+    /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
+    function executeDeposit(Orders.Order calldata order) internal {
         uint256 gasStart = gasleft();
-        (Orders.DepositOrder memory depositOrder, uint256 amountLimit0, uint256 amountLimit1) = orders
-            .dequeueDepositOrder();
-        (, address token0, address token1) = orders.getPairInfo(depositOrder.pairId);
+        orders.dequeueOrder(order.orderId);
+
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: depositOrder.gasLimit.sub(
-                Orders.ORDER_BASE_COST.add(orders.transferGasCosts[token0]).add(orders.transferGasCosts[token1])
+            gas: order.gasLimit.sub(
+                Orders.ORDER_BASE_COST.add(orders.transferGasCosts[order.token0]).add(
+                    orders.transferGasCosts[order.token1]
+                )
             )
-        }(abi.encodeWithSelector(this._executeDeposit.selector, depositOrder, amountLimit0, amountLimit1));
+        }(abi.encodeWithSelector(this._executeDeposit.selector, order));
+
         bool refundSuccess = true;
         if (!executionSuccess) {
             refundSuccess = refundTokens(
-                depositOrder.to,
-                token0,
-                depositOrder.share0,
-                token1,
-                depositOrder.share1,
-                depositOrder.unwrap
+                order.to,
+                order.token0,
+                order.value0,
+                order.token1,
+                order.value1,
+                order.unwrap
             );
         }
         finalizeOrder(refundSuccess);
-        (uint256 gasUsed, uint256 ethRefund) = refund(
-            depositOrder.gasLimit,
-            depositOrder.gasPrice,
-            gasStart,
-            depositOrder.to
-        );
+        (uint256 gasUsed, uint256 ethRefund) = refund(order.gasLimit, order.gasPrice, gasStart, order.to);
         emit OrderExecuted(orders.lastProcessedOrderId, executionSuccess, data, gasUsed, ethRefund);
     }
 
-    function executeWithdraw() internal {
+    /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
+    function executeWithdraw(Orders.Order calldata order) internal {
         uint256 gasStart = gasleft();
-        Orders.WithdrawOrder memory withdrawOrder = orders.dequeueWithdrawOrder();
+        orders.dequeueOrder(order.orderId);
+
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: withdrawOrder.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.PAIR_TRANSFER_COST))
-        }(abi.encodeWithSelector(this._executeWithdraw.selector, withdrawOrder));
+            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.PAIR_TRANSFER_COST))
+        }(abi.encodeWithSelector(this._executeWithdraw.selector, order));
+
         bool refundSuccess = true;
         if (!executionSuccess) {
-            (address pair, , ) = orders.getPairInfo(withdrawOrder.pairId);
-            refundSuccess = Orders.refundLiquidity(
-                pair,
-                withdrawOrder.to,
-                withdrawOrder.liquidity,
-                this._refundLiquidity.selector
-            );
+            (address pair, ) = orders.getPair(order.token0, order.token1);
+            refundSuccess = Orders.refundLiquidity(pair, order.to, order.liquidity, this._refundLiquidity.selector);
         }
         finalizeOrder(refundSuccess);
-        (uint256 gasUsed, uint256 ethRefund) = refund(
-            withdrawOrder.gasLimit,
-            withdrawOrder.gasPrice,
-            gasStart,
-            withdrawOrder.to
-        );
+        (uint256 gasUsed, uint256 ethRefund) = refund(order.gasLimit, order.gasPrice, gasStart, order.to);
         emit OrderExecuted(orders.lastProcessedOrderId, executionSuccess, data, gasUsed, ethRefund);
     }
 
-    function executeSell() internal {
+    /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
+    function executeSell(Orders.Order calldata order) internal {
         uint256 gasStart = gasleft();
-        (Orders.SellOrder memory sellOrder, uint256 amountLimit) = orders.dequeueSellOrder();
+        orders.dequeueOrder(order.orderId);
 
-        (, address token0, address token1) = orders.getPairInfo(sellOrder.pairId);
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: sellOrder.gasLimit.sub(
-                Orders.ORDER_BASE_COST.add(orders.transferGasCosts[sellOrder.inverse ? token1 : token0])
-            )
-        }(abi.encodeWithSelector(this._executeSell.selector, sellOrder, amountLimit));
+            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(orders.transferGasCosts[order.token0]))
+        }(abi.encodeWithSelector(this._executeSell.selector, order));
+
         bool refundSuccess = true;
         if (!executionSuccess) {
-            refundSuccess = refundToken(
-                sellOrder.inverse ? token1 : token0,
-                sellOrder.to,
-                sellOrder.shareIn,
-                sellOrder.unwrap
-            );
+            refundSuccess = refundToken(order.token0, order.to, order.value0, order.unwrap);
         }
         finalizeOrder(refundSuccess);
-        (uint256 gasUsed, uint256 ethRefund) = refund(sellOrder.gasLimit, sellOrder.gasPrice, gasStart, sellOrder.to);
+        (uint256 gasUsed, uint256 ethRefund) = refund(order.gasLimit, order.gasPrice, gasStart, order.to);
         emit OrderExecuted(orders.lastProcessedOrderId, executionSuccess, data, gasUsed, ethRefund);
     }
 
-    function executeBuy() internal {
+    /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
+    function executeBuy(Orders.Order calldata order) internal {
         uint256 gasStart = gasleft();
-        (Orders.BuyOrder memory buyOrder, uint256 amountLimit) = orders.dequeueBuyOrder();
-        (, address token0, address token1) = orders.getPairInfo(buyOrder.pairId);
+        orders.dequeueOrder(order.orderId);
+
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: buyOrder.gasLimit.sub(
-                Orders.ORDER_BASE_COST.add(orders.transferGasCosts[buyOrder.inverse ? token1 : token0])
-            )
-        }(abi.encodeWithSelector(this._executeBuy.selector, buyOrder, amountLimit));
+            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(orders.transferGasCosts[order.token0]))
+        }(abi.encodeWithSelector(this._executeBuy.selector, order));
+
         bool refundSuccess = true;
         if (!executionSuccess) {
-            refundSuccess = refundToken(
-                buyOrder.inverse ? token1 : token0,
-                buyOrder.to,
-                buyOrder.shareInMax,
-                buyOrder.unwrap
-            );
+            refundSuccess = refundToken(order.token0, order.to, order.value0, order.unwrap);
         }
         finalizeOrder(refundSuccess);
-        (uint256 gasUsed, uint256 ethRefund) = refund(buyOrder.gasLimit, buyOrder.gasPrice, gasStart, buyOrder.to);
+        (uint256 gasUsed, uint256 ethRefund) = refund(order.gasLimit, order.gasPrice, gasStart, order.to);
         emit OrderExecuted(orders.lastProcessedOrderId, executionSuccess, data, gasUsed, ethRefund);
     }
 
@@ -476,41 +448,34 @@ contract TwapDelay is ITwapDelay {
         return TransferHelper.safeTransfer(pair, to, liquidity);
     }
 
-    function _executeDeposit(
-        Orders.DepositOrder calldata depositOrder,
-        uint256 amountLimit0,
-        uint256 amountLimit1
-    ) external payable {
+    function _executeDeposit(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(depositOrder.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
+        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
 
-        (
-            Orders.PairInfo memory pairInfo,
-            uint256 amount0Left,
-            uint256 amount1Left,
-            uint256 swapToken
-        ) = _initialDeposit(depositOrder, amountLimit0, amountLimit1);
-        if (depositOrder.swap && swapToken != 0) {
-            bytes memory data = encodePriceInfo(pairInfo.pair, depositOrder.priceAccumulator, depositOrder.timestamp);
+        (address pair, ) = orders.getPair(order.token0, order.token1);
+        (uint256 amount0Left, uint256 amount1Left, uint256 swapToken) = _initialDeposit(order, pair);
+
+        if (order.swap && swapToken != 0) {
+            bytes memory data = encodePriceInfo(pair, order.priceAccumulator, order.timestamp);
             if (amount0Left != 0 && swapToken == 1) {
                 uint256 extraAmount1;
                 (amount0Left, extraAmount1) = AddLiquidity.swapDeposit0(
-                    pairInfo.pair,
-                    pairInfo.token0,
+                    pair,
+                    order.token0,
                     amount0Left,
-                    depositOrder.minSwapPrice,
-                    tolerance[pairInfo.pair],
+                    order.minSwapPrice,
+                    tolerance[pair],
                     data
                 );
                 amount1Left = amount1Left.add(extraAmount1);
             } else if (amount1Left != 0 && swapToken == 2) {
                 uint256 extraAmount0;
                 (extraAmount0, amount1Left) = AddLiquidity.swapDeposit1(
-                    pairInfo.pair,
-                    pairInfo.token1,
+                    pair,
+                    order.token1,
                     amount1Left,
-                    depositOrder.maxSwapPrice,
-                    tolerance[pairInfo.pair],
+                    order.maxSwapPrice,
+                    tolerance[pair],
                     data
                 );
                 amount0Left = amount0Left.add(extraAmount0);
@@ -519,178 +484,158 @@ contract TwapDelay is ITwapDelay {
 
         if (amount0Left != 0 && amount1Left != 0) {
             (amount0Left, amount1Left, ) = AddLiquidity.addLiquidityAndMint(
-                pairInfo.pair,
-                depositOrder.to,
-                pairInfo.token0,
-                pairInfo.token1,
+                pair,
+                order.to,
+                order.token0,
+                order.token1,
                 amount0Left,
                 amount1Left
             );
         }
 
-        AddLiquidity._refundDeposit(depositOrder.to, pairInfo.token0, pairInfo.token1, amount0Left, amount1Left);
+        AddLiquidity._refundDeposit(order.to, order.token0, order.token1, amount0Left, amount1Left);
     }
 
-    function _initialDeposit(
-        Orders.DepositOrder calldata depositOrder,
-        uint256 amountLimit0,
-        uint256 amountLimit1
-    )
+    function _initialDeposit(Orders.Order calldata order, address pair)
         private
         returns (
-            Orders.PairInfo memory pairInfo,
             uint256 amount0Left,
             uint256 amount1Left,
             uint256 swapToken
         )
     {
-        pairInfo = orders.pairs[depositOrder.pairId];
-        uint256 amount0Desired = tokenShares.sharesToAmount(
-            pairInfo.token0,
-            depositOrder.share0,
-            amountLimit0,
-            depositOrder.to
-        );
-        uint256 amount1Desired = tokenShares.sharesToAmount(
-            pairInfo.token1,
-            depositOrder.share1,
-            amountLimit1,
-            depositOrder.to
-        );
-        ITwapPair(pairInfo.pair).sync();
+        uint256 amount0Desired = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
+        uint256 amount1Desired = tokenShares.sharesToAmount(order.token1, order.value1, order.amountLimit1, order.to);
+        ITwapPair(pair).sync();
         (amount0Left, amount1Left, swapToken) = AddLiquidity.addLiquidityAndMint(
-            pairInfo.pair,
-            depositOrder.to,
-            pairInfo.token0,
-            pairInfo.token1,
+            pair,
+            order.to,
+            order.token0,
+            order.token1,
             amount0Desired,
             amount1Desired
         );
     }
 
-    function _executeWithdraw(Orders.WithdrawOrder calldata withdrawOrder) external payable {
+    function _executeWithdraw(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(withdrawOrder.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
-        (address pair, address token0, address token1) = orders.getPairInfo(withdrawOrder.pairId);
+        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
+        (address pair, ) = orders.getPair(order.token0, order.token1);
         ITwapPair(pair).sync();
-        TransferHelper.safeTransfer(pair, pair, withdrawOrder.liquidity);
+        TransferHelper.safeTransfer(pair, pair, order.liquidity);
         uint256 wethAmount;
         uint256 amount0;
         uint256 amount1;
-        if (withdrawOrder.unwrap && (token0 == tokenShares.weth || token1 == tokenShares.weth)) {
+        if (order.unwrap && (order.token0 == tokenShares.weth || order.token1 == tokenShares.weth)) {
             bool success;
             (success, wethAmount, amount0, amount1) = WithdrawHelper.withdrawAndUnwrap(
-                token0,
-                token1,
+                order.token0,
+                order.token1,
                 pair,
                 tokenShares.weth,
-                withdrawOrder.to,
+                order.to,
                 orders.transferGasCosts[address(0)]
             );
             if (!success) {
-                tokenShares.onUnwrapFailed(withdrawOrder.to, wethAmount);
+                tokenShares.onUnwrapFailed(order.to, wethAmount);
             }
         } else {
-            (amount0, amount1) = ITwapPair(pair).burn(withdrawOrder.to);
+            (amount0, amount1) = ITwapPair(pair).burn(order.to);
         }
-        require(amount0 >= withdrawOrder.amount0Min && amount1 >= withdrawOrder.amount1Min, 'TD03');
+        require(amount0 >= order.value0 && amount1 >= order.value1, 'TD03');
     }
 
-    function _executeBuy(Orders.BuyOrder calldata buyOrder, uint256 amountLimit) external payable {
+    function _executeBuy(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(buyOrder.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
+        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
 
-        (address pairAddress, address tokenIn, address tokenOut) = _getPairAndTokens(buyOrder.pairId, buyOrder.inverse);
-        uint256 amountInMax = tokenShares.sharesToAmount(tokenIn, buyOrder.shareInMax, amountLimit, buyOrder.to);
+        (address pairAddress, ) = orders.getPair(order.token0, order.token1);
+        uint256 amountInMax = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
         ITwapPair(pairAddress).sync();
-        bytes memory priceInfo = encodePriceInfo(pairAddress, buyOrder.priceAccumulator, buyOrder.timestamp);
+        bytes memory priceInfo = encodePriceInfo(pairAddress, order.priceAccumulator, order.timestamp);
         uint256 amountIn;
         uint256 amountOut;
         uint256 reserveOut;
+        bool inverted = order.orderType == Orders.BUY_INVERTED_TYPE;
         {
             // scope for reserve out logic, avoids stack too deep errors
             (uint112 reserve0, uint112 reserve1) = ITwapPair(pairAddress).getReserves();
             // subtract 1 to prevent reserve going to 0
-            reserveOut = uint256(buyOrder.inverse ? reserve0 : reserve1).sub(1);
+            reserveOut = uint256(inverted ? reserve0 : reserve1).sub(1);
         }
         {
             // scope for partial fill logic, avoids stack too deep errors
             address oracle = ITwapPair(pairAddress).oracle();
             uint256 swapFee = ITwapPair(pairAddress).swapFee();
             (amountIn, amountOut) = ITwapOracle(oracle).getSwapAmountInMaxOut(
-                buyOrder.inverse,
+                inverted,
                 swapFee,
-                buyOrder.amountOut,
+                order.value1,
                 priceInfo
             );
             uint256 amountInMaxScaled;
             if (amountOut > reserveOut) {
-                amountInMaxScaled = amountInMax.mul(reserveOut).ceil_div(buyOrder.amountOut);
+                amountInMaxScaled = amountInMax.mul(reserveOut).ceil_div(order.value1);
                 (amountIn, amountOut) = ITwapOracle(oracle).getSwapAmountInMinOut(
-                    buyOrder.inverse,
+                    inverted,
                     swapFee,
                     reserveOut,
                     priceInfo
                 );
             } else {
                 amountInMaxScaled = amountInMax;
-                amountOut = buyOrder.amountOut; // Truncate to desired out
+                amountOut = order.value1; // Truncate to desired out
             }
             require(amountInMaxScaled >= amountIn, 'TD08');
             if (amountInMax > amountIn) {
-                if (tokenIn == tokenShares.weth && buyOrder.unwrap) {
-                    _forceEtherTransfer(buyOrder.to, amountInMax.sub(amountIn));
+                if (order.token0 == tokenShares.weth && order.unwrap) {
+                    _forceEtherTransfer(order.to, amountInMax.sub(amountIn));
                 } else {
-                    TransferHelper.safeTransfer(tokenIn, buyOrder.to, amountInMax.sub(amountIn));
+                    TransferHelper.safeTransfer(order.token0, order.to, amountInMax.sub(amountIn));
                 }
             }
-            TransferHelper.safeTransfer(tokenIn, pairAddress, amountIn);
+            TransferHelper.safeTransfer(order.token0, pairAddress, amountIn);
         }
         amountOut = amountOut.sub(tolerance[pairAddress]);
         uint256 amount0Out;
         uint256 amount1Out;
-        if (buyOrder.inverse) {
+        if (inverted) {
             amount0Out = amountOut;
         } else {
             amount1Out = amountOut;
         }
-        if (tokenOut == tokenShares.weth && buyOrder.unwrap) {
+        if (order.token1 == tokenShares.weth && order.unwrap) {
             ITwapPair(pairAddress).swap(amount0Out, amount1Out, address(this), priceInfo);
-            _forceEtherTransfer(buyOrder.to, amountOut);
+            _forceEtherTransfer(order.to, amountOut);
         } else {
-            ITwapPair(pairAddress).swap(amount0Out, amount1Out, buyOrder.to, priceInfo);
+            ITwapPair(pairAddress).swap(amount0Out, amount1Out, order.to, priceInfo);
         }
     }
 
-    function _executeSell(Orders.SellOrder calldata sellOrder, uint256 amountLimit) external payable {
+    function _executeSell(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(sellOrder.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
+        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
 
-        (address pairAddress, address tokenIn, address tokenOut) = _getPairAndTokens(
-            sellOrder.pairId,
-            sellOrder.inverse
-        );
+        (address pairAddress, ) = orders.getPair(order.token0, order.token1);
         ITwapPair(pairAddress).sync();
-        bytes memory priceInfo = encodePriceInfo(pairAddress, sellOrder.priceAccumulator, sellOrder.timestamp);
+        bytes memory priceInfo = encodePriceInfo(pairAddress, order.priceAccumulator, order.timestamp);
 
-        uint256 amountOut = _executeSellHelper(sellOrder, amountLimit, pairAddress, tokenIn, priceInfo);
+        bool inverted = order.orderType == Orders.SELL_INVERTED_TYPE;
+        uint256 amountOut = _executeSellHelper(order, inverted, pairAddress, priceInfo);
 
-        (uint256 amount0Out, uint256 amount1Out) = sellOrder.inverse
-            ? (amountOut, uint256(0))
-            : (uint256(0), amountOut);
-        if (tokenOut == tokenShares.weth && sellOrder.unwrap) {
+        (uint256 amount0Out, uint256 amount1Out) = inverted ? (amountOut, uint256(0)) : (uint256(0), amountOut);
+        if (order.token1 == tokenShares.weth && order.unwrap) {
             ITwapPair(pairAddress).swap(amount0Out, amount1Out, address(this), priceInfo);
-            _forceEtherTransfer(sellOrder.to, amountOut);
+            _forceEtherTransfer(order.to, amountOut);
         } else {
-            ITwapPair(pairAddress).swap(amount0Out, amount1Out, sellOrder.to, priceInfo);
+            ITwapPair(pairAddress).swap(amount0Out, amount1Out, order.to, priceInfo);
         }
     }
 
     function _executeSellHelper(
-        Orders.SellOrder calldata sellOrder,
-        uint256 amountLimit,
+        Orders.Order calldata order,
+        bool inverted,
         address pairAddress,
-        address tokenIn,
         bytes memory priceInfo
     ) internal returns (uint256 amountOut) {
         uint256 reserveOut;
@@ -698,53 +643,39 @@ contract TwapDelay is ITwapDelay {
             // scope for determining reserve out, avoids stack too deep errors
             (uint112 reserve0, uint112 reserve1) = ITwapPair(pairAddress).getReserves();
             // subtract 1 to prevent reserve going to 0
-            reserveOut = uint256(sellOrder.inverse ? reserve0 : reserve1).sub(1);
+            reserveOut = uint256(inverted ? reserve0 : reserve1).sub(1);
         }
         {
             // scope for calculations, avoids stack too deep errors
             address oracle = ITwapPair(pairAddress).oracle();
             uint256 swapFee = ITwapPair(pairAddress).swapFee();
-            uint256 amountIn = tokenShares.sharesToAmount(tokenIn, sellOrder.shareIn, amountLimit, sellOrder.to);
-            amountOut = sellOrder.inverse
+            uint256 amountIn = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
+            amountOut = inverted
                 ? ITwapOracle(oracle).getSwapAmount0Out(swapFee, amountIn, priceInfo)
                 : ITwapOracle(oracle).getSwapAmount1Out(swapFee, amountIn, priceInfo);
 
             uint256 amountOutMinScaled;
             if (amountOut > reserveOut) {
-                amountOutMinScaled = sellOrder.amountOutMin.mul(reserveOut).div(amountOut);
+                amountOutMinScaled = order.value1.mul(reserveOut).div(amountOut);
                 uint256 _amountIn = amountIn;
                 (amountIn, amountOut) = ITwapOracle(oracle).getSwapAmountInMinOut(
-                    sellOrder.inverse,
+                    inverted,
                     swapFee,
                     reserveOut,
                     priceInfo
                 );
-                if (tokenIn == tokenShares.weth && sellOrder.unwrap) {
-                    _forceEtherTransfer(sellOrder.to, _amountIn.sub(amountIn));
+                if (order.token0 == tokenShares.weth && order.unwrap) {
+                    _forceEtherTransfer(order.to, _amountIn.sub(amountIn));
                 } else {
-                    TransferHelper.safeTransfer(tokenIn, sellOrder.to, _amountIn.sub(amountIn));
+                    TransferHelper.safeTransfer(order.token0, order.to, _amountIn.sub(amountIn));
                 }
             } else {
-                amountOutMinScaled = sellOrder.amountOutMin;
+                amountOutMinScaled = order.value1;
             }
             amountOut = amountOut.sub(tolerance[pairAddress]);
             require(amountOut >= amountOutMinScaled, 'TD37');
-            TransferHelper.safeTransfer(tokenIn, pairAddress, amountIn);
+            TransferHelper.safeTransfer(order.token0, pairAddress, amountIn);
         }
-    }
-
-    function _getPairAndTokens(uint32 pairId, bool pairInversed)
-        private
-        view
-        returns (
-            address,
-            address,
-            address
-        )
-    {
-        (address pairAddress, address token0, address token1) = orders.getPairInfo(pairId);
-        (address tokenIn, address tokenOut) = pairInversed ? (token1, token0) : (token0, token1);
-        return (pairAddress, tokenIn, tokenOut);
     }
 
     function _forceEtherTransfer(address to, uint256 amount) internal {
@@ -755,71 +686,62 @@ contract TwapDelay is ITwapDelay {
         }
     }
 
-    function performRefund(
-        Orders.OrderType orderType,
-        uint256 validAfterTimestamp,
-        uint256 orderId,
-        bool shouldRefundEth
-    ) internal {
-        require(orderType != Orders.OrderType.Empty, 'TD41');
-        bool canOwnerRefund = validAfterTimestamp.add(365 days) < block.timestamp;
+    /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
+    function performRefund(Orders.Order calldata order, bool shouldRefundEth) internal {
+        bool canOwnerRefund = order.validAfterTimestamp.add(365 days) < block.timestamp;
 
-        if (orderType == Orders.OrderType.Deposit) {
-            (Orders.DepositOrder memory depositOrder, , ) = orders.getDepositOrder(orderId);
-            (, address token0, address token1) = orders.getPairInfo(depositOrder.pairId);
-            address to = canOwnerRefund ? owner : depositOrder.to;
-            require(
-                refundTokens(to, token0, depositOrder.share0, token1, depositOrder.share1, depositOrder.unwrap),
-                'TD14'
-            );
+        if (order.orderType == Orders.DEPOSIT_TYPE) {
+            address to = canOwnerRefund ? owner : order.to;
+            require(refundTokens(to, order.token0, order.value0, order.token1, order.value1, order.unwrap), 'TD14');
             if (shouldRefundEth) {
-                require(refundEth(payable(to), depositOrder.gasPrice.mul(depositOrder.gasLimit)), 'TD40');
+                require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
-        } else if (orderType == Orders.OrderType.Withdraw) {
-            Orders.WithdrawOrder memory withdrawOrder = orders.getWithdrawOrder(orderId);
-            (address pair, , ) = orders.getPairInfo(withdrawOrder.pairId);
-            address to = canOwnerRefund ? owner : withdrawOrder.to;
-            require(Orders.refundLiquidity(pair, to, withdrawOrder.liquidity, this._refundLiquidity.selector), 'TD14');
+        } else if (order.orderType == Orders.WITHDRAW_TYPE) {
+            (address pair, ) = orders.getPair(order.token0, order.token1);
+            address to = canOwnerRefund ? owner : order.to;
+            require(Orders.refundLiquidity(pair, to, order.liquidity, this._refundLiquidity.selector), 'TD14');
             if (shouldRefundEth) {
-                require(refundEth(payable(to), withdrawOrder.gasPrice.mul(withdrawOrder.gasLimit)), 'TD40');
+                require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
-        } else if (orderType == Orders.OrderType.Sell) {
-            (Orders.SellOrder memory sellOrder, ) = orders.getSellOrder(orderId);
-            (, address token0, address token1) = orders.getPairInfo(sellOrder.pairId);
-            address to = canOwnerRefund ? owner : sellOrder.to;
-            require(refundToken(sellOrder.inverse ? token1 : token0, to, sellOrder.shareIn, sellOrder.unwrap), 'TD14');
+        } else if (order.orderType == Orders.SELL_TYPE || order.orderType == Orders.SELL_INVERTED_TYPE) {
+            address to = canOwnerRefund ? owner : order.to;
+            require(refundToken(order.token0, to, order.value0, order.unwrap), 'TD14');
             if (shouldRefundEth) {
-                require(refundEth(payable(to), sellOrder.gasPrice.mul(sellOrder.gasLimit)), 'TD40');
+                require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
-        } else if (orderType == Orders.OrderType.Buy) {
-            (Orders.BuyOrder memory buyOrder, ) = orders.getBuyOrder(orderId);
-            (, address token0, address token1) = orders.getPairInfo(buyOrder.pairId);
-            address to = canOwnerRefund ? owner : buyOrder.to;
-            require(refundToken(buyOrder.inverse ? token1 : token0, to, buyOrder.shareInMax, buyOrder.unwrap), 'TD14');
+        } else if (order.orderType == Orders.BUY_TYPE || order.orderType == Orders.BUY_INVERTED_TYPE) {
+            address to = canOwnerRefund ? owner : order.to;
+            require(refundToken(order.token0, to, order.value0, order.unwrap), 'TD14');
             if (shouldRefundEth) {
-                require(refundEth(payable(to), buyOrder.gasPrice.mul(buyOrder.gasLimit)), 'TD40');
+                require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
+        } else {
+            return;
         }
-        orders.forgetOrder(orderId);
+        orders.forgetOrder(order.orderId);
     }
 
-    function retryRefund(uint256 orderId) external override lock {
-        (Orders.OrderType orderType, uint256 validAfterTimestamp) = orders.getFailedOrderType(orderId);
-        performRefund(orderType, validAfterTimestamp, orderId, false);
+    function retryRefund(Orders.Order calldata order) external override lock {
+        orders.verifyOrder(order);
+        require(orders.refundFailed[order.orderId], 'TD21');
+        performRefund(order, false);
     }
 
-    function cancelOrder(uint256 orderId) external override lock {
-        require(orders.getOrderStatus(orderId) == Orders.OrderStatus.EnqueuedReady, 'TD52');
-        (Orders.OrderType orderType, uint256 validAfterTimestamp) = orders.getOrder(orderId);
-        require(validAfterTimestamp.sub(orders.delay).add(ORDER_CANCEL_TIME) < block.timestamp, 'TD1C');
-        orders.canceled[orderId] = true;
-        performRefund(orderType, validAfterTimestamp, orderId, true);
+    function cancelOrder(Orders.Order calldata order) external override lock {
+        orders.verifyOrder(order);
+        require(
+            orders.getOrderStatus(order.orderId, order.validAfterTimestamp) == Orders.OrderStatus.EnqueuedReady,
+            'TD52'
+        );
+        require(order.validAfterTimestamp.sub(orders.delay).add(ORDER_CANCEL_TIME) < block.timestamp, 'TD1C');
+        orders.canceled[order.orderId] = true;
+        performRefund(order, true);
     }
 
     function encodePriceInfo(
         address pair,
         uint256 priceAccumulator,
-        uint32 priceTimestamp
+        uint256 priceTimestamp
     ) internal view returns (bytes memory data) {
         uint256 price = ITwapOracle(ITwapPair(pair).oracle()).getAveragePrice(priceAccumulator, priceTimestamp);
         // Pack everything as 32 bytes / uint256 to simplify decoding

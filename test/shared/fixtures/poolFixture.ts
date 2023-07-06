@@ -4,14 +4,24 @@ import { factoryFixture } from './factoryFixture'
 import { deployPair } from './helpers'
 
 export async function poolFixture([wallet]: Wallet[]) {
-  const { oracle, setUniswapPrice, getEncodedPriceInfo, setupUniswapPair } = await oracleV3WithUniswapFixture([wallet])
+  const {
+    oracle,
+    pool: uniswapPool,
+    getEncodedPriceInfo,
+    setupUniswapPool,
+    router,
+    token0,
+    token1,
+    createObservations,
+  } = await oracleV3WithUniswapFixture([wallet])
+
   const { factory } = await factoryFixture([wallet])
-  const result = await deployPair(wallet, oracle, factory, wallet.address)
+  const result = await deployPair(wallet, oracle, factory, wallet.address, token0, token1)
 
   async function getAnotherOracle() {
-    const { oracle: otherOracle } = await oracleV3WithUniswapFixture([wallet])
-    return { otherOracle }
+    const { oracle: otherOracle, pool: uniswapPool } = await oracleV3WithUniswapFixture([wallet])
+    return { otherOracle, uniswapPool }
   }
 
-  return { ...result, setUniswapPrice, getAnotherOracle, setupUniswapPair, getEncodedPriceInfo }
+  return { ...result, uniswapPool, getAnotherOracle, setupUniswapPool, getEncodedPriceInfo, router, createObservations }
 }

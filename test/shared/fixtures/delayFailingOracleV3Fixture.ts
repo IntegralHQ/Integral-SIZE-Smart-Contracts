@@ -10,6 +10,7 @@ export async function delayFailingOracleV3Fixture([wallet]: Wallet[]) {
   await setUniswapPrice(BigNumber.from(1), BigNumber.from(2))
   await addLiquidity(expandTo18Decimals(100), expandTo18Decimals(100))
   await oracle.setUniswapPair(pool.address, overrides)
+  await oracle.setTwapInterval(1)
   const { factory } = await factoryFixture([wallet])
   const tokenA = await new FailingERC20__factory(wallet).deploy(expandTo18Decimals(100000), overrides)
   const tokenB = await new FailingERC20__factory(wallet).deploy(expandTo18Decimals(100000), overrides)

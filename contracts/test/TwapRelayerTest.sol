@@ -4,22 +4,13 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import '../TwapRelayer.sol';
-import '../interfaces/ITwapPair.sol';
 
 contract TwapRelayerTest is TwapRelayer {
     using SafeMath for uint256;
 
     uint256 private constant PRECISION = 10**18;
 
-    constructor(
-        address _factory,
-        address _delay,
-        address _weth
-    ) TwapRelayer(_factory, _delay, _weth) {}
-
     function testSwapExactIn(
-        address pair,
-        bool inverted,
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
@@ -33,12 +24,10 @@ contract TwapRelayerTest is TwapRelayer {
             uint256 fee
         )
     {
-        return swapExactIn(pair, inverted, tokenIn, tokenOut, amountIn, wrapUnwrap, to);
+        return swapExactIn(tokenIn, tokenOut, amountIn, wrapUnwrap, to);
     }
 
     function testSwapExactOut(
-        address pair,
-        bool inverted,
         address tokenIn,
         address tokenOut,
         uint256 amountOut,
@@ -52,7 +41,7 @@ contract TwapRelayerTest is TwapRelayer {
             uint256 fee
         )
     {
-        return swapExactOut(pair, inverted, tokenIn, tokenOut, amountOut, wrapUnwrap, to);
+        return swapExactOut(tokenIn, tokenOut, amountOut, wrapUnwrap, to);
     }
 
     function testGetAveragePrice(
