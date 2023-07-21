@@ -362,7 +362,7 @@ describe('TwapDelay.executeSell.oracleV3', () => {
         .to.emit(delay, 'OrderExecuted')
         .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
         .to.emit(delay, 'RefundFailed')
-        .withArgs(sell.to, token0.address, sell.amountIn, encodeErrorData('TH05'))
+        .withArgs(sell.to, token0.address, sell.amountIn.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
 
       const orderHashOnChain = await delay.getOrderHash(1, overrides)
       const orderHash = getOrderDigest(sell.orderData[0])
@@ -551,44 +551,24 @@ describe('TwapDelay.executeSell.oracleV3', () => {
     const loadFixture = setupFixtureLoader()
 
     const decimals = [
-      // [2, 18],
-      // [4, 18],
+      [4, 0],
+      [3, 1],
+      [2, 2],
+      [1, 3],
+      [0, 4],
+
+      [18, 0],
+      [18, 2],
+      [18, 4],
+      [18, 6],
+      [18, 12],
+
+      [0, 18],
+      [2, 18],
+      [4, 18],
       [6, 18],
-      // [8, 18],
-      // [10, 18],
-      // [12, 18],
-      // [14, 18],
-      // [16, 18],
-      // [18, 18],
-      // [20, 18],
-      // [22, 18],
-      // [24, 18],
-
-      // [2, 6],
-      // [4, 6],
-      // [6, 6],
-      // [8, 6],
-      // [10, 6],
-      // [12, 6],
-      // [14, 6],
-      // [16, 6],
-      // [18, 6],
-      // [20, 6],
-      // [22, 6],
-      [24, 6],
-
-      [2, 12],
-      // [4, 12],
-      // [6, 12],
-      // [8, 12],
-      // [10, 12],
-      // [12, 12],
-      // [14, 12],
-      // [16, 12],
-      // [18, 12],
-      // [20, 12],
-      // [22, 12],
-      // [24, 12],
+      [12, 18],
+      [18, 18],
     ]
 
     const reserves = [

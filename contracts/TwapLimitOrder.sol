@@ -427,7 +427,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         buyOrder.amountOut = buyParams.amountOut.toUint112();
 
         buyOrder.twapInterval = twapInterval;
-        buyOrder.shares = shares.toUint112();
+        buyOrder.shares = shares;
         buyOrder.pairId = pairId;
         buyOrder.inverted = inverted;
 
@@ -439,7 +439,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         orderId = _enqueueOrder(buyOrder);
         emit BuyLimitOrderEnqueued(
             orderId,
-            buyOrder.shares,
+            buyParams.amountInMax,
             buyOrder.amountOut,
             buyOrder.inverted,
             buyOrder.wrapUnwrap,
@@ -492,7 +492,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         sellOrder.amountOut = sellParams.amountOutMin.toUint112();
 
         sellOrder.twapInterval = twapInterval;
-        sellOrder.shares = shares.toUint112();
+        sellOrder.shares = shares;
         sellOrder.pairId = pairId;
         sellOrder.inverted = inverted;
 
@@ -504,7 +504,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         orderId = _enqueueOrder(sellOrder);
         emit SellLimitOrderEnqueued(
             orderId,
-            sellOrder.shares,
+            sellParams.amountIn,
             sellOrder.amountOut,
             sellOrder.inverted,
             sellOrder.wrapUnwrap,

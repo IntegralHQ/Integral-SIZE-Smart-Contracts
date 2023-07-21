@@ -1,5 +1,6 @@
-import { BigNumber, utils, constants, Wallet, ContractTransaction, Event, providers } from 'ethers'
+import { BigNumber, utils, constants, Wallet, ContractTransaction, Event, providers, Contract } from 'ethers'
 import { ERC20 } from '../../build/types'
+import { Interface } from 'ethers/lib/utils'
 
 const PERMIT_TYPEHASH = utils.keccak256(
   utils.toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
@@ -163,6 +164,17 @@ export const overrides = {
 
 export function pairAddressToPairId(pairAddress: string) {
   return parseInt(utils.keccak256(pairAddress).slice(2, 10), 16)
+}
+
+export function getEventTopics0(encoder: Interface, eventName: string) {
+  const fragment = encoder.getEvent(eventName)
+  const eventFullName = fragment.format()
+  return utils.keccak256(utils.toUtf8Bytes(eventFullName))
+}
+
+export async function getEventsFrom(contract: Contract, tx: ContractTransaction, eventName: string) {
+  const topics0 = getEventTopics0(contract.interface, eventName)
+  return (await tx.wait()).events?.filter((e) => e.topics[0] === topics0) ?? []
 }
 
 export async function getEvents(tx: ContractTransaction, eventName: string) {

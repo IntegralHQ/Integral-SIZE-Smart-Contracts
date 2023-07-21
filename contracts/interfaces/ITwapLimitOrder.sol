@@ -34,7 +34,7 @@ interface ITwapLimitOrder {
 
     event BuyLimitOrderEnqueued(
         uint256 indexed orderId,
-        uint112 amountIn,
+        uint256 amountIn,
         uint112 amountOut,
         bool inverse,
         bool wrapUnwrap,
@@ -50,7 +50,7 @@ interface ITwapLimitOrder {
 
     event SellLimitOrderEnqueued(
         uint256 indexed orderId,
-        uint112 amountIn,
+        uint256 amountIn,
         uint112 amountOut,
         bool inverse,
         bool wrapUnwrap,
@@ -96,10 +96,10 @@ interface ITwapLimitOrder {
         bool wrapUnwrap;
         bool inverted;
         // slot 1
-        uint112 shares;
+        uint256 shares;
+        // slot 2
         uint32 pairId;
         uint32 expiration;
-        // slot 2
         address to;
         // slot 3
         address submitter;

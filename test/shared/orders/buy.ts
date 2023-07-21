@@ -24,8 +24,8 @@ export const getDefaultLimitOrderBuy = (tokenIn: IERC20, tokenOut: IERC20, walle
   to: wallet.address,
   tokenIn: tokenIn.address,
   tokenOut: tokenOut.address,
-  amountInMax: expandTo18Decimals(1),
-  amountOut: expandTo18Decimals(1),
+  amountInMax: BigNumber.from(1000000),
+  amountOut: BigNumber.from(1000000),
   submitDeadline: 100,
 })
 

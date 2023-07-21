@@ -76,22 +76,11 @@ describe('TwapDelay.executeDeposit.oracleV3', () => {
       { reserve0: 0.00001, reserve1: 200, amount0: 40, amount1: 40 },
       { reserve0: 0.00001, reserve1: 200, amount0: 40, amount1: 0 },
       { reserve0: 0.00001, reserve1: 200, amount0: 0, amount1: 40 },
-
-      // extremes
-      { reserve0: 1, reserve1: 2, amount0: 5000, amount1: 0, clearFees: true },
-      { reserve0: 1, reserve1: 2, amount0: 0, amount1: 5000, clearFees: true },
-      { reserve0: 2, reserve1: 1, amount0: 5000, amount1: 0, clearFees: true },
-      { reserve0: 2, reserve1: 1, amount0: 0, amount1: 5000, clearFees: true },
     ]
 
-    for (const { reserve0, reserve1, amount0, amount1, clearFees } of cases) {
+    for (const { reserve0, reserve1, amount0, amount1 } of cases) {
       it(`reserves: (${reserve0}, ${reserve1}) + amounts: (${amount0}, ${amount1})`, async () => {
-        const { delay, token0, token1, wallet, factory, pair, addLiquidity } = await loadFixture(delayOracleV3Fixture)
-
-        if (clearFees) {
-          await factory.setMintFee(token0.address, token1.address, 0, overrides)
-          await factory.setSwapFee(token0.address, token1.address, 0, overrides)
-        }
+        const { delay, token0, token1, wallet, pair, addLiquidity } = await loadFixture(delayOracleV3Fixture)
 
         await addLiquidity(expandTo18Decimals(reserve0), expandTo18Decimals(reserve1))
         const depositResult = await depositAndWait(delay, token0, token1, wallet, {

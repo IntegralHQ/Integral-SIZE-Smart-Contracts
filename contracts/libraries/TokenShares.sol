@@ -14,6 +14,7 @@ library TokenShares {
 
     uint256 private constant PRECISION = 10**18;
     uint256 private constant TOLERANCE = 10**18 + 10**16;
+    uint256 private constant TOTAL_SHARES_PRECISION = 10**18;
 
     event UnwrapFailed(address to, uint256 amount);
 
@@ -74,21 +75,22 @@ library TokenShares {
             uint256 balanceBefore = IERC20(token).balanceOf(address(this));
             uint256 totalTokenShares = data.totalShares[token];
             require(balanceBefore > 0 || totalTokenShares == 0, 'TS30');
-            if (totalTokenShares == 0) {
-                totalTokenShares = balanceBefore;
-            }
             token.safeTransferFrom(msg.sender, address(this), amount);
             uint256 balanceAfter = IERC20(token).balanceOf(address(this));
             require(balanceAfter > balanceBefore, 'TS2C');
             if (balanceBefore > 0) {
+                if (totalTokenShares == 0) {
+                    totalTokenShares = balanceBefore.mul(TOTAL_SHARES_PRECISION);
+                }
                 uint256 newShares = totalTokenShares.mul(balanceAfter).div(balanceBefore);
                 require(balanceAfter < type(uint256).max.div(newShares), 'TS73'); // to prevent overflow at execution
                 data.totalShares[token] = newShares;
                 return newShares - totalTokenShares;
             } else {
-                require(balanceAfter < type(uint256).max.div(balanceAfter), 'TS73'); // to prevent overflow at execution
-                data.totalShares[token] = balanceAfter;
-                return balanceAfter;
+                totalTokenShares = balanceAfter.mul(TOTAL_SHARES_PRECISION);
+                require(totalTokenShares < type(uint256).max.div(totalTokenShares), 'TS73'); // to prevent overflow at execution
+                data.totalShares[token] = totalTokenShares;
+                return totalTokenShares;
             }
         }
     }

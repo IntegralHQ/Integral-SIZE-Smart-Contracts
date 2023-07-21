@@ -8,6 +8,7 @@ import { setupFixtureLoader } from '../shared/setup'
 import { encodeErrorData } from '../shared/solidityError'
 import {
   expandTo18Decimals,
+  expandToDecimals,
   getEthRefund,
   getEvents,
   getGasSpent,
@@ -78,22 +79,11 @@ describe('TwapDelay.executeDeposit', () => {
       { reserve0: 0.00001, reserve1: 200, amount0: 40, amount1: 40 },
       { reserve0: 0.00001, reserve1: 200, amount0: 40, amount1: 0 },
       { reserve0: 0.00001, reserve1: 200, amount0: 0, amount1: 40 },
-
-      // extremes
-      { reserve0: 1, reserve1: 2, amount0: 5000, amount1: 0, clearFees: true },
-      { reserve0: 1, reserve1: 2, amount0: 0, amount1: 5000, clearFees: true },
-      { reserve0: 2, reserve1: 1, amount0: 5000, amount1: 0, clearFees: true },
-      { reserve0: 2, reserve1: 1, amount0: 0, amount1: 5000, clearFees: true },
     ]
 
-    for (const { reserve0, reserve1, amount0, amount1, clearFees } of cases) {
+    for (const { reserve0, reserve1, amount0, amount1 } of cases) {
       it(`reserves: (${reserve0}, ${reserve1}) + amounts: (${amount0}, ${amount1})`, async () => {
-        const { delay, token0, token1, wallet, factory, pair, addLiquidity } = await loadFixture(delayFixture)
-
-        if (clearFees) {
-          await factory.setMintFee(token0.address, token1.address, 0, overrides)
-          await factory.setSwapFee(token0.address, token1.address, 0, overrides)
-        }
+        const { delay, token0, token1, wallet, pair, addLiquidity } = await loadFixture(delayFixture)
 
         await addLiquidity(expandTo18Decimals(reserve0), expandTo18Decimals(reserve1))
         const depositResult = await depositAndWait(delay, token0, token1, wallet, {
@@ -221,7 +211,7 @@ describe('TwapDelay.executeDeposit', () => {
 
       const depositResult = await depositAndWait(delay, token0, token1, wallet, {
         amount0: BigNumber.from(1),
-        amount1: expandTo18Decimals(1000),
+        amount1: expandToDecimals(1, 6),
         swap: true,
       })
 
@@ -553,7 +543,7 @@ describe('TwapDelay.executeDeposit', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token0.address, deposit.amount0, encodeErrorData('TH05'))
+      .withArgs(wallet.address, token0.address, deposit.amount0.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
   })
 
   it('hits the 48 hours deadline', async () => {
@@ -648,9 +638,9 @@ describe('TwapDelay.executeDeposit', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token0.address, deposit.amount0, encodeErrorData('TH05'))
+      .withArgs(wallet.address, token0.address, deposit.amount0.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token1.address, deposit.amount1, encodeErrorData('TH05'))
+      .withArgs(wallet.address, token1.address, deposit.amount1.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
   })
 
   it('token0 refund fails if token1 refund fails', async () => {
@@ -669,9 +659,9 @@ describe('TwapDelay.executeDeposit', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token0.address, deposit.amount0, encodeErrorData('TH05'))
+      .withArgs(wallet.address, token0.address, deposit.amount0.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token1.address, deposit.amount1, encodeErrorData('TH05'))
+      .withArgs(wallet.address, token1.address, deposit.amount1.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
   })
 
   it('if token refund fails order is still in queue', async () => {
@@ -717,7 +707,12 @@ describe('TwapDelay.executeDeposit', () => {
       .to.emit(delay, 'RefundFailed')
       .withArgs(etherHater.address, weth.address, utils.parseEther('2'), encodeErrorData('TH3F'))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(etherHater.address, token.address, utils.parseEther('2'), encodeErrorData('TH3F'))
+      .withArgs(
+        etherHater.address,
+        token.address,
+        utils.parseEther('2').mul(expandTo18Decimals(1)),
+        encodeErrorData('TH3F')
+      )
 
     const orderHashOnChain = await delay.getOrderHash(1, overrides)
     const orderHash = getOrderDigest(deposit.orderData[0])

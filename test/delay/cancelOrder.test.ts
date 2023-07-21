@@ -35,9 +35,9 @@ describe('TwapDelay.cancelOrder', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(deposit.to, token0.address, deposit.amount0, encodeErrorData('TH05'))
+      .withArgs(deposit.to, token0.address, deposit.amount0.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(deposit.to, token1.address, deposit.amount1, encodeErrorData('TH05'))
+      .withArgs(deposit.to, token1.address, deposit.amount1.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
       .to.emit(delay, 'EthRefund')
 
     await token0.setWasteTransferGas(false, overrides)

@@ -39,7 +39,12 @@ describe('TwapDelay.refund', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('FA_BALANCE_OF_OOPS'), getGasSpent(events[0]), getEthRefund(events[0]))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token0.address, deposit.amount0, encodeErrorData('FA_BALANCE_OF_OOPS'))
+      .withArgs(
+        wallet.address,
+        token0.address,
+        deposit.amount0.mul(expandTo18Decimals(1)),
+        encodeErrorData('FA_BALANCE_OF_OOPS')
+      )
   })
 
   it('succeeds even if refund fails because of transfer', async () => {
@@ -58,7 +63,7 @@ describe('TwapDelay.refund', () => {
       .to.emit(delay, 'OrderExecuted')
       .withArgs(1, false, encodeErrorData('TH05'), getGasSpent(events[0]), getEthRefund(events[0]))
       .to.emit(delay, 'RefundFailed')
-      .withArgs(wallet.address, token0.address, deposit.amount0, encodeErrorData('TH05'))
+      .withArgs(wallet.address, token0.address, deposit.amount0.mul(expandTo18Decimals(1)), encodeErrorData('TH05'))
   })
 
   it('succeeds even if user eth refund fails', async () => {

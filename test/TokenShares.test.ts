@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { BigNumber } from 'ethers'
 import { tokenSharesFixture } from './shared/fixtures'
 import { setupFixtureLoader } from './shared/setup'
-import { overrides } from './shared/utilities'
+import { overrides, expandTo18Decimals } from './shared/utilities'
 
 describe('TokenShares', () => {
   const loadFixture = setupFixtureLoader()
@@ -19,18 +19,18 @@ describe('TokenShares', () => {
     it('mints shares equal to initial deposit', async () => {
       const { tokenShares, amountToShares, adjustableErc20 } = await loadFixture(tokenSharesFixture)
       const shares = await amountToShares(adjustableErc20.address, 200)
-      expect(shares).to.equal(200)
+      expect(shares).to.equal(expandTo18Decimals(200))
       const totalShares = await tokenShares.totalShares(adjustableErc20.address)
-      expect(totalShares).to.equal(200)
+      expect(totalShares).to.equal(expandTo18Decimals(200))
     })
 
     it('continues minting shares', async () => {
       const { tokenShares, amountToShares, adjustableErc20 } = await loadFixture(tokenSharesFixture)
       await amountToShares(adjustableErc20.address, 200)
       const shares = await amountToShares(adjustableErc20.address, 300)
-      expect(shares).to.equal(300)
+      expect(shares).to.equal(expandTo18Decimals(300))
       const totalShares = await tokenShares.totalShares(adjustableErc20.address)
-      expect(totalShares).to.equal(500)
+      expect(totalShares).to.equal(expandTo18Decimals(500))
     })
 
     it('accounts for balance changing', async () => {
@@ -38,9 +38,9 @@ describe('TokenShares', () => {
       await amountToShares(adjustableErc20.address, 200)
       await adjustableErc20.setBalance(tokenShares.address, 100, overrides)
       const shares = await amountToShares(adjustableErc20.address, 300)
-      expect(shares).to.equal(600)
+      expect(shares).to.equal(expandTo18Decimals(600))
       const totalShares = await tokenShares.totalShares(adjustableErc20.address)
-      expect(totalShares).to.equal(800)
+      expect(totalShares).to.equal(expandTo18Decimals(800))
     })
 
     it('fails when total != 0 and balance == 0', async () => {
@@ -53,8 +53,8 @@ describe('TokenShares', () => {
     it('sets total to balance when total = 0', async () => {
       const { tokenShares, amountToShares, adjustableErc20 } = await loadFixture(tokenSharesFixture)
       await adjustableErc20.setBalance(tokenShares.address, 100, overrides)
-      expect(await amountToShares(adjustableErc20.address, 100)).to.equal(100)
-      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(200)
+      expect(await amountToShares(adjustableErc20.address, 100)).to.equal(expandTo18Decimals(100))
+      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(expandTo18Decimals(200))
     })
 
     it('can work with wrapped ether', async () => {
@@ -107,15 +107,15 @@ describe('TokenShares', () => {
     it('converts parts of the totalShares', async () => {
       const { adjustableErc20, tokenShares, amountToShares, sharesToAmount } = await loadFixture(tokenSharesFixture)
       await amountToShares(adjustableErc20.address, 300)
-      const value = await sharesToAmount(adjustableErc20.address, 100)
+      const value = await sharesToAmount(adjustableErc20.address, expandTo18Decimals(100))
       expect(value).to.equal(100)
-      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(200)
+      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(expandTo18Decimals(200))
     })
 
     it('converts the entirety totalShares', async () => {
       const { adjustableErc20, tokenShares, amountToShares, sharesToAmount } = await loadFixture(tokenSharesFixture)
       await amountToShares(adjustableErc20.address, 300)
-      const value = await sharesToAmount(adjustableErc20.address, 300)
+      const value = await sharesToAmount(adjustableErc20.address, expandTo18Decimals(300))
       expect(value).to.equal(300)
       expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(0)
     })
@@ -124,9 +124,9 @@ describe('TokenShares', () => {
       const { adjustableErc20, tokenShares, amountToShares, sharesToAmount } = await loadFixture(tokenSharesFixture)
       await amountToShares(adjustableErc20.address, 300)
       await adjustableErc20.setBalance(tokenShares.address, 150, overrides)
-      const value = await sharesToAmount(adjustableErc20.address, 100)
+      const value = await sharesToAmount(adjustableErc20.address, expandTo18Decimals(100))
       expect(value).to.equal(50)
-      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(200)
+      expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(expandTo18Decimals(200))
     })
 
     it('can work with wrapped ether', async () => {
@@ -153,13 +153,13 @@ describe('TokenShares', () => {
       const shares = await amountToShares(adjustableErc20.address, 3000)
       const tolerance = BigNumber.from(10).pow(18).add(BigNumber.from(10).pow(16))
       const precision = BigNumber.from(10).pow(18)
-      const amountLimit = shares.div(2)
+      const amountLimit = shares.div(2).div(expandTo18Decimals(1))
       const value = await sharesToAmount(adjustableErc20.address, shares, amountLimit, other.address)
       const amountOut = amountLimit.mul(tolerance).div(precision)
       expect(value).to.equal(amountOut)
       expect(await tokenShares.totalShares(adjustableErc20.address)).to.equal(0)
       const balanceAfter = await adjustableErc20.balanceOf(other.address)
-      expect(balanceAfter.sub(balanceBefore)).to.equal(shares.sub(amountOut))
+      expect(balanceAfter.sub(balanceBefore)).to.equal(shares.div(expandTo18Decimals(1)).sub(amountOut))
     })
   })
 })

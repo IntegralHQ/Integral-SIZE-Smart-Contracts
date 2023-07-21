@@ -1,10 +1,18 @@
 import { expect } from 'chai'
-import { constants, BigNumber, utils } from 'ethers'
+import { constants, BigNumber, utils, providers } from 'ethers'
 import { delayFixture, delayWithMaxTokenSupplyFixture } from '../shared/fixtures'
 import { OrderInternalType, OrderType } from '../shared/OrderType'
 import { setupFixtureLoader } from '../shared/setup'
-import { INVALID_ADDRESS, overrides } from '../shared/utilities'
-import { getDefaultDeposit, sortTokens, depositAndWait, getDepositOrderData, getOrderDigest } from '../shared/orders'
+import { INVALID_ADDRESS, overrides, DELAY } from '../shared/utilities'
+import {
+  getDefaultDeposit,
+  sortTokens,
+  depositAndWait,
+  getDepositOrderData,
+  getOrderDigest,
+  getDefaultWithdraw,
+  getWithdrawOrderData,
+} from '../shared/orders'
 
 describe('TwapDelay.deposit', () => {
   const loadFixture = setupFixtureLoader()
@@ -343,5 +351,195 @@ describe('TwapDelay.deposit', () => {
     )
       .to.emit(orderIdTest, 'OrderId')
       .withArgs(1)
+  })
+
+  it('token shares attack', async () => {
+    // Arrange
+
+    const { delay, token0, token1, pair, wallet, another: victim, other: attacker } = await loadFixture(delayFixture)
+
+    // setup balances
+    await token0.transfer(attacker.address, 20000e6)
+    await token1.transfer(attacker.address, 20000e6)
+    await token0.transfer(victim.address, 1000e6)
+    await token1.transfer(victim.address, 1000e6)
+
+    const gasPrice = utils.parseUnits('69.420', 'gwei')
+    await delay.setGasPrice(gasPrice)
+
+    // do all approval for convenience
+    await token0.connect(attacker).approve(delay.address, constants.MaxUint256, overrides)
+    await token1.connect(attacker).approve(delay.address, constants.MaxUint256, overrides)
+    await token0.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+    await token1.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+    await pair.connect(attacker).approve(delay.address, constants.MaxUint256, overrides)
+    await pair.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+
+    // Act
+
+    // 1.
+    // attacker enqueues deposit for 1 token to the pair to get all shares
+    let depositRequest = getDefaultDeposit(token0, token1, wallet)
+    depositRequest.gasPrice = gasPrice
+    depositRequest.amount0 = BigNumber.from(1)
+    depositRequest.amount1 = BigNumber.from(1)
+    depositRequest.to = attacker.address
+
+    let tx = await delay.connect(attacker).deposit(depositRequest, {
+      ...overrides,
+      value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+    })
+    let receipt = await tx.wait()
+    const attackerOrderData = getDepositOrderData(receipt)
+
+    // 2. frontrunning
+    // before victim does deposit, attacker sends funds directly to the delay contract
+    // attacker sends much more than victim's deposit to maintain its 100% shares
+
+    await token0.connect(attacker).transfer(delay.address, BigNumber.from(10000e6))
+
+    // 3.
+    // victim deposits 1000e6 token
+    depositRequest = getDefaultDeposit(token0, token1, wallet)
+    depositRequest.gasPrice = gasPrice
+    depositRequest.amount0 = BigNumber.from(1000e6)
+    depositRequest.amount1 = BigNumber.from(1000e6)
+    depositRequest.to = victim.address
+
+    tx = await delay.connect(victim).deposit(depositRequest, {
+      ...overrides,
+      value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+    })
+    receipt = await tx.wait()
+    const victimOrderData = getDepositOrderData(receipt)
+
+    const victimBalance0Before = await token0.balanceOf(victim.address)
+    const victimBalance1Before = await token1.balanceOf(victim.address)
+
+    await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [DELAY + 1])
+    await delay.execute(attackerOrderData.concat(victimOrderData), overrides)
+
+    // 4.
+    // victim withdraw
+    const liquidity = await pair.balanceOf(victim.address)
+    const withdrawRequest = getDefaultWithdraw(token0, token1, victim)
+    withdrawRequest.amount0Min = BigNumber.from(0)
+    withdrawRequest.amount1Min = BigNumber.from(0)
+    withdrawRequest.to = victim.address
+    withdrawRequest.liquidity = liquidity // should be able to withdraw at least 1
+
+    tx = await delay.connect(victim).withdraw(withdrawRequest, {
+      ...overrides,
+      value: BigNumber.from(withdrawRequest.gasLimit).mul(withdrawRequest.gasPrice),
+    })
+    receipt = await tx.wait()
+    const orderData = getWithdrawOrderData(receipt)
+
+    await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [DELAY + 1])
+    await delay.execute(orderData, overrides)
+
+    // Assert
+
+    const victimBalance0After = await token0.balanceOf(victim.address)
+    const victimBalance1After = await token1.balanceOf(victim.address)
+
+    expect(victimBalance0After).to.be.gt(victimBalance0Before)
+    expect(victimBalance1After).to.be.gt(victimBalance1Before)
+  })
+
+  it('griefing attack', async () => {
+    // Arrange
+
+    const { delay, token0, token1, pair, wallet, another: victim, other: attacker } = await loadFixture(delayFixture)
+
+    // setup balances
+    await token0.transfer(attacker.address, 20000e6)
+    await token1.transfer(attacker.address, 20000e6)
+    await token0.transfer(victim.address, 1000e6)
+    await token1.transfer(victim.address, 1000e6)
+
+    const gasPrice = utils.parseUnits('69.420', 'gwei')
+    await delay.setGasPrice(gasPrice)
+
+    // do all approval for convenience
+    await token0.connect(attacker).approve(delay.address, constants.MaxUint256, overrides)
+    await token1.connect(attacker).approve(delay.address, constants.MaxUint256, overrides)
+    await token0.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+    await token1.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+    await pair.connect(attacker).approve(delay.address, constants.MaxUint256, overrides)
+    await pair.connect(victim).approve(delay.address, constants.MaxUint256, overrides)
+
+    // Act
+
+    // 1. hacker transfers in 1 token
+    await token0.connect(attacker).transfer(delay.address, BigNumber.from(1))
+
+    // 2.
+    // attacker enqueues deposit for 2 token to the pair to get all shares
+    let depositRequest = getDefaultDeposit(token0, token1, wallet)
+    depositRequest.gasPrice = gasPrice
+    depositRequest.amount0 = BigNumber.from(2)
+    depositRequest.amount1 = BigNumber.from(2)
+    depositRequest.to = attacker.address
+
+    let tx = await delay.connect(attacker).deposit(depositRequest, {
+      ...overrides,
+      value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+    })
+    let receipt = await tx.wait()
+    const attackerOrderData = getDepositOrderData(receipt)
+
+    // 3. frontrunning
+    // before victim does deposit, attacker sends funds directly to the delay contract
+    // attacker sends much more than victim's deposit to maintain its 100% shares
+    await token0.connect(attacker).transfer(delay.address, BigNumber.from(3000e6))
+
+    // 4.
+    // victim deposits 1000e6 token
+    depositRequest = getDefaultDeposit(token0, token1, wallet)
+    depositRequest.gasPrice = gasPrice
+    depositRequest.amount0 = BigNumber.from(1000e6)
+    depositRequest.amount1 = BigNumber.from(1000e6)
+    depositRequest.to = victim.address
+
+    tx = await delay.connect(victim).deposit(depositRequest, {
+      ...overrides,
+      value: BigNumber.from(depositRequest.gasLimit).mul(gasPrice),
+    })
+    receipt = await tx.wait()
+    const victimOrderData = getDepositOrderData(receipt)
+
+    const victimBalance0Before = await token0.balanceOf(victim.address)
+    const victimBalance1Before = await token1.balanceOf(victim.address)
+
+    await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [DELAY + 1])
+    await delay.execute(attackerOrderData.concat(victimOrderData), overrides)
+
+    // 5.
+    // victim withdraw
+    const liquidity = await pair.balanceOf(victim.address)
+    const withdrawRequest = getDefaultWithdraw(token0, token1, victim)
+    withdrawRequest.amount0Min = BigNumber.from(0)
+    withdrawRequest.amount1Min = BigNumber.from(0)
+    withdrawRequest.to = victim.address
+    withdrawRequest.liquidity = liquidity // should be able to withdraw at least 1
+
+    tx = await delay.connect(victim).withdraw(withdrawRequest, {
+      ...overrides,
+      value: BigNumber.from(withdrawRequest.gasLimit).mul(withdrawRequest.gasPrice),
+    })
+    receipt = await tx.wait()
+    const orderData = getWithdrawOrderData(receipt)
+
+    await (delay.provider as providers.JsonRpcProvider).send('evm_increaseTime', [DELAY + 1])
+    await delay.execute(orderData, overrides)
+
+    // Assert
+
+    const victimBalance0After = await token0.balanceOf(victim.address)
+    const victimBalance1After = await token1.balanceOf(victim.address)
+
+    expect(victimBalance0After).to.be.gt(victimBalance0Before)
+    expect(victimBalance1After).to.be.gt(victimBalance1Before)
   })
 })
