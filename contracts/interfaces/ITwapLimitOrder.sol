@@ -9,6 +9,7 @@ import '../libraries/Orders.sol';
 interface ITwapLimitOrder {
     event OwnerSet(address owner);
     event BotSet(address bot, bool isBot);
+    event PairEnabledSet(address pair, bool enabled);
     event PriceToleranceSet(address pair, uint32 value);
     event DelaySet(address delay);
     event Approve(address token, address to, uint256 amount);
@@ -113,13 +114,13 @@ interface ITwapLimitOrder {
 
     function weth() external returns (address);
 
-    function delay() external returns (address);
-
     function factory() external returns (address);
 
     function owner() external returns (address);
 
-    function priceTolerance(address pair) external returns (uint32);
+    function getPriceTolerance(address pair) external pure returns (uint32);
+
+    function isPairEnabled(address pair) external view returns (bool);
 
     function gasMultiplier() external returns (uint256);
 
@@ -129,9 +130,7 @@ interface ITwapLimitOrder {
 
     function setOwner(address _owner) external;
 
-    function setPriceTolerance(address pair, uint32 tolerance) external;
-
-    function setSecondsPerBlock(uint256 _secondsPerBlock) external;
+    function setPairEnabled(address pair, bool enabled) external;
 
     function isBot(address bot) external returns (bool);
 
@@ -142,10 +141,6 @@ interface ITwapLimitOrder {
     function newestOrderId() external returns (uint256);
 
     function maxGasLimit() external returns (uint256);
-
-    function setMaxGasLimit(uint256 _maxGasLimit) external;
-
-    function setGasMultiplier(uint256 _multiplier) external;
 
     function setEnqueueDisabled(bool _flag) external;
 

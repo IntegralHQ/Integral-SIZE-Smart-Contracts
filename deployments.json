@@ -1,21 +1,37 @@
 {
   "polygon": {
-    "owner": ""
+    "owner": "",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "polygon-mumbai": {
-    "owner": ""
+    "owner": "",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "optimism": {
-    "owner": ""
+    "owner": "",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "optimism-goerli": {
-    "owner": ""
+    "owner": "",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "arbitrum": {
     "owner": "0x81e297E9529c5A7a8A172cCC8D60195ecD2dADA2",
     "delay": {
-      "address": "0x7B96662D4dbBf6894a888Ba53Afbe2F98359C973",
-      "checksum": "f416352768133d125886e92ef505ec684d31bed49df698e300124741d93acf64"
+      "address": "0x8BfEd1e49610576F0bD2a83540AEcaC5A1B8819D",
+      "checksum": "6f85a70aaf88561843927148bff8bb4f7c75c0ae1707f648e3878372fde08343"
     },
     "tokens": {
       "usdc": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
@@ -36,25 +52,25 @@
       "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
     },
     "tokenShares": {
-      "address": "0xc7903ce6CFAE211A0cbbcf1A8d721eE71A297466",
-      "checksum": "b4b8498622e19c952aaf1bf8b953143dc37235c0a550368501f14b66b4400f9f"
+      "address": "0x29965e2B89AfAa6257Ace7963172e259e0739dad",
+      "checksum": "151cf5645475046d2ae347a7add05b45e97369fbe7088988a6c73279662ff633"
     },
     "withdrawHelper": {
-      "address": "0xc1963430691708beE5d24B4E7D66ca8c9191a208",
-      "checksum": "3714afb70aca752078137f27b075e44e4374279cc10df7ac239df140aa85987f"
+      "address": "0x33fa0602cf504a896b874D417a802170C8e66975",
+      "checksum": "93343ca5e18751561137977c90c966eff53c9dfa09e733fa8619cdecef2c4c80"
     },
     "addLiquidity": {
       "address": "0xA1F563cC7dA98a87983AEc5d5d3dFdB53eF4C974",
       "checksum": "556ed14ab3a7f9696d16e2c17602a373f6a3fca3454bdf29b50f8707692752f5"
     },
     "orders": {
-      "address": "0x0eDC96C6070feF121Cb4A1aF50Fc8E02fE6A8486",
-      "checksum": "c6af4767ad6b2ee20bc9af3ea154648428d6f286d35e99e09eb584bfb07322b1"
+      "address": "0xC8E061D62fbAad5c9BEA74fE5D295bdDdfeE1892",
+      "checksum": "b0a50dc3b4d12d2d76cf64b0bd4bcc9ff09f8f0d6d1e53c2cb25ef244ab50b31"
     },
     "oraclesV3": {
       "weth-usdc": {
-        "address": "0x635E1eDEA94EDa4afCB5EC404c029257CeEcF064",
-        "checksum": "bbb1d31dc4c29104b0e6500c44fbbf2e8da1bc1eeaa3223301b6d311cb68cd47"
+        "address": "0x5c435D01cEa5eF0ce54351878E8169203fdce39b",
+        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
       }
     },
     "pairs": {
@@ -67,6 +83,18 @@
     "multicall": {
       "address": "0xAeC732F0BfebF15C2F41B62eC571168be82bB1f8",
       "checksum": "ec484c4f160f831f8a16fefd706901f5d0523d4e40658fbd25e549d4e9f8eb09"
+    },
+    "relayer": {
+      "address": "0x1A983CA929F75B2c699a61d2618dAC5e2cd84602",
+      "checksum": "6cfa1721470762571fdea6673e9130c22f77c1e3a3afe7eb028b4c598c108497"
+    },
+    "relayerProxy": {
+      "address": "0x3c6951FDB433b5b8442e7aa126D50fBFB54b5f42",
+      "checksum": "8264e42b23542d6aa57aff45fc2d683c6a5461ac1c06ee0966055147b7cf9cad"
+    },
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
     }
   },
   "arbitrum-goerli": {
@@ -93,29 +121,29 @@
       "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
     },
     "tokenShares": {
-      "address": "0x6Db09A2B7e9EB394D23e676b3DbB34871BFc373a",
-      "checksum": "b4b8498622e19c952aaf1bf8b953143dc37235c0a550368501f14b66b4400f9f"
+      "address": "0x3290438C43a341B0f9673F6Ce6C6d035004445a6",
+      "checksum": "151cf5645475046d2ae347a7add05b45e97369fbe7088988a6c73279662ff633"
     },
     "withdrawHelper": {
-      "address": "0xa99eFef4ae9f87B2C69C9CEAAE690D01F215D0A7",
-      "checksum": "3714afb70aca752078137f27b075e44e4374279cc10df7ac239df140aa85987f"
+      "address": "0x93329e41d87318BEc189f467b4BD653ca785A9E6",
+      "checksum": "93343ca5e18751561137977c90c966eff53c9dfa09e733fa8619cdecef2c4c80"
     },
     "addLiquidity": {
       "address": "0x0edE62166B2b6086BFb860eDA0d622FfC50fc8Ad",
       "checksum": "556ed14ab3a7f9696d16e2c17602a373f6a3fca3454bdf29b50f8707692752f5"
     },
     "orders": {
-      "address": "0x44Fb1Af77521a6fa683017BBf119Ec9062DB7B97",
-      "checksum": "c6af4767ad6b2ee20bc9af3ea154648428d6f286d35e99e09eb584bfb07322b1"
+      "address": "0xfe30D496e64383467e133F2aDC769Dbf288CA5aB",
+      "checksum": "b0a50dc3b4d12d2d76cf64b0bd4bcc9ff09f8f0d6d1e53c2cb25ef244ab50b31"
     },
     "delay": {
-      "address": "0x3397DAaEaddCc483648EEfdeD729c967998223A1",
-      "checksum": "f416352768133d125886e92ef505ec684d31bed49df698e300124741d93acf64"
+      "address": "0xe9b261cC45106fa35B7fc56B45D2Eb5cD6C31828",
+      "checksum": "6f85a70aaf88561843927148bff8bb4f7c75c0ae1707f648e3878372fde08343"
     },
     "oraclesV3": {
       "weth-usdc": {
-        "address": "0x8b33CcDC75C5aB85FCee0e23947290F178f0bBA6",
-        "checksum": "bbb1d31dc4c29104b0e6500c44fbbf2e8da1bc1eeaa3223301b6d311cb68cd47"
+        "address": "0x5382Cf820033Ff6cB5453A88F58B9a4c8e9B52cB",
+        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
       }
     },
     "pairs": {
@@ -128,6 +156,44 @@
     "multicall": {
       "address": "0x93A4fA8d6b40a0ebeC8ef8C22372B1817cE5B54e",
       "checksum": "ec484c4f160f831f8a16fefd706901f5d0523d4e40658fbd25e549d4e9f8eb09"
+    },
+    "relayer": {
+      "address": "0xCc96a28c21D770aEb15F3886750acbB42ae25fE4",
+      "checksum": "6cfa1721470762571fdea6673e9130c22f77c1e3a3afe7eb028b4c598c108497"
+    },
+    "relayerProxy": {
+      "address": "0x0a404cF7E54D218fA10cA811f4f730120DEa5208",
+      "checksum": "8264e42b23542d6aa57aff45fc2d683c6a5461ac1c06ee0966055147b7cf9cad"
+    },
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
+  },
+  "test": {
+    "owner": "",
+    "tokens": {
+      "dai": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "usdc": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "wbtc": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "weth": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "usdt": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+    },
+    "factory": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "pairs": {
+      "weth-dai": "0x47f4DbF601F3336fC19eF5E299De2971172C0887",
+      "weth-usdc": "0x7e3434ec80cCB7BBe47b971B0D14A75A56D20aFF",
+      "weth-wbtc": "0xdcDb526632087aDF80CF788d9816C744A20C428D",
+      "usdc-usdt": "0x6efd76c9d739587409E959a040a0779D4FBD193D",
+      "dai-usdc": "0xDe2Fc250ba7f21117b3a7632cBc09A8D6fcfAFD0"
+    },
+    "delay": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+    "factoryGovernor": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+    "relayerProxy": "0x04C89607413713Ec9775E14b954286519d836FEf",
+    "limitOrder": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
     }
   },
   "ganache": {
@@ -140,7 +206,11 @@
       "weth": "0xFf807885934003A35b1284d7445fc83Fd23417e5"
     },
     "pairs": {},
-    "delay": "0x84e924C5E04438D2c1Df1A981f7E7104952e6de1"
+    "delay": "0x84e924C5E04438D2c1Df1A981f7E7104952e6de1",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "goerli": {
     "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
@@ -293,40 +363,26 @@
     "rewarder": {
       "address": "0x48BFAf5A1bC3bd76DB249855FdB9ad8e14E0a52f",
       "checksum": "1d921b640f2e6c9788222b4dc35ed667022c2cef90a1e60fd0c92f1b8db0987a"
+    },
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
     }
   },
   "sepolia": {
     "owner": "",
     "tokens": {
-      "usdc": {
-        "address": "0xB36056FCdc4279Ca57dea60b44D476A8190A68Fe",
-        "checksum": "a9004c74d300036c0c436f75398c0919c0c2f62b1a083b2e49ee7c2fdb439121"
-      },
+      "usdc": "0xB36056FCdc4279Ca57dea60b44D476A8190A68Fe",
       "weth": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
-      "cvx": {
-        "address": "0x509c7e5948ef281d2E91e9Ea43b21D2C7e1389b2",
-        "checksum": "a9004c74d300036c0c436f75398c0919c0c2f62b1a083b2e49ee7c2fdb439121"
-      },
-      "sushi": {
-        "address": "0x1F414b17143F2987a0a8ED19D89d7518767A4BE7",
-        "checksum": "a9004c74d300036c0c436f75398c0919c0c2f62b1a083b2e49ee7c2fdb439121"
-      },
-      "steth": {
-        "address": "0x76375a6d6175ace4514B5Adc2DcC3a740AB06BF9",
-        "checksum": "a9004c74d300036c0c436f75398c0919c0c2f62b1a083b2e49ee7c2fdb439121"
-      },
+      "cvx": "0x509c7e5948ef281d2E91e9Ea43b21D2C7e1389b2",
+      "sushi": "0x1F414b17143F2987a0a8ED19D89d7518767A4BE7",
+      "steth": "0x76375a6d6175ace4514B5Adc2DcC3a740AB06BF9",
       "matic": {
         "address": "",
         "checksum": ""
       },
-      "usdt": {
-        "address": "0x98628033f7395a6d935c986152125Db0D7730d71",
-        "checksum": "a9004c74d300036c0c436f75398c0919c0c2f62b1a083b2e49ee7c2fdb439121"
-      },
-      "wbtc": {
-        "address": "0xFbf27d6168d6D0381314D25D4F7c4Ee5ffc14957",
-        "checksum": "a9004c74d300036c0c436f75398c0919c0c2f62b1a083b2e49ee7c2fdb439121"
-      }
+      "usdt": "0x98628033f7395a6d935c986152125Db0D7730d71",
+      "wbtc": "0xFbf27d6168d6D0381314D25D4F7c4Ee5ffc14957"
     },
     "uniswapV2": {
       "factory": "0xB7f907f7A9eBC822a80BD25E224be42Ce0A698A0",
@@ -343,28 +399,28 @@
       "factory": ""
     },
     "factory": {
-      "address": "0x7d0437A8cBfa6ad0cc894E93500EbBB287a45c68",
-      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+      "address": "0x7d0437a8cbfa6ad0cc894e93500ebbb287a45c68",
+      "checksum": "edb98c9be23f25cf08339321c51defceaed0f160b8591e73aa3602e4b770a7b9"
     },
     "tokenShares": {
-      "address": "0x1CcaC597b3eD35Ae58b354712673E4B38b5cc9dA",
-      "checksum": "8dc3d5c1f19d12e8f43639af095ca2b45a1dc3a39bf246f6fe6c63a4321e4742"
+      "address": "0x136Be7F0D471691C0364773AB9312AAEe7D02B07",
+      "checksum": "5ebad06ba7e86f2f04e9f2e405c8e14ee82cd8392624b8d85dfc11733cddf2d0"
     },
     "withdrawHelper": {
-      "address": "0x6Db09A2B7e9EB394D23e676b3DbB34871BFc373a",
-      "checksum": "93343ca5e18751561137977c90c966eff53c9dfa09e733fa8619cdecef2c4c80"
+      "address": "0x1685040038509a66e0F5c524D68cDe8f846E8dCd",
+      "checksum": "e40c47b0554299ee06f6b8591336e822536714f2938edd64bbdcb3e1949da82b"
     },
     "addLiquidity": {
-      "address": "0xa99eFef4ae9f87B2C69C9CEAAE690D01F215D0A7",
-      "checksum": "556ed14ab3a7f9696d16e2c17602a373f6a3fca3454bdf29b50f8707692752f5"
+      "address": "0x9b81c985AEB7827042E01c06107aDa97fD791ad6",
+      "checksum": "ab10cf0230fe04d80d2046982bc84272392c654a39a328668f68939721c5cbf8"
     },
     "orders": {
-      "address": "0x6873e36B3f5adaC51fc9f6CE8Ec992f56F44158a",
-      "checksum": "a0553583bf6eff9a9ec37db314839022da282969a16bb39477ef199d5e67b9bc"
+      "address": "0xD73D9ccd4869316647C550EcA6A49Aa34680C823",
+      "checksum": "9697f5cc2f5ca5199ad3fcf6ce95754387ef4af5ff2bcb7a992f7902d3dccabc"
     },
     "delay": {
-      "address": "0xFc1e4AbD92B34A93a88eFF05A31b3b6Da568754B",
-      "checksum": "cabb32f0d510a704345d66bf8a11df757c504a4b604ee1e0b1abe53c2d484d05"
+      "address": "0x52ceb36f86a31B262f26c6c9e19C0a0F4267729B",
+      "checksum": "5def913df61505c1edff2e8b91ff85b3e867bbccc771f0eebcb42aadca9afbcc"
     },
     "oraclesV2": {
       "weth-usdc": {
@@ -381,7 +437,7 @@
       },
       "weth-steth": {
         "address": "0x5b2d3C36fb8665eeFc0D3AEab4a64dE6aDe1B7b9",
-        "checksum": "ee8bd7dc38263286a18888da2af324cfd832b9180d41a550c53cfe15e77cbe70"
+        "checksum": "297531407278e2d8388240a4dc6eb8db082eaa7ec35f19daaf7375f93ea3ac79"
       },
       "usdc-usdt": {
         "address": "",
@@ -395,25 +451,25 @@
       },
       "weth-usdc": {
         "address": "0xCc96a28c21D770aEb15F3886750acbB42ae25fE4",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       },
       "weth-usdt": {
         "address": "0xd8F967555dD59991b2c41e32b2EdBBD3e671d280",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       },
       "usdc-usdt": {
         "address": "0x9126e44902E78e9232306E07C530D09d15F701bf",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       },
       "weth-wbtc": {
         "address": "0xc88C6C0365c62c54F73fbb8c8AD610dBaBe495dc",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       }
     },
     "pairs": {
       "weth-usdc": "0x8a39912146ca85FC1335FE7c0f1E9AB1c77036a6",
-      "weth-cvx": "",
-      "weth-sushi": "",
+      "weth-cvx": "0x0000000000000000000000000000000000000000",
+      "weth-sushi": "0x0000000000000000000000000000000000000000",
       "weth-steth": "0x4fB81301507b6f3757e1679030aaC00342f44a52",
       "weth-matic": "",
       "weth-usdt": "0x5f67592B289F3088eFEAAF8290E96Fc407009337",
@@ -422,28 +478,40 @@
     },
     "reader": {
       "address": "0xfe30D496e64383467e133F2aDC769Dbf288CA5aB",
-      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+      "checksum": "cefe1f3f17d87ff33d82cf15c938b69d43d97f5afe6fa99e754fc38b99a9b10c"
     },
     "multicall": {
       "address": "0xe9b261cC45106fa35B7fc56B45D2Eb5cD6C31828",
-      "checksum": "ec484c4f160f831f8a16fefd706901f5d0523d4e40658fbd25e549d4e9f8eb09"
+      "checksum": "60302b9c08098d56b5bc66c457b4684ce5247fa7f8e1bb3e05af8140c09594b5"
     },
     "relayer": {
-      "address": "0x6A2aB784518e054464f54b2d0AB736eF6Af1d9a6",
-      "checksum": "433d34b96352b23c75243d02b1f44c1d6e961caa3aa2149aad08064c12e45a8c"
+      "address": "0xa855a7744927f86d1B1Ef66a6937a455f9a0E5b1",
+      "checksum": "5e2aaa8c8d0cbfd7f62acc5e7cfe99d87f9872ba6d744d7f6d4de27e42d43922"
     },
     "relayerProxy": {
       "address": "0xB69C7579B209a346a2429E6A99645CD72EDe5C8E",
-      "checksum": "8264e42b23542d6aa57aff45fc2d683c6a5461ac1c06ee0966055147b7cf9cad"
+      "checksum": "73814cbb77bbf0918d79ddfd53d0495b9a3e786f0a31113480a4c72be5664cf1"
     },
     "limitOrder": {
-      "address": "0x2c2dc8Bd9722852b833e47Da42eb87Fbe46603FF",
-      "checksum": "8375693d92dd4f7fff670c50e6588b598d28561f7e074c37938f05a4ea6115d6"
+      "address": "0xeD1845669c66a55FfBe966063C80195a62D863b0",
+      "checksum": "8612820bd8ae9c4c470fea99fe6e50cbe80e0e57cf43c581dd2bfbbd502e0ffc"
     },
     "integralToken": "0xc61B6926570b8E14FDE6398bfE8Bf60F1C6404Cc",
     "rewarder": {
       "address": "0xF75ed406c984A24772082719EF522Aae50C6dadc",
       "checksum": "1d921b640f2e6c9788222b4dc35ed667022c2cef90a1e60fd0c92f1b8db0987a"
+    },
+    "factoryGovernor": {
+      "address": "0x81E175c16723B0c669890A1974C40E3eeF7F7fC4",
+      "checksum": "fc4419e4fc95bf299d51c30691c272e1f91db212041cffd76ccd354ad2a6c70d"
+    },
+    "executionHelper": {
+      "address": "0xbb7bc039b0d56FdF9bA7a3315A1EB544B7712367",
+      "checksum": "b3291c4b4b418de2be70acf89be8e1d27fbc89b7cb97043b1925afdcc35c18ef"
+    },
+    "factoryGovernorProxy": {
+      "address": "0x09f97d654DA42546D724EFA94A2B0e28984F3458",
+      "checksum": "73814cbb77bbf0918d79ddfd53d0495b9a3e786f0a31113480a4c72be5664cf1"
     }
   },
   "kovan": {
@@ -562,7 +630,11 @@
         "checksum": "3028e97130a3ca25aaa7b595f6d76663cd3644ac63bd52c132cbd28f6e07d7f8"
       }
     },
-    "multicall": "0x2cc8688c5f75e365aaeeb4ea8d6a480405a48d2a"
+    "multicall": "0x2cc8688c5f75e365aaeeb4ea8d6a480405a48d2a",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "ropsten": {
     "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
@@ -576,6 +648,10 @@
     "uniswap": {
       "factory": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
       "weth-usdc": "0xbc30AaA8e99d0f0e435FC938034850c2fC77f753"
+    },
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
     }
   },
   "rinkeby": {
@@ -607,7 +683,11 @@
       "weth-usdc": "0x9cCF47CC3FD5378061E2949ABb437DEbd13789Bf",
       "weth-crv": "0x8CE1CD689deF124037f2eb59393f062bC790b884"
     },
-    "reader": "0xd69c8a45B14f9f0ac11085CfB186C667faE71210"
+    "reader": "0xd69c8a45B14f9f0ac11085CfB186C667faE71210",
+    "factoryGovernorProxy": {
+      "address": "",
+      "checksum": ""
+    }
   },
   "mainnet": {
     "owner": "0xFf030bEb0335432e156A0Ee55Bd87850eAaD228E",
@@ -647,15 +727,15 @@
       },
       "weth-cvx": {
         "address": "0x4e954aD5DFf8fFc37deCE524DF11B7d303FFC7E2",
-        "checksum": "ee8bd7dc38263286a18888da2af324cfd832b9180d41a550c53cfe15e77cbe70"
+        "checksum": "297531407278e2d8388240a4dc6eb8db082eaa7ec35f19daaf7375f93ea3ac79"
       },
       "weth-sushi": {
         "address": "0xC13D8a028A41a5B24Da8F672770A5d595E4bbaF5",
-        "checksum": "ee8bd7dc38263286a18888da2af324cfd832b9180d41a550c53cfe15e77cbe70"
+        "checksum": "297531407278e2d8388240a4dc6eb8db082eaa7ec35f19daaf7375f93ea3ac79"
       },
       "weth-steth": {
         "address": "0x1aDDB93a08A3c79a8f115706A3e30d25c2b837eE",
-        "checksum": "ee8bd7dc38263286a18888da2af324cfd832b9180d41a550c53cfe15e77cbe70"
+        "checksum": "297531407278e2d8388240a4dc6eb8db082eaa7ec35f19daaf7375f93ea3ac79"
       }
     },
     "priceReader": "0x75e4955dd2B608Eb7A821EefCbBacB5f9dC978AF",
@@ -666,31 +746,31 @@
     },
     "factory": {
       "address": "0xC480b33eE5229DE3FbDFAD1D2DCD3F3BAD0C56c6",
-      "checksum": "720f2403b5a1b6215c7b3a52321693ed95f13191fd37d1977c8dabdc0fb9fe6b"
+      "checksum": "edb98c9be23f25cf08339321c51defceaed0f160b8591e73aa3602e4b770a7b9"
     },
     "tokenShares": {
-      "address": "0x85204098AD33da81FAC67bECE54ad4107bDD7442",
-      "checksum": "8dc3d5c1f19d12e8f43639af095ca2b45a1dc3a39bf246f6fe6c63a4321e4742"
+      "address": "0xff407b033077B5cabDeF809E953CadbE4B322126",
+      "checksum": "7d471389fe33733669021d551998fe4ac0e46551c37d6c95bbdb7c2af35876b9"
     },
     "withdrawHelper": {
-      "address": "0x19F6BC0755FD4a465B3961FB335d6E55AB8B9Eaa",
-      "checksum": "93343ca5e18751561137977c90c966eff53c9dfa09e733fa8619cdecef2c4c80"
+      "address": "0x4D6740c0224E4AE4D9cB5b4900435d768DbFf204",
+      "checksum": "e40c47b0554299ee06f6b8591336e822536714f2938edd64bbdcb3e1949da82b"
     },
     "addLiquidity": {
-      "address": "0x0eC2323adafbEBC6C80257c7359692bCcEb0B3f1",
-      "checksum": "556ed14ab3a7f9696d16e2c17602a373f6a3fca3454bdf29b50f8707692752f5"
+      "address": "0x80246AC7A8f51d61856a1F62B2dF8aD0fcEe24d2",
+      "checksum": "ab10cf0230fe04d80d2046982bc84272392c654a39a328668f68939721c5cbf8"
     },
     "orders": {
-      "address": "0x033F27c32Ed52f31163189FC2F5E4cBF2a650B08",
-      "checksum": "a0553583bf6eff9a9ec37db314839022da282969a16bb39477ef199d5e67b9bc"
+      "address": "0x6b225B3797892C6582a06D17bcfe0A96f0b9087c",
+      "checksum": "4a107bf5fb0352e0c60bac3d94394bb54d040aeba8b6d6fa5a234673cc4054be"
     },
     "delay": {
-      "address": "0xBdbcDFbca3b6Eb90F251b41806A40569c6eB18cd",
-      "checksum": "cabb32f0d510a704345d66bf8a11df757c504a4b604ee1e0b1abe53c2d484d05"
+      "address": "0x35Cb375799B28C8D6b7C5C8d494ed180AE2E60cB",
+      "checksum": "9135e243280cae14ec49dac5605dc3e277cbf1fcd12aa8e491861a07eb67f294"
     },
     "reader": {
       "address": "0xB5C08263c1D2c9651Ea6d91A9908460e40095f7c",
-      "checksum": "e23b270e1d8155b031c29128111318889c57633659177d3a644e881e87be6048"
+      "checksum": "cefe1f3f17d87ff33d82cf15c938b69d43d97f5afe6fa99e754fc38b99a9b10c"
     },
     "sushiswapV2": {
       "factory": "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
@@ -713,32 +793,44 @@
       },
       "weth-usdc": {
         "address": "0x42Ac95f3Dd079AAEE572FEC9704a51C449879D6d",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       },
       "weth-usdt": {
         "address": "0xC6342b505D8C1F32883aD85Af65402cE160B1aB9",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       },
       "usdc-usdt": {
         "address": "0xa567CbeCa45ed0694850753d3572c92602246F1a",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       },
       "weth-wbtc": {
         "address": "0xcB1620778a758e9e7ab2De567ecF3fbBaEC8f71E",
-        "checksum": "655ea51306a8753769b760c2e017de623120769a0b6b092174d35d54d69a0c9e"
+        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600"
       }
     },
     "relayer": {
-      "address": "0x4b4De1fA81446602fD86192CE1Fb7eBC49B050A8",
-      "checksum": "c27cdea70e4402ce54cb1245fad0a9d081c24db1c43dfcf20b5da67dbf24f017"
+      "address": "0x85fd81EC651d69c692CD6173aba425E88A2Ae94a",
+      "checksum": "1e027c3db958fae02eb7c00df63824e10562be2b97393a6f2dc4164126185896"
     },
     "relayerProxy": {
       "address": "0xd17b3c9784510E33cD5B87b490E79253BcD81e2E",
-      "checksum": "8264e42b23542d6aa57aff45fc2d683c6a5461ac1c06ee0966055147b7cf9cad"
+      "checksum": "73814cbb77bbf0918d79ddfd53d0495b9a3e786f0a31113480a4c72be5664cf1"
     },
     "rewarder": {
       "address": "0xa4b40336649718a76cB2b882968FC82a6048714A",
       "checksum": "1d921b640f2e6c9788222b4dc35ed667022c2cef90a1e60fd0c92f1b8db0987a"
+    },
+    "factoryGovernor": {
+      "address": "0x2B93b9abFa3c3377330FD45F9525d01dD9B8C020",
+      "checksum": "fc4419e4fc95bf299d51c30691c272e1f91db212041cffd76ccd354ad2a6c70d"
+    },
+    "factoryGovernorProxy": {
+      "address": "0xF4418d9fe76A788F2868a558dD216549aD2d869B",
+      "checksum": "73814cbb77bbf0918d79ddfd53d0495b9a3e786f0a31113480a4c72be5664cf1"
+    },
+    "executionHelper": {
+      "address": "0xeb244fB424b56CcB96D42Bd1983Fb0d67037B27e",
+      "checksum": "e4c88005482897a8f1c8413be6b83796697f5a742d1b568446b2f51d75381d93"
     }
   }
 }

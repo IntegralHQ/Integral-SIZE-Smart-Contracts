@@ -4,19 +4,31 @@ import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-etherscan"
 import "hardhat-gas-reporter"
 import "hardhat-abi-exporter"
+import "hardhat-preprocessor"
 import "@typechain/hardhat"
+import { transformConstants } from "./scripts/preprocessor/subtasks"
+import "./scripts/preprocessor/subtasks/conditional"
 
 export default {
+  preprocess: {
+    eachLine: transformConstants()
+  },
   defaultNetwork: process.env.DEFAULT_NETWORK,
   gasReporter: {
     showTimeSpent: true,
     currency: 'USD',
   },
   networks: {
+    test: {
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      timeout: 60 * 30 * 1000,
+      url: "http://127.0.0.1:8545",
+      gas: 5000000,
+    },
     ganache: {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       timeout: 60 * 30 * 1000,
-      url: "127.0.0.1:8545",
+      url: "http://127.0.0.1:8545",
       gas: 5000000,
     },
     polygon: {

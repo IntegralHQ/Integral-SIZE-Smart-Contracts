@@ -7,9 +7,5 @@ pragma abicoder v2;
 interface ITwapRelayerInitializable {
     event Initialized(address _factory, address _delay, address _weth);
 
-    function initialize(
-        address _factory,
-        address _delay,
-        address _weth
-    ) external;
+    function initialize() external;
 }

@@ -10,10 +10,6 @@ contract TokenSharesTest {
 
     event Result(uint256 value);
 
-    constructor(address weth) {
-        tokenShares.weth = weth;
-    }
-
     function totalShares(address token) public view returns (uint256) {
         return tokenShares.totalShares[token];
     }

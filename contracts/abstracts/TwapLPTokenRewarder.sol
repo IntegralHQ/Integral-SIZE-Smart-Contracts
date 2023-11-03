@@ -278,7 +278,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
         uint256 accumulatedItgrPerShare = pool.accumulatedItgrPerShare;
         uint256 lpSupply = IERC20(lpTokens[pid]).balanceOf(address(this));
 
-        if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
+        if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0 && pool.allocationPoints != 0) {
             uint256 time = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 itgrReward = time.mul(itgrPerSecond).mul(pool.allocationPoints).div(totalAllocationPoints);
             accumulatedItgrPerShare = accumulatedItgrPerShare.add(
@@ -334,7 +334,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
         pool = pools[pid];
         if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = IERC20(lpTokens[pid]).balanceOf(address(this));
-            if (lpSupply > 0) {
+            if (lpSupply != 0 && pool.allocationPoints != 0) {
                 uint256 time = block.timestamp.sub(pool.lastRewardTimestamp);
                 uint256 itgrReward = time.mul(itgrPerSecond).mul(pool.allocationPoints).div(totalAllocationPoints);
                 pool.accumulatedItgrPerShare = pool.accumulatedItgrPerShare.add(

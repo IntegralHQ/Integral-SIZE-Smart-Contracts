@@ -12,6 +12,9 @@ import './libraries/Orders.sol';
 import './libraries/TokenShares.sol';
 import './libraries/AddLiquidity.sol';
 import './libraries/WithdrawHelper.sol';
+import './libraries/ExecutionHelper.sol';
+import './interfaces/ITwapFactoryGovernor.sol';
+import './libraries/Macros.sol';
 
 contract TwapDelay is ITwapDelay {
     using SafeMath for uint256;
@@ -23,35 +26,23 @@ contract TwapDelay is ITwapDelay {
 
     uint256 private constant ORDER_CANCEL_TIME = 24 hours;
     uint256 private constant BOT_EXECUTION_TIME = 20 minutes;
-    uint256 private constant ORDER_LIFESPAN = 48 hours;
-    uint16 private constant MAX_TOLERANCE = 10;
 
     address public override owner;
+    address public override factoryGovernor;
+    address public constant RELAYER_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F    /*__MACRO__GLOBAL.RELAYER_PROXY_ADDRESS*/; //prettier-ignore
     mapping(address => bool) public override isBot;
 
-    mapping(address => uint16) public override tolerance;
+    constructor(address _factoryGovernor, address _bot) {
+        _setOwner(msg.sender);
+        _setFactoryGovernor(_factoryGovernor);
+        _setBot(_bot, true);
 
-    constructor(
-        address _factory,
-        address _weth,
-        address _bot
-    ) {
-        orders.factory = _factory;
-        owner = msg.sender;
-        isBot[_bot] = true;
         orders.gasPrice = tx.gasprice;
-        tokenShares.weth = _weth;
-        orders.delay = 30 minutes;
-        orders.maxGasLimit = 5_000_000;
-        orders.gasPriceInertia = 20_000_000;
-        orders.maxGasPriceImpact = 1_000_000;
-        orders.setTransferGasCost(address(0), Orders.ETHER_TRANSFER_CALL_COST);
-
-        emit OwnerSet(msg.sender);
+        _emitEventWithDefaults();
     }
 
-    function getTransferGasCost(address token) external view override returns (uint256 gasCost) {
-        return orders.transferGasCosts[token];
+    function getTransferGasCost(address token) external pure override returns (uint256 gasCost) {
+        return Orders.getTransferGasCost(token);
     }
 
     function getDepositDisabled(address pair) external view override returns (bool) {
@@ -87,8 +78,8 @@ contract TwapDelay is ITwapDelay {
         locked = 0;
     }
 
-    function factory() external view override returns (address) {
-        return orders.factory;
+    function factory() external pure override returns (address) {
+        return Orders.FACTORY_ADDRESS;
     }
 
     function totalShares(address token) external view override returns (uint256) {
@@ -96,12 +87,20 @@ contract TwapDelay is ITwapDelay {
     }
 
     // returns wrapped native currency for particular blockchain (WETH or WMATIC)
-    function weth() external view override returns (address) {
-        return tokenShares.weth;
+    function weth() external pure override returns (address) {
+        return TokenShares.WETH_ADDRESS;
     }
 
-    function delay() external view override returns (uint256) {
-        return orders.delay;
+    function relayer() external pure override returns (address) {
+        return RELAYER_ADDRESS;
+    }
+
+    function isNonRebasingToken(address token) external pure override returns (bool) {
+        return TokenShares.isNonRebasing(token);
+    }
+
+    function delay() external pure override returns (uint256) {
+        return Orders.DELAY;
     }
 
     function lastProcessedOrderId() external view returns (uint256) {
@@ -116,78 +115,64 @@ contract TwapDelay is ITwapDelay {
         return orders.canceled[orderId];
     }
 
-    function maxGasLimit() external view override returns (uint256) {
-        return orders.maxGasLimit;
+    function maxGasLimit() external pure override returns (uint256) {
+        return Orders.MAX_GAS_LIMIT;
     }
 
-    function maxGasPriceImpact() external view override returns (uint256) {
-        return orders.maxGasPriceImpact;
+    function maxGasPriceImpact() external pure override returns (uint256) {
+        return Orders.MAX_GAS_PRICE_IMPACT;
     }
 
-    function gasPriceInertia() external view override returns (uint256) {
-        return orders.gasPriceInertia;
+    function gasPriceInertia() external pure override returns (uint256) {
+        return Orders.GAS_PRICE_INERTIA;
     }
 
     function gasPrice() external view override returns (uint256) {
         return orders.gasPrice;
     }
 
-    function setOrderDisabled(
+    function setOrderTypesDisabled(
         address pair,
-        Orders.OrderType orderType,
+        Orders.OrderType[] calldata orderTypes,
         bool disabled
-    ) external payable override {
+    ) external override {
         require(msg.sender == owner, 'TD00');
-        orders.setOrderDisabled(pair, orderType, disabled);
+        orders.setOrderTypesDisabled(pair, orderTypes, disabled);
     }
 
-    function setOwner(address _owner) external payable override {
+    function setOwner(address _owner) external override {
         require(msg.sender == owner, 'TD00');
-        // require(_owner != owner, 'TD01'); // Comment out to save size
+        _setOwner(_owner);
+    }
+
+    function _setOwner(address _owner) internal {
+        require(_owner != owner, 'TD01');
         require(_owner != address(0), 'TD02');
         owner = _owner;
         emit OwnerSet(_owner);
     }
 
-    function setBot(address _bot, bool _isBot) external payable override {
+    function setFactoryGovernor(address _factoryGovernor) external override {
         require(msg.sender == owner, 'TD00');
-        // require(_isBot != isBot[_bot], 'TD01'); // Comment out to save size
+        _setFactoryGovernor(_factoryGovernor);
+    }
+
+    function _setFactoryGovernor(address _factoryGovernor) internal {
+        require(_factoryGovernor != factoryGovernor, 'TD01');
+        require(_factoryGovernor != address(0), 'TD02');
+        factoryGovernor = _factoryGovernor;
+        emit FactoryGovernorSet(_factoryGovernor);
+    }
+
+    function setBot(address _bot, bool _isBot) external override {
+        require(msg.sender == owner, 'TD00');
+        _setBot(_bot, _isBot);
+    }
+
+    function _setBot(address _bot, bool _isBot) internal {
+        require(_isBot != isBot[_bot], 'TD01');
         isBot[_bot] = _isBot;
         emit BotSet(_bot, _isBot);
-    }
-
-    function setMaxGasLimit(uint256 _maxGasLimit) external payable override {
-        require(msg.sender == owner, 'TD00');
-        orders.setMaxGasLimit(_maxGasLimit);
-    }
-
-    function setDelay(uint32 _delay) external payable override {
-        require(msg.sender == owner, 'TD00');
-        // require(_delay != orders.delay, 'TD01'); // Comment out to save size
-        orders.delay = _delay;
-        emit DelaySet(_delay);
-    }
-
-    function setGasPriceInertia(uint256 _gasPriceInertia) external payable override {
-        require(msg.sender == owner, 'TD00');
-        orders.setGasPriceInertia(_gasPriceInertia);
-    }
-
-    function setMaxGasPriceImpact(uint256 _maxGasPriceImpact) external payable override {
-        require(msg.sender == owner, 'TD00');
-        orders.setMaxGasPriceImpact(_maxGasPriceImpact);
-    }
-
-    function setTransferGasCost(address token, uint256 gasCost) external payable override {
-        require(msg.sender == owner, 'TD00');
-        orders.setTransferGasCost(token, gasCost);
-    }
-
-    function setTolerance(address pair, uint16 amount) external payable override {
-        require(msg.sender == owner, 'TD00');
-        require(amount <= MAX_TOLERANCE, 'TD54');
-        tolerance[pair] = amount;
-        emit ToleranceSet(pair, amount);
     }
 
     function deposit(Orders.DepositParams calldata depositParams)
@@ -214,6 +199,18 @@ contract TwapDelay is ITwapDelay {
 
     function sell(Orders.SellParams calldata sellParams) external payable override lock returns (uint256 orderId) {
         orders.sell(sellParams, tokenShares);
+        return orders.newestOrderId;
+    }
+
+    function relayerSell(Orders.SellParams calldata sellParams)
+        external
+        payable
+        override
+        lock
+        returns (uint256 orderId)
+    {
+        require(msg.sender == RELAYER_ADDRESS, 'TD00');
+        orders.relayerSell(sellParams, tokenShares);
         return orders.newestOrderId;
     }
 
@@ -245,13 +242,13 @@ contract TwapDelay is ITwapDelay {
             }
             require(senderCanExecute || block.timestamp >= validAfterTimestamp + BOT_EXECUTION_TIME, 'TD00');
             orderExecuted = true;
-            if (_orders[i].orderType == Orders.DEPOSIT_TYPE) {
+            if (_orders[i].orderType == Orders.OrderType.Deposit) {
                 executeDeposit(_orders[i]);
-            } else if (_orders[i].orderType == Orders.WITHDRAW_TYPE) {
+            } else if (_orders[i].orderType == Orders.OrderType.Withdraw) {
                 executeWithdraw(_orders[i]);
-            } else if (_orders[i].orderType == Orders.SELL_TYPE || _orders[i].orderType == Orders.SELL_INVERTED_TYPE) {
+            } else if (_orders[i].orderType == Orders.OrderType.Sell) {
                 executeSell(_orders[i]);
-            } else if (_orders[i].orderType == Orders.BUY_TYPE || _orders[i].orderType == Orders.BUY_INVERTED_TYPE) {
+            } else if (_orders[i].orderType == Orders.OrderType.Buy) {
                 executeBuy(_orders[i]);
             }
         }
@@ -267,8 +264,8 @@ contract TwapDelay is ITwapDelay {
 
         (bool executionSuccess, bytes memory data) = address(this).call{
             gas: order.gasLimit.sub(
-                Orders.ORDER_BASE_COST.add(orders.transferGasCosts[order.token0]).add(
-                    orders.transferGasCosts[order.token1]
+                Orders.ORDER_BASE_COST.add(Orders.getTransferGasCost(order.token0)).add(
+                    Orders.getTransferGasCost(order.token1)
                 )
             )
         }(abi.encodeWithSelector(this._executeDeposit.selector, order));
@@ -300,7 +297,7 @@ contract TwapDelay is ITwapDelay {
 
         bool refundSuccess = true;
         if (!executionSuccess) {
-            (address pair, ) = orders.getPair(order.token0, order.token1);
+            (address pair, ) = Orders.getPair(order.token0, order.token1);
             refundSuccess = Orders.refundLiquidity(pair, order.to, order.liquidity, this._refundLiquidity.selector);
         }
         finalizeOrder(refundSuccess);
@@ -314,7 +311,7 @@ contract TwapDelay is ITwapDelay {
         orders.dequeueOrder(order.orderId);
 
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(orders.transferGasCosts[order.token0]))
+            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.getTransferGasCost(order.token0)))
         }(abi.encodeWithSelector(this._executeSell.selector, order));
 
         bool refundSuccess = true;
@@ -332,7 +329,7 @@ contract TwapDelay is ITwapDelay {
         orders.dequeueOrder(order.orderId);
 
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(orders.transferGasCosts[order.token0]))
+            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.getTransferGasCost(order.token0)))
         }(abi.encodeWithSelector(this._executeBuy.selector, order));
 
         bool refundSuccess = true;
@@ -370,7 +367,7 @@ contract TwapDelay is ITwapDelay {
         if (value == 0) {
             return true;
         }
-        success = TransferHelper.transferETH(to, value, orders.transferGasCosts[address(0)]);
+        success = TransferHelper.transferETH(to, value, Orders.getTransferGasCost(Orders.NATIVE_CURRENCY_SENTINEL));
         emit EthRefund(to, success, value);
     }
 
@@ -383,11 +380,11 @@ contract TwapDelay is ITwapDelay {
         if (share == 0) {
             return true;
         }
-        (bool success, bytes memory data) = address(this).call{ gas: orders.transferGasCosts[token] }(
+        (bool success, bytes memory data) = address(this).call{ gas: Orders.getTransferGasCost(token) }(
             abi.encodeWithSelector(this._refundToken.selector, token, to, share, unwrap)
         );
         if (!success) {
-            emit RefundFailed(to, token, share, data);
+            emit Orders.RefundFailed(to, token, share, data);
         }
         return success;
     }
@@ -401,11 +398,11 @@ contract TwapDelay is ITwapDelay {
         bool unwrap
     ) private returns (bool) {
         (bool success, bytes memory data) = address(this).call{
-            gas: orders.transferGasCosts[token0].add(orders.transferGasCosts[token1])
+            gas: Orders.getTransferGasCost(token0).add(Orders.getTransferGasCost(token1))
         }(abi.encodeWithSelector(this._refundTokens.selector, to, token0, share0, token1, share1, unwrap));
         if (!success) {
-            emit RefundFailed(to, token0, share0, data);
-            emit RefundFailed(to, token1, share1, data);
+            emit Orders.RefundFailed(to, token0, share0, data);
+            emit Orders.RefundFailed(to, token1, share1, data);
         }
         return success;
     }
@@ -430,10 +427,10 @@ contract TwapDelay is ITwapDelay {
         bool unwrap
     ) public payable {
         require(msg.sender == address(this), 'TD00');
-        if (token == tokenShares.weth && unwrap) {
+        if (token == TokenShares.WETH_ADDRESS && unwrap) {
             uint256 amount = tokenShares.sharesToAmount(token, share, 0, to);
-            IWETH(tokenShares.weth).withdraw(amount);
-            TransferHelper.safeTransferETH(to, amount, orders.transferGasCosts[address(0)]);
+            IWETH(TokenShares.WETH_ADDRESS).withdraw(amount);
+            TransferHelper.safeTransferETH(to, amount, Orders.getTransferGasCost(Orders.NATIVE_CURRENCY_SENTINEL));
         } else {
             TransferHelper.safeTransfer(token, to, tokenShares.sharesToAmount(token, share, 0, to));
         }
@@ -450,266 +447,76 @@ contract TwapDelay is ITwapDelay {
 
     function _executeDeposit(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
 
-        (address pair, ) = orders.getPair(order.token0, order.token1);
-        (uint256 amount0Left, uint256 amount1Left, uint256 swapToken) = _initialDeposit(order, pair);
+        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
 
-        if (order.swap && swapToken != 0) {
-            bytes memory data = encodePriceInfo(pair, order.priceAccumulator, order.timestamp);
-            if (amount0Left != 0 && swapToken == 1) {
-                uint256 extraAmount1;
-                (amount0Left, extraAmount1) = AddLiquidity.swapDeposit0(
-                    pair,
-                    order.token0,
-                    amount0Left,
-                    order.minSwapPrice,
-                    tolerance[pair],
-                    data
-                );
-                amount1Left = amount1Left.add(extraAmount1);
-            } else if (amount1Left != 0 && swapToken == 2) {
-                uint256 extraAmount0;
-                (extraAmount0, amount1Left) = AddLiquidity.swapDeposit1(
-                    pair,
-                    order.token1,
-                    amount1Left,
-                    order.maxSwapPrice,
-                    tolerance[pair],
-                    data
-                );
-                amount0Left = amount0Left.add(extraAmount0);
-            }
-        }
-
-        if (amount0Left != 0 && amount1Left != 0) {
-            (amount0Left, amount1Left, ) = AddLiquidity.addLiquidityAndMint(
-                pair,
-                order.to,
-                order.token0,
-                order.token1,
-                amount0Left,
-                amount1Left
-            );
-        }
-
-        AddLiquidity._refundDeposit(order.to, order.token0, order.token1, amount0Left, amount1Left);
-    }
-
-    function _initialDeposit(Orders.Order calldata order, address pair)
-        private
-        returns (
-            uint256 amount0Left,
-            uint256 amount1Left,
-            uint256 swapToken
-        )
-    {
-        uint256 amount0Desired = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
-        uint256 amount1Desired = tokenShares.sharesToAmount(order.token1, order.value1, order.amountLimit1, order.to);
-        ITwapPair(pair).sync();
-        (amount0Left, amount1Left, swapToken) = AddLiquidity.addLiquidityAndMint(
-            pair,
-            order.to,
-            order.token0,
-            order.token1,
-            amount0Desired,
-            amount1Desired
-        );
+        ITwapPair(pairAddress).sync();
+        ITwapFactoryGovernor(factoryGovernor).distributeFees(order.token0, order.token1, pairAddress);
+        ITwapPair(pairAddress).sync();
+        ExecutionHelper.executeDeposit(order, pairAddress, getTolerance(pairAddress), tokenShares);
     }
 
     function _executeWithdraw(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
-        (address pair, ) = orders.getPair(order.token0, order.token1);
-        ITwapPair(pair).sync();
-        TransferHelper.safeTransfer(pair, pair, order.liquidity);
-        uint256 wethAmount;
-        uint256 amount0;
-        uint256 amount1;
-        if (order.unwrap && (order.token0 == tokenShares.weth || order.token1 == tokenShares.weth)) {
-            bool success;
-            (success, wethAmount, amount0, amount1) = WithdrawHelper.withdrawAndUnwrap(
-                order.token0,
-                order.token1,
-                pair,
-                tokenShares.weth,
-                order.to,
-                orders.transferGasCosts[address(0)]
-            );
-            if (!success) {
-                tokenShares.onUnwrapFailed(order.to, wethAmount);
-            }
-        } else {
-            (amount0, amount1) = ITwapPair(pair).burn(order.to);
-        }
-        require(amount0 >= order.value0 && amount1 >= order.value1, 'TD03');
+
+        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
+
+        ITwapPair(pairAddress).sync();
+        ITwapFactoryGovernor(factoryGovernor).distributeFees(order.token0, order.token1, pairAddress);
+        ITwapPair(pairAddress).sync();
+        ExecutionHelper.executeWithdraw(order);
     }
 
     function _executeBuy(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
 
-        (address pairAddress, ) = orders.getPair(order.token0, order.token1);
-        uint256 amountInMax = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
+        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
+        ExecutionHelper.ExecuteBuySellParams memory orderParams;
+        orderParams.order = order;
+        orderParams.pairAddress = pairAddress;
+        orderParams.pairTolerance = getTolerance(pairAddress);
+
         ITwapPair(pairAddress).sync();
-        bytes memory priceInfo = encodePriceInfo(pairAddress, order.priceAccumulator, order.timestamp);
-        uint256 amountIn;
-        uint256 amountOut;
-        uint256 reserveOut;
-        bool inverted = order.orderType == Orders.BUY_INVERTED_TYPE;
-        {
-            // scope for reserve out logic, avoids stack too deep errors
-            (uint112 reserve0, uint112 reserve1) = ITwapPair(pairAddress).getReserves();
-            // subtract 1 to prevent reserve going to 0
-            reserveOut = uint256(inverted ? reserve0 : reserve1).sub(1);
-        }
-        {
-            // scope for partial fill logic, avoids stack too deep errors
-            address oracle = ITwapPair(pairAddress).oracle();
-            uint256 swapFee = ITwapPair(pairAddress).swapFee();
-            (amountIn, amountOut) = ITwapOracle(oracle).getSwapAmountInMaxOut(
-                inverted,
-                swapFee,
-                order.value1,
-                priceInfo
-            );
-            uint256 amountInMaxScaled;
-            if (amountOut > reserveOut) {
-                amountInMaxScaled = amountInMax.mul(reserveOut).ceil_div(order.value1);
-                (amountIn, amountOut) = ITwapOracle(oracle).getSwapAmountInMinOut(
-                    inverted,
-                    swapFee,
-                    reserveOut,
-                    priceInfo
-                );
-            } else {
-                amountInMaxScaled = amountInMax;
-                amountOut = order.value1; // Truncate to desired out
-            }
-            require(amountInMaxScaled >= amountIn, 'TD08');
-            if (amountInMax > amountIn) {
-                if (order.token0 == tokenShares.weth && order.unwrap) {
-                    _forceEtherTransfer(order.to, amountInMax.sub(amountIn));
-                } else {
-                    TransferHelper.safeTransfer(order.token0, order.to, amountInMax.sub(amountIn));
-                }
-            }
-            TransferHelper.safeTransfer(order.token0, pairAddress, amountIn);
-        }
-        amountOut = amountOut.sub(tolerance[pairAddress]);
-        uint256 amount0Out;
-        uint256 amount1Out;
-        if (inverted) {
-            amount0Out = amountOut;
-        } else {
-            amount1Out = amountOut;
-        }
-        if (order.token1 == tokenShares.weth && order.unwrap) {
-            ITwapPair(pairAddress).swap(amount0Out, amount1Out, address(this), priceInfo);
-            _forceEtherTransfer(order.to, amountOut);
-        } else {
-            ITwapPair(pairAddress).swap(amount0Out, amount1Out, order.to, priceInfo);
-        }
+        ExecutionHelper.executeBuy(orderParams, tokenShares);
     }
 
     function _executeSell(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
-        require(order.validAfterTimestamp + ORDER_LIFESPAN >= block.timestamp, 'TD04');
 
-        (address pairAddress, ) = orders.getPair(order.token0, order.token1);
+        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
+        ExecutionHelper.ExecuteBuySellParams memory orderParams;
+        orderParams.order = order;
+        orderParams.pairAddress = pairAddress;
+        orderParams.pairTolerance = getTolerance(pairAddress);
+
         ITwapPair(pairAddress).sync();
-        bytes memory priceInfo = encodePriceInfo(pairAddress, order.priceAccumulator, order.timestamp);
-
-        bool inverted = order.orderType == Orders.SELL_INVERTED_TYPE;
-        uint256 amountOut = _executeSellHelper(order, inverted, pairAddress, priceInfo);
-
-        (uint256 amount0Out, uint256 amount1Out) = inverted ? (amountOut, uint256(0)) : (uint256(0), amountOut);
-        if (order.token1 == tokenShares.weth && order.unwrap) {
-            ITwapPair(pairAddress).swap(amount0Out, amount1Out, address(this), priceInfo);
-            _forceEtherTransfer(order.to, amountOut);
-        } else {
-            ITwapPair(pairAddress).swap(amount0Out, amount1Out, order.to, priceInfo);
-        }
-    }
-
-    function _executeSellHelper(
-        Orders.Order calldata order,
-        bool inverted,
-        address pairAddress,
-        bytes memory priceInfo
-    ) internal returns (uint256 amountOut) {
-        uint256 reserveOut;
-        {
-            // scope for determining reserve out, avoids stack too deep errors
-            (uint112 reserve0, uint112 reserve1) = ITwapPair(pairAddress).getReserves();
-            // subtract 1 to prevent reserve going to 0
-            reserveOut = uint256(inverted ? reserve0 : reserve1).sub(1);
-        }
-        {
-            // scope for calculations, avoids stack too deep errors
-            address oracle = ITwapPair(pairAddress).oracle();
-            uint256 swapFee = ITwapPair(pairAddress).swapFee();
-            uint256 amountIn = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
-            amountOut = inverted
-                ? ITwapOracle(oracle).getSwapAmount0Out(swapFee, amountIn, priceInfo)
-                : ITwapOracle(oracle).getSwapAmount1Out(swapFee, amountIn, priceInfo);
-
-            uint256 amountOutMinScaled;
-            if (amountOut > reserveOut) {
-                amountOutMinScaled = order.value1.mul(reserveOut).div(amountOut);
-                uint256 _amountIn = amountIn;
-                (amountIn, amountOut) = ITwapOracle(oracle).getSwapAmountInMinOut(
-                    inverted,
-                    swapFee,
-                    reserveOut,
-                    priceInfo
-                );
-                if (order.token0 == tokenShares.weth && order.unwrap) {
-                    _forceEtherTransfer(order.to, _amountIn.sub(amountIn));
-                } else {
-                    TransferHelper.safeTransfer(order.token0, order.to, _amountIn.sub(amountIn));
-                }
-            } else {
-                amountOutMinScaled = order.value1;
-            }
-            amountOut = amountOut.sub(tolerance[pairAddress]);
-            require(amountOut >= amountOutMinScaled, 'TD37');
-            TransferHelper.safeTransfer(order.token0, pairAddress, amountIn);
-        }
-    }
-
-    function _forceEtherTransfer(address to, uint256 amount) internal {
-        IWETH(tokenShares.weth).withdraw(amount);
-        (bool success, ) = to.call{ value: amount, gas: orders.transferGasCosts[address(0)] }('');
-        if (!success) {
-            tokenShares.onUnwrapFailed(to, amount);
-        }
+        ExecutionHelper.executeSell(orderParams, tokenShares);
     }
 
     /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
     function performRefund(Orders.Order calldata order, bool shouldRefundEth) internal {
         bool canOwnerRefund = order.validAfterTimestamp.add(365 days) < block.timestamp;
 
-        if (order.orderType == Orders.DEPOSIT_TYPE) {
+        if (order.orderType == Orders.OrderType.Deposit) {
             address to = canOwnerRefund ? owner : order.to;
             require(refundTokens(to, order.token0, order.value0, order.token1, order.value1, order.unwrap), 'TD14');
             if (shouldRefundEth) {
                 require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
-        } else if (order.orderType == Orders.WITHDRAW_TYPE) {
-            (address pair, ) = orders.getPair(order.token0, order.token1);
+        } else if (order.orderType == Orders.OrderType.Withdraw) {
+            (address pair, ) = Orders.getPair(order.token0, order.token1);
             address to = canOwnerRefund ? owner : order.to;
             require(Orders.refundLiquidity(pair, to, order.liquidity, this._refundLiquidity.selector), 'TD14');
             if (shouldRefundEth) {
                 require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
-        } else if (order.orderType == Orders.SELL_TYPE || order.orderType == Orders.SELL_INVERTED_TYPE) {
+        } else if (order.orderType == Orders.OrderType.Sell) {
             address to = canOwnerRefund ? owner : order.to;
             require(refundToken(order.token0, to, order.value0, order.unwrap), 'TD14');
             if (shouldRefundEth) {
                 require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
-        } else if (order.orderType == Orders.BUY_TYPE || order.orderType == Orders.BUY_INVERTED_TYPE) {
+        } else if (order.orderType == Orders.OrderType.Buy) {
             address to = canOwnerRefund ? owner : order.to;
             require(refundToken(order.token0, to, order.value0, order.unwrap), 'TD14');
             if (shouldRefundEth) {
@@ -733,19 +540,131 @@ contract TwapDelay is ITwapDelay {
             orders.getOrderStatus(order.orderId, order.validAfterTimestamp) == Orders.OrderStatus.EnqueuedReady,
             'TD52'
         );
-        require(order.validAfterTimestamp.sub(orders.delay).add(ORDER_CANCEL_TIME) < block.timestamp, 'TD1C');
+        require(order.validAfterTimestamp.sub(Orders.DELAY).add(ORDER_CANCEL_TIME) < block.timestamp, 'TD1C');
         orders.canceled[order.orderId] = true;
         performRefund(order, true);
     }
 
-    function encodePriceInfo(
-        address pair,
-        uint256 priceAccumulator,
-        uint256 priceTimestamp
-    ) internal view returns (bytes memory data) {
-        uint256 price = ITwapOracle(ITwapPair(pair).oracle()).getAveragePrice(priceAccumulator, priceTimestamp);
-        // Pack everything as 32 bytes / uint256 to simplify decoding
-        data = abi.encode(price);
+    function syncPair(address token0, address token1) external override returns (address pairAddress) {
+        require(msg.sender == factoryGovernor, 'TD00');
+
+        (pairAddress, ) = Orders.getPair(token0, token1);
+        ITwapPair(pairAddress).sync();
+    }
+
+    // prettier-ignore
+    function _emitEventWithDefaults() internal {
+        emit MaxGasLimitSet(Orders.MAX_GAS_LIMIT);
+        emit GasPriceInertiaSet(Orders.GAS_PRICE_INERTIA);
+        emit MaxGasPriceImpactSet(Orders.MAX_GAS_PRICE_IMPACT);
+        emit DelaySet(Orders.DELAY);
+        emit RelayerSet(RELAYER_ADDRESS);
+
+        // #if defined(TOLERANCE__PAIR_WETH_USDC)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_USDT)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDT);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_WBTC)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_WBTC_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_WBTC);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_USDC_USDT)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_USDC_USDT_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_USDC_USDT);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_CVX)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_CVX_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_CVX);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_SUSHI)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_SUSHI_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_SUSHI);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_STETH)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_STETH);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_DAI)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_DAI);
+        // #endif
+
+        emit TransferGasCostSet(Orders.NATIVE_CURRENCY_SENTINEL, Orders.ETHER_TRANSFER_CALL_COST);
+        // #if defined(TRANSFER_GAS_COST__TOKEN_WETH)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_WETH_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_WETH);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_USDC)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDC);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_USDT)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDT);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_WBTC)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_WBTC_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_WBTC);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_CVX)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_CVX_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_CVX);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_SUSHI)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_SUSHI);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_STETH)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_STETH);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_DAI)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_DAI);
+        // #endif
+
+        // #if defined(IS_NON_REBASING__TOKEN_WETH)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_WETH_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WETH);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_USDC)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDC);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_USDT)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDT);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_WBTC)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_WBTC_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WBTC);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_CVX)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_CVX_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_CVX);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_SUSHI)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_SUSHI);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_STETH)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_STETH);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_DAI)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_DAI);
+        // #endif
+    }
+
+    // prettier-ignore
+    // constant mapping for tolerance
+    function getTolerance(address/* #if !bool(TOLERANCE) */ pair/* #endif */) public virtual view override returns (uint16 tolerance) {
+        // #if defined(TOLERANCE__PAIR_WETH_USDC) && (uint(TOLERANCE__PAIR_WETH_USDC) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_USDT) && (uint(TOLERANCE__PAIR_WETH_USDT) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDT;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_WBTC) && (uint(TOLERANCE__PAIR_WETH_WBTC) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WBTC_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_WBTC;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_USDC_USDT) && (uint(TOLERANCE__PAIR_USDC_USDT) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_USDC_USDT_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_USDC_USDT;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_CVX) && (uint(TOLERANCE__PAIR_WETH_CVX) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_CVX_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_CVX;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_SUSHI) && (uint(TOLERANCE__PAIR_WETH_SUSHI) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SUSHI_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_SUSHI;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_STETH) && (uint(TOLERANCE__PAIR_WETH_STETH) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_STETH;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_DAI) && (uint(TOLERANCE__PAIR_WETH_DAI) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_DAI;
+        // #endif
+        return __MACRO__MAPPING.TOLERANCE__DEFAULT;
     }
 
     receive() external payable {}

@@ -102,7 +102,7 @@
     ]
   },
   "0F": {
-    "errorMessage": "TOKEN TRANSFER GAS COST UNSET",
+    "errorMessage": "[UNUSED]",
     "userMessages": [
       "One or more token transfer gas costs is unset",
       "Please contact support"
@@ -354,7 +354,7 @@
     ]
   },
   "33": {
-    "errorMessage": "INVALID MAX GAS PRICE IMPACT",
+    "errorMessage": "[UNUSED]",
     "userMessages": [
       "Gas price impact exceeds inertia",
       "Please contact support"
@@ -368,7 +368,7 @@
     ]
   },
   "35": {
-    "errorMessage": "INVALID INERTIA",
+    "errorMessage": "[UNUSED]",
     "userMessages": [
       "Gas price inertia too low",
       "Please contact support"
@@ -417,11 +417,8 @@
     ]
   },
   "3C": {
-    "errorMessage": "GAS PRICE PRECISION",
-    "userMessages": [
-      "Calculation exceeded bounds",
-      "Please contact support"
-    ]
+    "errorMessage": "[UNUSED]",
+    "userMessages": []
   },
   "3D": {
     "errorMessage": "GAS LIMIT TOO LOW",
@@ -678,6 +675,12 @@
     "errorMessage": "INPUT AMOUNT TOO BIG",
     "userMessages": [
       "Amount is bigger than upper limit"
+    ]
+  },
+  "74": {
+    "errorMessage": "TOTAL SHARES MUST BE ZERO",
+    "userMessages": [
+      "Total token shares must be zero"
     ]
   }
 }

@@ -7,6 +7,7 @@ import '../interfaces/IERC20.sol';
 import '../interfaces/IWETH.sol';
 import './SafeMath.sol';
 import './TransferHelper.sol';
+import './Macros.sol';
 
 library TokenShares {
     using SafeMath for uint256;
@@ -18,9 +19,11 @@ library TokenShares {
 
     event UnwrapFailed(address to, uint256 amount);
 
+    // represents wrapped native currency (WETH or WMATIC)
+    address public constant WETH_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F   /*__MACRO__GLOBAL.TOKEN_WETH_ADDRESS*/; //prettier-ignore
+
     struct Data {
         mapping(address => uint256) totalShares;
-        address weth; // represents wrapped native currency (WETH or WMATIC)
     }
 
     function sharesToAmount(
@@ -33,7 +36,7 @@ library TokenShares {
         if (share == 0) {
             return 0;
         }
-        if (token == data.weth) {
+        if (token == WETH_ADDRESS || isNonRebasing(token)) {
             return share;
         }
 
@@ -63,7 +66,7 @@ library TokenShares {
         if (amount == 0) {
             return 0;
         }
-        if (token == data.weth) {
+        if (token == WETH_ADDRESS) {
             if (wrap) {
                 require(msg.value >= amount, 'TS03');
                 IWETH(token).deposit{ value: amount }();
@@ -71,37 +74,98 @@ library TokenShares {
                 token.safeTransferFrom(msg.sender, address(this), amount);
             }
             return amount;
+        } else if (isNonRebasing(token)) {
+            token.safeTransferFrom(msg.sender, address(this), amount);
+            return amount;
         } else {
             uint256 balanceBefore = IERC20(token).balanceOf(address(this));
-            uint256 totalTokenShares = data.totalShares[token];
-            require(balanceBefore > 0 || totalTokenShares == 0, 'TS30');
             token.safeTransferFrom(msg.sender, address(this), amount);
             uint256 balanceAfter = IERC20(token).balanceOf(address(this));
-            require(balanceAfter > balanceBefore, 'TS2C');
-            if (balanceBefore > 0) {
-                if (totalTokenShares == 0) {
-                    totalTokenShares = balanceBefore.mul(TOTAL_SHARES_PRECISION);
-                }
-                uint256 newShares = totalTokenShares.mul(balanceAfter).div(balanceBefore);
-                require(balanceAfter < type(uint256).max.div(newShares), 'TS73'); // to prevent overflow at execution
-                data.totalShares[token] = newShares;
-                return newShares - totalTokenShares;
-            } else {
-                totalTokenShares = balanceAfter.mul(TOTAL_SHARES_PRECISION);
-                require(totalTokenShares < type(uint256).max.div(totalTokenShares), 'TS73'); // to prevent overflow at execution
-                data.totalShares[token] = totalTokenShares;
-                return totalTokenShares;
-            }
+
+            return amountToSharesHelper(data, token, balanceBefore, balanceAfter);
         }
     }
 
-    function onUnwrapFailed(
+    function amountToSharesWithoutTransfer(
         Data storage data,
-        address to,
-        uint256 amount
-    ) external {
+        address token,
+        uint256 amount,
+        bool wrap
+    ) external returns (uint256) {
+        if (token == WETH_ADDRESS) {
+            if (wrap) {
+                // require(msg.value >= amount, 'TS03'); // Duplicate check in TwapRelayer.sell
+                IWETH(token).deposit{ value: amount }();
+            }
+            return amount;
+        } else if (isNonRebasing(token)) {
+            return amount;
+        } else {
+            uint256 balanceAfter = IERC20(token).balanceOf(address(this));
+            uint256 balanceBefore = balanceAfter.sub(amount);
+            return amountToSharesHelper(data, token, balanceBefore, balanceAfter);
+        }
+    }
+
+    function amountToSharesHelper(
+        Data storage data,
+        address token,
+        uint256 balanceBefore,
+        uint256 balanceAfter
+    ) internal returns (uint256) {
+        uint256 totalTokenShares = data.totalShares[token];
+        require(balanceBefore > 0 || totalTokenShares == 0, 'TS30');
+        require(balanceAfter > balanceBefore, 'TS2C');
+
+        if (balanceBefore > 0) {
+            if (totalTokenShares == 0) {
+                totalTokenShares = balanceBefore.mul(TOTAL_SHARES_PRECISION);
+            }
+            uint256 newShares = totalTokenShares.mul(balanceAfter).div(balanceBefore);
+            require(balanceAfter < type(uint256).max.div(newShares), 'TS73'); // to prevent overflow at execution
+            data.totalShares[token] = newShares;
+            return newShares - totalTokenShares;
+        } else {
+            totalTokenShares = balanceAfter.mul(TOTAL_SHARES_PRECISION);
+            require(totalTokenShares < type(uint256).max.div(totalTokenShares), 'TS73'); // to prevent overflow at execution
+            data.totalShares[token] = totalTokenShares;
+            return totalTokenShares;
+        }
+    }
+
+    function onUnwrapFailed(address to, uint256 amount) external {
         emit UnwrapFailed(to, amount);
-        IWETH(data.weth).deposit{ value: amount }();
-        TransferHelper.safeTransfer(data.weth, to, amount);
+        IWETH(WETH_ADDRESS).deposit{ value: amount }();
+        TransferHelper.safeTransfer(WETH_ADDRESS, to, amount);
+    }
+
+    // prettier-ignore
+    // constant mapping for nonRebasingToken
+    function isNonRebasing(address/* #if !bool(IS_NON_REBASING) */ token/* #endif */) internal pure returns (bool) {
+        // #if defined(IS_NON_REBASING__TOKEN_WETH) && (uint(IS_NON_REBASING__TOKEN_WETH) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WETH_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WETH;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_USDC) && (uint(IS_NON_REBASING__TOKEN_USDC) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDC;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_USDT) && (uint(IS_NON_REBASING__TOKEN_USDT) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDT;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_WBTC) && (uint(IS_NON_REBASING__TOKEN_WBTC) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WBTC_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WBTC;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_CVX) && (uint(IS_NON_REBASING__TOKEN_CVX) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_CVX_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_CVX;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_SUSHI) && (uint(IS_NON_REBASING__TOKEN_SUSHI) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_SUSHI;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_STETH) && (uint(IS_NON_REBASING__TOKEN_STETH) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_STETH;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_DAI) && (uint(IS_NON_REBASING__TOKEN_DAI) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_DAI;
+        // #endif
+        return __MACRO__MAPPING.IS_NON_REBASING__DEFAULT;
     }
 }

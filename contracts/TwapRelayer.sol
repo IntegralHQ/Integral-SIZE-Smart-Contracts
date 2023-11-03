@@ -16,12 +16,16 @@ import './libraries/Orders.sol';
 import './libraries/TransferHelper.sol';
 import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import '@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol';
+import './libraries/Macros.sol';
 
 contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     using SafeMath for uint256;
 
     uint256 private constant PRECISION = 10**18;
-    uint16 private constant MAX_TOLERANCE = 10;
+    address public constant FACTORY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F    /*__MACRO__GLOBAL.FACTORY_ADDRESS*/; //prettier-ignore
+    address public constant WETH_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F       /*__MACRO__GLOBAL.TOKEN_WETH_ADDRESS*/; //prettier-ignore
+    address public constant DELAY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F      /*__MACRO__GLOBAL.DELAY_ADDRESS*/; //prettier-ignore
+    uint256 public constant EXECUTION_GAS_LIMIT = 0x0F0F0F                                  /*__MACRO__CONSTANT.EXECUTION_GAS_LIMIT*/; //prettier-ignore
 
     /*
      * DO NOT CHANGE THE BELOW STATE VARIABLES.
@@ -29,24 +33,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
      * NEW VARIABLES SHOULD BE ADDED BELOW THESE VARIABLES TO AVOID STORAGE COLLISION.
      */
     uint8 public initialized;
-    uint8 private locked;
+    uint8 private __RESERVED__OLD_LOCKED;
     address public override owner;
-    address public override factory;
-    address public override weth;
-    address public override delay;
-    uint256 public override ethTransferGasCost;
-    uint256 public override executionGasLimit;
-    uint256 public override gasPriceMultiplier;
+    address public __RESERVED__OLD_FACTORY;
+    address public __RESERVED__OLD_WETH;
+    address public __RESERVED__OLD_DELAY;
+    uint256 public __RESERVED__OLD_ETH_TRANSFER_GAS_COST;
+    uint256 public __RESERVED__OLD_EXECUTION_GAS_LIMIT;
+    uint256 public __RESERVED__SLOT_6_USED_IN_PREVIOUS_VERSIONS;
 
     mapping(address => uint256) public override swapFee;
-    mapping(address => uint32) public override twapInterval;
+    mapping(address => uint32) public __RESERVED__OLD_TWAP_INTERVAL;
     mapping(address => bool) public override isPairEnabled;
-    mapping(address => uint256) public override tokenLimitMin;
-    mapping(address => uint256) public override tokenLimitMaxMultiplier;
-    mapping(address => uint16) public override tolerance;
+    mapping(address => uint256) public __RESERVED__OLD_TOKEN_LIMIT_MIN;
+    mapping(address => uint256) public __RESERVED__OLD_TOKEN_LIMIT_MAX_MULTIPLIER;
+    mapping(address => uint16) public __RESERVED__OLD_TOLERANCE;
 
     address public override rebalancer;
     mapping(address => bool) public override isOneInchRouterWhitelisted;
+
+    uint256 private locked;
 
     /*
      * DO NOT CHANGE THE ABOVE STATE VARIABLES.
@@ -63,7 +69,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
     // This contract implements a proxy pattern.
     // The constructor is to set to prevent abuse of this implementation contract.
-    // Setting locked = 1 forces core fetures, e.g. buy(), to always revert.
+    // Setting locked = 1 forces core features, e.g. buy(), to always revert.
     constructor() {
         owner = msg.sender;
         initialized = 1;
@@ -71,32 +77,15 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     }
 
     // This function should be called through the proxy contract to initialize the proxy contract's storage.
-    function initialize(
-        address _factory,
-        address _delay,
-        address _weth
-    ) external override {
+    function initialize() external override {
         require(initialized == 0, 'TR5B');
 
         initialized = 1;
-        factory = _factory;
-        delay = _delay;
-        weth = _weth;
         owner = msg.sender;
-        ethTransferGasCost = 2600 + 1504; // EIP-2929 acct access cost + Gnosis Safe receive ETH cost;
 
-        emit Initialized(_factory, _delay, _weth);
-        emit DelaySet(_delay);
+        emit Initialized(FACTORY_ADDRESS, DELAY_ADDRESS, WETH_ADDRESS);
         emit OwnerSet(msg.sender);
-        emit EthTransferGasCostSet(ethTransferGasCost);
-    }
-
-    function setDelay(address _delay) external override {
-        require(msg.sender == owner, 'TR00');
-        require(_delay != delay, 'TR01');
-        require(_delay != address(0), 'TR02');
-        delay = _delay;
-        emit DelaySet(_delay);
+        _emitEventWithDefaults();
     }
 
     function setOwner(address _owner) external override {
@@ -114,64 +103,11 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         emit SwapFeeSet(pair, fee);
     }
 
-    function setTwapInterval(address pair, uint32 interval) external override {
-        require(msg.sender == owner, 'TR00');
-        require(interval != twapInterval[pair], 'TR01');
-        // '>' uses less gas than '!=' in 0.7.6
-        require(interval > 0, 'TR56');
-        twapInterval[pair] = interval;
-        emit TwapIntervalSet(pair, interval);
-    }
-
     function setPairEnabled(address pair, bool enabled) external override {
         require(msg.sender == owner, 'TR00');
         require(enabled != isPairEnabled[pair], 'TR01');
         isPairEnabled[pair] = enabled;
         emit PairEnabledSet(pair, enabled);
-    }
-
-    function setEthTransferGasCost(uint256 gasCost) external override {
-        require(msg.sender == owner, 'TR00');
-        require(gasCost != ethTransferGasCost, 'TR01');
-        ethTransferGasCost = gasCost;
-        emit EthTransferGasCostSet(gasCost);
-    }
-
-    function setExecutionGasLimit(uint256 limit) external override {
-        require(msg.sender == owner, 'TR00');
-        require(limit != executionGasLimit, 'TR01');
-        executionGasLimit = limit;
-        emit ExecutionGasLimitSet(limit);
-    }
-
-    function setGasPriceMultiplier(uint256 multiplier) external override {
-        require(msg.sender == owner, 'TR00');
-        require(multiplier != gasPriceMultiplier, 'TR01');
-        gasPriceMultiplier = multiplier;
-        emit GasPriceMultiplierSet(multiplier);
-    }
-
-    function setTokenLimitMin(address token, uint256 limit) external override {
-        require(msg.sender == owner, 'TR00');
-        require(limit != tokenLimitMin[token], 'TR01');
-        tokenLimitMin[token] = limit;
-        emit TokenLimitMinSet(token, limit);
-    }
-
-    function setTokenLimitMaxMultiplier(address token, uint256 multiplier) external override {
-        require(msg.sender == owner, 'TR00');
-        require(multiplier != tokenLimitMaxMultiplier[token], 'TR01');
-        require(multiplier <= PRECISION, 'TR3A');
-        tokenLimitMaxMultiplier[token] = multiplier;
-        emit TokenLimitMaxMultiplierSet(token, multiplier);
-    }
-
-    function setTolerance(address pair, uint16 _tolerance) external override {
-        require(msg.sender == owner, 'TR00');
-        require(_tolerance != tolerance[pair], 'TR01');
-        require(_tolerance <= MAX_TOLERANCE, 'TR54');
-        tolerance[pair] = _tolerance;
-        emit ToleranceSet(pair, _tolerance);
     }
 
     function setRebalancer(address _rebalancer) external override {
@@ -184,6 +120,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
     function whitelistOneInchRouter(address oneInchRouter, bool whitelisted) external override {
         require(msg.sender == owner, 'TR00');
+        require(oneInchRouter != address(0), 'TR02');
         require(whitelisted != isOneInchRouterWhitelisted[oneInchRouter], 'TR01');
         isOneInchRouterWhitelisted[oneInchRouter] = whitelisted;
         emit OneInchRouterWhitelisted(oneInchRouter, whitelisted);
@@ -197,8 +134,11 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // Duplicate checks in Orders.sell
         // require(sellParams.amountIn != 0, 'TR24');
 
-        if (sellParams.wrapUnwrap && sellParams.tokenIn == weth) {
+        uint256 ethValue = calculatePrepay();
+
+        if (sellParams.wrapUnwrap && sellParams.tokenIn == WETH_ADDRESS) {
             require(msg.value == sellParams.amountIn, 'TR59');
+            ethValue = ethValue.add(msg.value);
         } else {
             require(msg.value == 0, 'TR58');
         }
@@ -212,15 +152,15 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         );
         require(amountOut >= sellParams.amountOutMin, 'TR37');
 
-        orderId = ITwapDelay(delay).sell{ value: calculatePrepay() }(
+        orderId = ITwapDelay(DELAY_ADDRESS).relayerSell{ value: ethValue }(
             Orders.SellParams(
                 sellParams.tokenIn,
                 sellParams.tokenOut,
                 amountIn,
                 0, // Relax slippage constraints
-                false, // Never wrap/unwrap
+                sellParams.wrapUnwrap,
                 address(this),
-                executionGasLimit,
+                EXECUTION_GAS_LIMIT,
                 sellParams.submitDeadline
             )
         );
@@ -235,7 +175,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
             sellParams.wrapUnwrap,
             fee,
             sellParams.to,
-            delay,
+            DELAY_ADDRESS,
             orderId
         );
     }
@@ -248,10 +188,6 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // Duplicate checks in Orders.sell
         // require(buyParams.amountOut != 0, 'TR23');
 
-        if (!buyParams.wrapUnwrap || buyParams.tokenIn != weth) {
-            require(msg.value == 0, 'TR58');
-        }
-
         uint256 balanceBefore = address(this).balance.sub(msg.value);
 
         (uint256 amountIn, uint256 amountOut, uint256 fee) = swapExactOut(
@@ -263,18 +199,44 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         );
         require(amountIn <= buyParams.amountInMax, 'TR08');
 
-        orderId = ITwapDelay(delay).sell{ value: calculatePrepay() }(
-            Orders.SellParams(
-                buyParams.tokenIn,
-                buyParams.tokenOut,
-                amountIn,
-                0, // Relax slippage constraints
-                false, // Never wrap/unwrap
-                address(this),
-                executionGasLimit,
-                buyParams.submitDeadline
-            )
-        );
+        // Used to avoid the 'stack too deep' error.
+        {
+            bool wrapUnwrapWeth = buyParams.wrapUnwrap && buyParams.tokenIn == WETH_ADDRESS;
+            uint256 prepay = calculatePrepay();
+            uint256 ethValue = prepay;
+
+            if (wrapUnwrapWeth) {
+                require(msg.value >= amountIn, 'TR59');
+                ethValue = ethValue.add(amountIn);
+            } else {
+                require(msg.value == 0, 'TR58');
+            }
+
+            orderId = ITwapDelay(DELAY_ADDRESS).relayerSell{ value: ethValue }(
+                Orders.SellParams(
+                    buyParams.tokenIn,
+                    buyParams.tokenOut,
+                    amountIn,
+                    0, // Relax slippage constraints
+                    buyParams.wrapUnwrap,
+                    address(this),
+                    EXECUTION_GAS_LIMIT,
+                    buyParams.submitDeadline
+                )
+            );
+
+            // refund remaining ETH
+            if (wrapUnwrapWeth) {
+                uint256 balanceAfter = address(this).balance + prepay;
+                if (balanceAfter > balanceBefore) {
+                    TransferHelper.safeTransferETH(
+                        msg.sender,
+                        balanceAfter - balanceBefore,
+                        Orders.ETHER_TRANSFER_COST
+                    );
+                }
+            }
+        }
 
         emit Buy(
             msg.sender,
@@ -286,29 +248,20 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
             buyParams.wrapUnwrap,
             fee,
             buyParams.to,
-            delay,
+            DELAY_ADDRESS,
             orderId
         );
-
-        if (buyParams.wrapUnwrap && buyParams.tokenIn == weth) {
-            uint256 balanceAfter = address(this).balance;
-            if (balanceAfter > balanceBefore) {
-                TransferHelper.safeTransferETH(msg.sender, balanceAfter.sub(balanceBefore), ethTransferGasCost);
-            }
-        }
     }
 
     function getPair(address tokenA, address tokenB) internal view returns (address pair, bool inverted) {
         inverted = tokenA > tokenB;
-        pair = ITwapFactory(factory).getPair(tokenA, tokenB);
+        pair = ITwapFactory(FACTORY_ADDRESS).getPair(tokenA, tokenB);
 
         require(pair != address(0), 'TR17');
     }
 
     function calculatePrepay() internal view returns (uint256) {
-        require(executionGasLimit > 0, 'TR3D');
-        require(gasPriceMultiplier > 0, 'TR3C');
-        return ITwapDelay(delay).gasPrice().mul(gasPriceMultiplier).mul(executionGasLimit).div(PRECISION);
+        return ITwapDelay(DELAY_ADDRESS).gasPrice().mul(EXECUTION_GAS_LIMIT);
     }
 
     function swapExactIn(
@@ -331,11 +284,10 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         _amountIn = transferIn(tokenIn, amountIn, wrapUnwrap);
 
         fee = _amountIn.mul(swapFee[pair]).div(PRECISION);
-        uint256 amountInMinusFee = _amountIn.sub(fee);
-        uint256 calculatedAmountOut = calculateAmountOut(pair, inverted, amountInMinusFee);
+        uint256 calculatedAmountOut = calculateAmountOut(pair, inverted, _amountIn.sub(fee));
         _amountOut = transferOut(to, tokenOut, calculatedAmountOut, wrapUnwrap);
 
-        require(_amountOut <= calculatedAmountOut.add(tolerance[pair]), 'TR2E');
+        require(_amountOut <= calculatedAmountOut.add(getTolerance(pair)), 'TR2E');
     }
 
     function swapExactOut(
@@ -362,7 +314,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         fee = amountInPlusFee.sub(calculatedAmountIn);
         _amountIn = transferIn(tokenIn, amountInPlusFee, wrapUnwrap);
 
-        require(_amountIn >= amountInPlusFee.sub(tolerance[pair]), 'TR2E');
+        require(_amountIn >= amountInPlusFee.sub(getTolerance(pair)), 'TR2E');
     }
 
     function calculateAmountIn(
@@ -439,10 +391,10 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
         price = getPriceByTokenAddresses(token0, token1);
 
-        limitMin0 = tokenLimitMin[token0];
-        limitMax0 = IERC20(token0).balanceOf(address(this)).mul(tokenLimitMaxMultiplier[token0]).div(PRECISION);
-        limitMin1 = tokenLimitMin[token1];
-        limitMax1 = IERC20(token1).balanceOf(address(this)).mul(tokenLimitMaxMultiplier[token1]).div(PRECISION);
+        limitMin0 = getTokenLimitMin(token0);
+        limitMax0 = IERC20(token0).balanceOf(address(this)).mul(getTokenLimitMaxMultiplier(token0)).div(PRECISION);
+        limitMin1 = getTokenLimitMin(token1);
+        limitMax1 = IERC20(token1).balanceOf(address(this)).mul(getTokenLimitMaxMultiplier(token1)).div(PRECISION);
     }
 
     function quoteSell(
@@ -500,7 +452,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         address uniswapPair,
         uint256 decimalsConverter
     ) internal view returns (uint256) {
-        uint32 secondsAgo = twapInterval[pair];
+        uint32 secondsAgo = getTwapInterval(pair);
         require(secondsAgo > 0, 'TR55');
         uint32[] memory secondsAgos = new uint32[](2);
         secondsAgos[0] = secondsAgo;
@@ -529,20 +481,18 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         if (amount == 0) {
             return 0;
         }
-        if (token == weth) {
-            if (wrap) {
-                require(msg.value >= amount, 'TR03');
-                IWETH(token).deposit{ value: amount }();
-            } else {
-                TransferHelper.safeTransferFrom(token, msg.sender, address(this), amount);
+        if (token == WETH_ADDRESS) {
+            // eth is transferred directly to the delay in sell / buy function
+            if (!wrap) {
+                TransferHelper.safeTransferFrom(token, msg.sender, DELAY_ADDRESS, amount);
             }
             return amount;
         } else {
-            uint256 balanceBefore = IERC20(token).balanceOf(address(this));
-            TransferHelper.safeTransferFrom(token, msg.sender, address(this), amount);
-            uint256 balanceAfter = IERC20(token).balanceOf(address(this));
+            uint256 balanceBefore = IERC20(token).balanceOf(DELAY_ADDRESS);
+            TransferHelper.safeTransferFrom(token, msg.sender, DELAY_ADDRESS, amount);
+            uint256 balanceAfter = IERC20(token).balanceOf(DELAY_ADDRESS);
             require(balanceAfter > balanceBefore, 'TR2C');
-            return balanceAfter.sub(balanceBefore);
+            return balanceAfter - balanceBefore;
         }
     }
 
@@ -557,10 +507,10 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         }
         checkLimits(token, amount);
 
-        if (token == weth) {
+        if (token == WETH_ADDRESS) {
             if (unwrap) {
                 IWETH(token).withdraw(amount);
-                TransferHelper.safeTransferETH(to, amount, ethTransferGasCost);
+                TransferHelper.safeTransferETH(to, amount, Orders.ETHER_TRANSFER_COST);
             } else {
                 TransferHelper.safeTransfer(token, to, amount);
             }
@@ -570,14 +520,14 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
             TransferHelper.safeTransfer(token, to, amount);
             uint256 balanceAfter = IERC20(token).balanceOf(address(this));
             require(balanceBefore > balanceAfter, 'TR2C');
-            return balanceBefore.sub(balanceAfter);
+            return balanceBefore - balanceAfter;
         }
     }
 
     function checkLimits(address token, uint256 amount) internal view {
-        require(amount >= tokenLimitMin[token], 'TR03');
+        require(amount >= getTokenLimitMin(token), 'TR03');
         require(
-            amount <= IERC20(token).balanceOf(address(this)).mul(tokenLimitMaxMultiplier[token]).div(PRECISION),
+            amount <= IERC20(token).balanceOf(address(this)).mul(getTokenLimitMaxMultiplier(token)).div(PRECISION),
             'TR3A'
         );
     }
@@ -602,8 +552,8 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     ) external override lock {
         require(msg.sender == owner, 'TR00');
         require(to != address(0), 'TR02');
-        if (token == address(0)) {
-            TransferHelper.safeTransferETH(to, amount, ethTransferGasCost);
+        if (token == Orders.NATIVE_CURRENCY_SENTINEL) {
+            TransferHelper.safeTransferETH(to, amount, Orders.ETHER_TRANSFER_COST);
         } else {
             TransferHelper.safeTransfer(token, to, amount);
         }
@@ -617,7 +567,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     ) external override lock {
         require(msg.sender == rebalancer, 'TR00');
 
-        uint256 delayOrderId = ITwapDelay(delay).sell{ value: calculatePrepay() }(
+        uint256 delayOrderId = ITwapDelay(DELAY_ADDRESS).sell{ value: calculatePrepay() }(
             Orders.SellParams(
                 tokenIn,
                 tokenOut,
@@ -625,7 +575,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
                 0, // Relax slippage constraints
                 false, // Never wrap/unwrap
                 address(this),
-                executionGasLimit,
+                EXECUTION_GAS_LIMIT,
                 uint32(block.timestamp)
             )
         );
@@ -650,6 +600,273 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
         emit Approve(tokenIn, oneInchRouter, amountIn);
         emit RebalanceSellWithOneInch(oneInchRouter, _gas, data);
+    }
+
+    // prettier-ignore
+    function _emitEventWithDefaults() internal {
+        emit DelaySet(DELAY_ADDRESS);
+        emit EthTransferGasCostSet(Orders.ETHER_TRANSFER_COST);
+        emit ExecutionGasLimitSet(EXECUTION_GAS_LIMIT);
+
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDC)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDC);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDT)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDT);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_WBTC)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_WBTC_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_WBTC);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_USDC_USDT)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_USDC_USDT_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_USDC_USDT);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_CVX)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_CVX_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_CVX);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_SUSHI)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_SUSHI_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_SUSHI);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_STETH)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_STETH);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_DAI)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_DAI);
+        // #endif
+
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_WETH)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_WETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_WETH);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDC)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDC);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDT)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDT);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_WBTC)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_WBTC_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_WBTC);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_CVX)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_CVX_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_CVX);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_SUSHI)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_SUSHI);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_STETH)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_STETH);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_DAI)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_DAI);
+        // #endif
+
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WETH)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_WETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WETH);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WBTC)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_WBTC_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WBTC);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_CVX)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_CVX_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_CVX);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SUSHI)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SUSHI);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI);
+        // #endif
+
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_USDC)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDC);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_USDT)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDT);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_WBTC)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_WBTC_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_WBTC);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_USDC_USDT)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_USDC_USDT_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_USDC_USDT);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_CVX)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_CVX_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_CVX);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_SUSHI)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_SUSHI_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_SUSHI);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_STETH)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_STETH);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_DAI)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_DAI);
+        // #endif
+    }
+
+    // prettier-ignore
+    // constant mapping for tolerance
+    function getTolerance(address/* #if !bool(RELAYER_TOLERANCE) */ pair/* #endif */) public pure override returns (uint16) {
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDC) && (uint(RELAYER_TOLERANCE__PAIR_WETH_USDC) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDT) && (uint(RELAYER_TOLERANCE__PAIR_WETH_USDT) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDT;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_WBTC) && (uint(RELAYER_TOLERANCE__PAIR_WETH_WBTC) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WBTC_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_WBTC;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_USDC_USDT) && (uint(RELAYER_TOLERANCE__PAIR_USDC_USDT) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_USDC_USDT_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_USDC_USDT;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_CVX) && (uint(RELAYER_TOLERANCE__PAIR_WETH_CVX) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_CVX_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_CVX;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_SUSHI) && (uint(RELAYER_TOLERANCE__PAIR_WETH_SUSHI) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SUSHI_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_SUSHI;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_STETH) && (uint(RELAYER_TOLERANCE__PAIR_WETH_STETH) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_STETH;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_DAI) && (uint(RELAYER_TOLERANCE__PAIR_WETH_DAI) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_DAI;
+        // #endif
+        return __MACRO__MAPPING.RELAYER_TOLERANCE__DEFAULT;
+    }
+
+    // prettier-ignore
+    // constant mapping for tokenLimitMin
+    function getTokenLimitMin(address/* #if !bool(TOKEN_LIMIT_MIN) */ token/* #endif */) public pure override returns (uint256) {
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_WETH) && (uint(TOKEN_LIMIT_MIN__TOKEN_WETH) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_WETH;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDC) && (uint(TOKEN_LIMIT_MIN__TOKEN_USDC) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDC;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDT) && (uint(TOKEN_LIMIT_MIN__TOKEN_USDT) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDT;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_WBTC) && (uint(TOKEN_LIMIT_MIN__TOKEN_WBTC) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WBTC_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_WBTC;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_CVX) && (uint(TOKEN_LIMIT_MIN__TOKEN_CVX) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_CVX_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_CVX;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_SUSHI) && (uint(TOKEN_LIMIT_MIN__TOKEN_SUSHI) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_SUSHI;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_STETH) && (uint(TOKEN_LIMIT_MIN__TOKEN_STETH) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_STETH;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_DAI) && (uint(TOKEN_LIMIT_MIN__TOKEN_DAI) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_DAI;
+        // #endif
+        return __MACRO__MAPPING.TOKEN_LIMIT_MIN__DEFAULT;
+    }
+
+    // prettier-ignore
+    // constant mapping for tokenLimitMaxMultiplier
+    function getTokenLimitMaxMultiplier(address/* #if !bool(TOKEN_LIMIT_MAX_MULTIPLIER) */ token/* #endif */) public pure override returns (uint256) {
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WETH) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WETH) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WETH;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WBTC) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WBTC) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WBTC_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WBTC;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_CVX) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_CVX) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_CVX_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_CVX;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SUSHI) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SUSHI) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SUSHI;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI;
+        // #endif
+        return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT;
+    }
+
+    // prettier-ignore
+    // constant mapping for twapInterval
+    function getTwapInterval(address/* #if !bool(TWAP_INTERVAL) */ pair/* #endif */) public pure override returns (uint32) {
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_USDC) && (uint(TWAP_INTERVAL__PAIR_WETH_USDC) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_USDT) && (uint(TWAP_INTERVAL__PAIR_WETH_USDT) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDT;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_WBTC) && (uint(TWAP_INTERVAL__PAIR_WETH_WBTC) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WBTC_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_WBTC;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_USDC_USDT) && (uint(TWAP_INTERVAL__PAIR_USDC_USDT) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_USDC_USDT_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_USDC_USDT;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_CVX) && (uint(TWAP_INTERVAL__PAIR_WETH_CVX) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_CVX_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_CVX;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_SUSHI) && (uint(TWAP_INTERVAL__PAIR_WETH_SUSHI) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SUSHI_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_SUSHI;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_STETH) && (uint(TWAP_INTERVAL__PAIR_WETH_STETH) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_STETH;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_DAI) && (uint(TWAP_INTERVAL__PAIR_WETH_DAI) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_DAI;
+        // #endif
+        return __MACRO__MAPPING.TWAP_INTERVAL__DEFAULT;
+    }
+
+    /*
+     * Methods for backward compatibility
+     */
+
+    function factory() external pure override returns (address) {
+        return FACTORY_ADDRESS;
+    }
+
+    function delay() external pure override returns (address) {
+        return DELAY_ADDRESS;
+    }
+
+    function weth() external pure override returns (address) {
+        return WETH_ADDRESS;
+    }
+
+    function twapInterval(address pair) external pure override returns (uint32) {
+        return getTwapInterval(pair);
+    }
+
+    function ethTransferGasCost() external pure override returns (uint256) {
+        return Orders.ETHER_TRANSFER_COST;
+    }
+
+    function executionGasLimit() external pure override returns (uint256) {
+        return EXECUTION_GAS_LIMIT;
+    }
+
+    function tokenLimitMin(address token) external pure override returns (uint256) {
+        return getTokenLimitMin(token);
+    }
+
+    function tokenLimitMaxMultiplier(address token) external pure override returns (uint256) {
+        return getTokenLimitMaxMultiplier(token);
+    }
+
+    function tolerance(address pair) external pure override returns (uint16) {
+        return getTolerance(pair);
     }
 
     receive() external payable {}

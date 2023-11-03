@@ -16,19 +16,10 @@ contract OrdersTest {
     event SellEnqueued(uint256 indexed orderId, Orders.Order order);
     event BuyEnqueued(uint256 indexed orderId, Orders.Order order);
 
-    uint256 private constant DEPOSIT_TYPE = 1;
-    uint256 private constant WITHDRAW_TYPE = 2;
-    uint256 private constant BUY_TYPE = 3;
-    uint256 private constant BUY_INVERTED_TYPE = 4;
-    uint256 private constant SELL_TYPE = 5;
-    uint256 private constant SELL_INVERTED_TYPE = 6;
+    uint256 public constant DELAY = 1 weeks;
 
-    constructor() {
-        orders.delay = 1 weeks;
-    }
-
-    function delay() external view returns (uint256) {
-        return orders.delay;
+    function delay() external pure returns (uint256) {
+        return DELAY;
     }
 
     function lastProcessedOrderId() external view returns (uint256) {
@@ -59,7 +50,8 @@ contract OrdersTest {
     ) external {
         Orders.Order memory order = Orders.Order(
             0,
-            DEPOSIT_TYPE,
+            Orders.OrderType.Deposit,
+            false,
             validAfterTimestamp,
             unwrap,
             0,
@@ -96,7 +88,8 @@ contract OrdersTest {
     ) external {
         Orders.Order memory order = Orders.Order(
             0,
-            WITHDRAW_TYPE,
+            Orders.OrderType.Withdraw,
+            false,
             validAfterTimestamp,
             unwrap,
             0,
@@ -135,7 +128,8 @@ contract OrdersTest {
     ) external {
         Orders.Order memory order = Orders.Order(
             0,
-            inverse ? SELL_INVERTED_TYPE : SELL_TYPE,
+            Orders.OrderType.Sell,
+            inverse,
             validAfterTimestamp,
             unwrap,
             timestamp,
@@ -174,7 +168,8 @@ contract OrdersTest {
     ) external {
         Orders.Order memory order = Orders.Order(
             0,
-            inverse ? BUY_INVERTED_TYPE : BUY_TYPE,
+            Orders.OrderType.Buy,
+            inverse,
             validAfterTimestamp,
             unwrap,
             timestamp,

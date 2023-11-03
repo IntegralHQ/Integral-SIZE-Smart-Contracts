@@ -10,12 +10,7 @@ contract TwapLimitOrderMockTwapInterval is TwapLimitOrder {
 
     uint256 public twapPrice;
 
-    constructor(
-        address _delay,
-        address _factory,
-        address _weth,
-        address _bot
-    ) TwapLimitOrder(_delay, _factory, _weth, _bot) {}
+    constructor(address _bot) TwapLimitOrder(_bot) {}
 
     function setTwapPrice(uint256 _p) external {
         twapPrice = _p;

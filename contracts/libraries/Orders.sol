@@ -10,6 +10,7 @@ import '../interfaces/ITwapFactory.sol';
 import '../interfaces/ITwapPair.sol';
 import '../interfaces/ITwapOracle.sol';
 import '../libraries/TokenShares.sol';
+import '../libraries/Macros.sol';
 
 library Orders {
     using SafeMath for uint256;
@@ -32,35 +33,31 @@ library Orders {
         Canceled
     }
 
-    event MaxGasLimitSet(uint256 maxGasLimit);
-    event GasPriceInertiaSet(uint256 gasPriceInertia);
-    event MaxGasPriceImpactSet(uint256 maxGasPriceImpact);
-    event TransferGasCostSet(address token, uint256 gasCost);
-
     event DepositEnqueued(uint256 indexed orderId, Order order);
     event WithdrawEnqueued(uint256 indexed orderId, Order order);
     event SellEnqueued(uint256 indexed orderId, Order order);
     event BuyEnqueued(uint256 indexed orderId, Order order);
 
-    event OrderDisabled(address pair, Orders.OrderType orderType, bool disabled);
+    event OrderTypesDisabled(address pair, Orders.OrderType[] orderTypes, bool disabled);
 
     event RefundFailed(address indexed to, address indexed token, uint256 amount, bytes data);
 
-    uint256 public constant DEPOSIT_TYPE = 1;
-    uint256 public constant WITHDRAW_TYPE = 2;
-    uint256 public constant BUY_TYPE = 3;
-    uint256 public constant BUY_INVERTED_TYPE = 4;
-    uint256 public constant SELL_TYPE = 5;
-    uint256 public constant SELL_INVERTED_TYPE = 6;
+    // Note on gas estimation for the full order execution in the UI:
+    // Add (ORDER_BASE_COST + token transfer costs) to the actual gas usage
+    // of the TwapDelay._execute* functions when updating gas cost in the UI.
+    // Remember that ETH unwrap is part of those functions. It is optional,
+    // but also needs to be included in the estimate.
 
-    uint256 private constant ETHER_TRANSFER_COST = 2600 + 1504; // EIP-2929 acct access cost + Gnosis Safe receive ETH cost
-    uint256 private constant BUFFER_COST = 10000;
+    uint256 public constant ETHER_TRANSFER_COST = ETHER_TRANSFER_CALL_COST + 2600 + 1504; // Std cost + EIP-2929 acct access cost + Gnosis Safe receive ETH cost
+    uint256 private constant BOT_ETHER_TRANSFER_COST = 10_000;
+    uint256 private constant BUFFER_COST = 10_000;
     uint256 private constant ORDER_EXECUTED_EVENT_COST = 3700;
-    uint256 private constant EXECUTE_PREPARATION_COST = 55000; // dequeue + getPair in execute
+    uint256 private constant EXECUTE_PREPARATION_COST = 30_000; // dequeue + gas calculation before calls to _execute* functions
 
-    uint256 public constant ETHER_TRANSFER_CALL_COST = 10000;
-    uint256 public constant PAIR_TRANSFER_COST = 55000;
-    uint256 public constant REFUND_BASE_COST = 2 * ETHER_TRANSFER_COST + BUFFER_COST + ORDER_EXECUTED_EVENT_COST;
+    uint256 public constant ETHER_TRANSFER_CALL_COST = 10_000;
+    uint256 public constant PAIR_TRANSFER_COST = 55_000;
+    uint256 public constant REFUND_BASE_COST =
+        BOT_ETHER_TRANSFER_COST + ETHER_TRANSFER_COST + BUFFER_COST + ORDER_EXECUTED_EVENT_COST;
     uint256 public constant ORDER_BASE_COST = EXECUTE_PREPARATION_COST + REFUND_BASE_COST;
 
     // Masks used for setting order disabled
@@ -70,26 +67,29 @@ library Orders {
     uint8 private constant SELL_MASK = uint8(1 << uint8(OrderType.Sell)); //         00001000
     uint8 private constant BUY_MASK = uint8(1 << uint8(OrderType.Buy)); //           00010000
 
+    address public constant FACTORY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F    /*__MACRO__GLOBAL.FACTORY_ADDRESS*/; //prettier-ignore
+    uint256 public constant MAX_GAS_LIMIT = 0x0F0F0F                                        /*__MACRO__CONSTANT.MAX_GAS_LIMIT*/; //prettier-ignore
+    uint256 public constant GAS_PRICE_INERTIA = 0x0F0F0F                                    /*__MACRO__CONSTANT.GAS_PRICE_INERTIA*/; //prettier-ignore
+    uint256 public constant MAX_GAS_PRICE_IMPACT = 0x0F0F0F                                 /*__MACRO__CONSTANT.MAX_GAS_PRICE_IMPACT*/; //prettier-ignore
+    uint256 public constant DELAY = 0x0F0F0F                                                /*__MACRO__CONSTANT.DELAY*/; //prettier-ignore
+
+    address public constant NATIVE_CURRENCY_SENTINEL = address(0); // A sentinel value for the native currency to distinguish it from ERC20 tokens
+
     struct Data {
-        uint256 delay;
         uint256 newestOrderId;
         uint256 lastProcessedOrderId;
         mapping(uint256 => bytes32) orderQueue;
-        address factory;
-        uint256 maxGasLimit;
         uint256 gasPrice;
-        uint256 gasPriceInertia;
-        uint256 maxGasPriceImpact;
-        mapping(address => uint256) transferGasCosts;
         mapping(uint256 => bool) canceled;
         // Bit on specific positions indicates whether order type is disabled (1) or enabled (0) on specific pair
-        mapping(address => uint8) orderDisabled;
+        mapping(address => uint8) orderTypesDisabled;
         mapping(uint256 => bool) refundFailed;
     }
 
     struct Order {
         uint256 orderId;
-        uint256 orderType;
+        OrderType orderType;
+        bool inverted;
         uint256 validAfterTimestamp;
         bool unwrap;
         uint256 timestamp;
@@ -132,43 +132,48 @@ library Orders {
         return OrderStatus.EnqueuedReady;
     }
 
-    function getPair(
-        Data storage data,
-        address tokenA,
-        address tokenB
-    ) internal view returns (address pair, bool inverted) {
-        pair = ITwapFactory(data.factory).getPair(tokenA, tokenB);
+    function getPair(address tokenA, address tokenB) internal view returns (address pair, bool inverted) {
+        pair = ITwapFactory(FACTORY_ADDRESS).getPair(tokenA, tokenB);
         require(pair != address(0), 'OS17');
         inverted = tokenA > tokenB;
     }
 
     function getDepositDisabled(Data storage data, address pair) internal view returns (bool) {
-        return data.orderDisabled[pair] & DEPOSIT_MASK != 0;
+        return data.orderTypesDisabled[pair] & DEPOSIT_MASK != 0;
     }
 
     function getWithdrawDisabled(Data storage data, address pair) internal view returns (bool) {
-        return data.orderDisabled[pair] & WITHDRAW_MASK != 0;
+        return data.orderTypesDisabled[pair] & WITHDRAW_MASK != 0;
     }
 
     function getSellDisabled(Data storage data, address pair) internal view returns (bool) {
-        return data.orderDisabled[pair] & SELL_MASK != 0;
+        return data.orderTypesDisabled[pair] & SELL_MASK != 0;
     }
 
     function getBuyDisabled(Data storage data, address pair) internal view returns (bool) {
-        return data.orderDisabled[pair] & BUY_MASK != 0;
+        return data.orderTypesDisabled[pair] & BUY_MASK != 0;
     }
 
-    function setOrderDisabled(
+    function setOrderTypesDisabled(
         Data storage data,
         address pair,
-        Orders.OrderType orderType,
+        Orders.OrderType[] calldata orderTypes,
         bool disabled
     ) external {
-        require(orderType != Orders.OrderType.Empty, 'OS32');
-        uint8 currentSettings = data.orderDisabled[pair];
+        uint256 orderTypesLength = orderTypes.length;
+        uint8 currentSettings = data.orderTypesDisabled[pair];
 
-        // zeros with 1 bit set at position specified by orderType
-        uint8 mask = uint8(1 << uint8(orderType));
+        uint8 combinedMask;
+        for (uint256 i; i < orderTypesLength; ++i) {
+            Orders.OrderType orderType = orderTypes[i];
+            require(orderType != Orders.OrderType.Empty, 'OS32');
+            // zeros with 1 bit set at position specified by orderType
+            // e.g. for SELL order type
+            // mask for SELL    = 00001000
+            // combinedMask     = 00000110 (DEPOSIT and WITHDRAW masks set in previous iterations)
+            // the result of OR = 00001110 (DEPOSIT, WITHDRAW and SELL combined mask)
+            combinedMask = combinedMask | uint8(1 << uint8(orderType));
+        }
 
         // set/unset a bit accordingly to 'disabled' value
         if (disabled) {
@@ -177,7 +182,7 @@ library Orders {
             // currentSettings   = 00010100 (BUY and WITHDRAW disabled)
             // mask for DEPOSIT  = 00000010
             // the result of OR  = 00010110
-            currentSettings = currentSettings | mask;
+            currentSettings = currentSettings | combinedMask;
         } else {
             // AND operation with a mask negation to enable order
             // e.g. for enable DEPOSIT
@@ -186,12 +191,12 @@ library Orders {
             // mask for Deposit  = 00000010
             // mask negation     = 11111101
             // the result of AND = 00010100
-            currentSettings = currentSettings & (mask ^ 0xff);
+            currentSettings = currentSettings & (combinedMask ^ 0xff);
         }
-        require(currentSettings != data.orderDisabled[pair], 'OS01');
-        data.orderDisabled[pair] = currentSettings;
+        require(currentSettings != data.orderTypesDisabled[pair], 'OS01');
+        data.orderTypesDisabled[pair] = currentSettings;
 
-        emit OrderDisabled(pair, orderType, disabled);
+        emit OrderTypesDisabled(pair, orderTypes, disabled);
     }
 
     function markRefundFailed(Data storage data) internal {
@@ -228,11 +233,9 @@ library Orders {
     ) external {
         {
             // scope for checks, avoids stack too deep errors
-            uint256 token0TransferCost = data.transferGasCosts[depositParams.token0];
-            uint256 token1TransferCost = data.transferGasCosts[depositParams.token1];
-            require(token0TransferCost != 0 && token1TransferCost != 0, 'OS0F');
+            uint256 token0TransferCost = getTransferGasCost(depositParams.token0);
+            uint256 token1TransferCost = getTransferGasCost(depositParams.token1);
             checkOrderParams(
-                data,
                 depositParams.to,
                 depositParams.gasLimit,
                 depositParams.submitDeadline,
@@ -240,7 +243,7 @@ library Orders {
             );
         }
         require(depositParams.amount0 != 0 || depositParams.amount1 != 0, 'OS25');
-        (address pairAddress, bool inverted) = getPair(data, depositParams.token0, depositParams.token1);
+        (address pairAddress, bool inverted) = getPair(depositParams.token0, depositParams.token1);
         require(!getDepositDisabled(data, pairAddress), 'OS46');
         {
             // scope for value, avoids stack too deep errors
@@ -248,9 +251,9 @@ library Orders {
 
             // allocate gas refund
             if (depositParams.wrap) {
-                if (depositParams.token0 == tokenShares.weth) {
+                if (depositParams.token0 == TokenShares.WETH_ADDRESS) {
                     value = msg.value.sub(depositParams.amount0, 'OS1E');
-                } else if (depositParams.token1 == tokenShares.weth) {
+                } else if (depositParams.token1 == TokenShares.WETH_ADDRESS) {
                     value = msg.value.sub(depositParams.amount1, 'OS1E');
                 }
             }
@@ -272,8 +275,9 @@ library Orders {
 
         Order memory order = Order(
             0,
-            DEPOSIT_TYPE,
-            timestamp + data.delay, // validAfterTimestamp
+            OrderType.Deposit,
+            inverted,
+            timestamp + DELAY, // validAfterTimestamp
             depositParams.wrap,
             timestamp,
             depositParams.gasLimit,
@@ -309,10 +313,9 @@ library Orders {
     }
 
     function withdraw(Data storage data, WithdrawParams calldata withdrawParams) external {
-        (address pair, bool inverted) = getPair(data, withdrawParams.token0, withdrawParams.token1);
+        (address pair, bool inverted) = getPair(withdrawParams.token0, withdrawParams.token1);
         require(!getWithdrawDisabled(data, pair), 'OS0A');
         checkOrderParams(
-            data,
             withdrawParams.to,
             withdrawParams.gasLimit,
             withdrawParams.submitDeadline,
@@ -325,8 +328,9 @@ library Orders {
 
         Order memory order = Order(
             0,
-            WITHDRAW_TYPE,
-            block.timestamp + data.delay, // validAfterTimestamp
+            OrderType.Withdraw,
+            inverted,
+            block.timestamp + DELAY, // validAfterTimestamp
             withdrawParams.unwrap,
             0, // timestamp
             withdrawParams.gasLimit,
@@ -365,35 +369,25 @@ library Orders {
         SellParams calldata sellParams,
         TokenShares.Data storage tokenShares
     ) external {
-        uint256 tokenTransferCost = data.transferGasCosts[sellParams.tokenIn];
-        require(tokenTransferCost != 0, 'OS0F');
+        uint256 tokenTransferCost = getTransferGasCost(sellParams.tokenIn);
         checkOrderParams(
-            data,
             sellParams.to,
             sellParams.gasLimit,
             sellParams.submitDeadline,
             ORDER_BASE_COST.add(tokenTransferCost)
         );
-        require(sellParams.amountIn != 0, 'OS24');
-        (address pairAddress, bool inverted) = getPair(data, sellParams.tokenIn, sellParams.tokenOut);
-        require(!getSellDisabled(data, pairAddress), 'OS13');
-        uint256 value = msg.value;
 
-        // allocate gas refund
-        if (sellParams.tokenIn == tokenShares.weth && sellParams.wrapUnwrap) {
-            value = msg.value.sub(sellParams.amountIn, 'OS1E');
-        }
-
-        allocateGasRefund(data, value, sellParams.gasLimit);
-
-        uint256 shares = tokenShares.amountToShares(sellParams.tokenIn, sellParams.amountIn, sellParams.wrapUnwrap);
+        (address pairAddress, bool inverted) = sellHelper(data, sellParams);
 
         (uint256 priceAccumulator, uint256 timestamp) = ITwapOracle(ITwapPair(pairAddress).oracle()).getPriceInfo();
 
+        uint256 shares = tokenShares.amountToShares(sellParams.tokenIn, sellParams.amountIn, sellParams.wrapUnwrap);
+
         Order memory order = Order(
             0,
-            inverted ? SELL_INVERTED_TYPE : SELL_TYPE,
-            timestamp + data.delay, // validAfterTimestamp
+            OrderType.Sell,
+            inverted,
+            timestamp + DELAY, // validAfterTimestamp
             sellParams.wrapUnwrap,
             timestamp,
             sellParams.gasLimit,
@@ -416,6 +410,64 @@ library Orders {
         emit SellEnqueued(order.orderId, order);
     }
 
+    function relayerSell(
+        Data storage data,
+        SellParams calldata sellParams,
+        TokenShares.Data storage tokenShares
+    ) external {
+        checkOrderParams(sellParams.to, sellParams.gasLimit, sellParams.submitDeadline, ORDER_BASE_COST);
+
+        (, bool inverted) = sellHelper(data, sellParams);
+
+        uint256 shares = tokenShares.amountToSharesWithoutTransfer(
+            sellParams.tokenIn,
+            sellParams.amountIn,
+            sellParams.wrapUnwrap
+        );
+
+        Order memory order = Order(
+            0,
+            OrderType.Sell,
+            inverted,
+            block.timestamp + DELAY, // validAfterTimestamp
+            false, // Never wrap/unwrap
+            block.timestamp,
+            sellParams.gasLimit,
+            data.gasPrice,
+            0, // liquidity
+            shares,
+            sellParams.amountOutMin,
+            sellParams.tokenIn,
+            sellParams.tokenOut,
+            sellParams.to,
+            0, // minSwapPrice
+            0, // maxSwapPrice
+            false, // swap
+            0, // priceAccumulator - oracleV3 pairs don't need priceAccumulator
+            sellParams.amountIn,
+            0 // amountLimit1
+        );
+        enqueueOrder(data, order);
+
+        emit SellEnqueued(order.orderId, order);
+    }
+
+    function sellHelper(Data storage data, SellParams calldata sellParams)
+        internal
+        returns (address pairAddress, bool inverted)
+    {
+        require(sellParams.amountIn != 0, 'OS24');
+        (pairAddress, inverted) = getPair(sellParams.tokenIn, sellParams.tokenOut);
+        require(!getSellDisabled(data, pairAddress), 'OS13');
+
+        // allocate gas refund
+        uint256 value = msg.value;
+        if (sellParams.wrapUnwrap && sellParams.tokenIn == TokenShares.WETH_ADDRESS) {
+            value = msg.value.sub(sellParams.amountIn, 'OS1E');
+        }
+        allocateGasRefund(data, value, sellParams.gasLimit);
+    }
+
     struct BuyParams {
         address tokenIn;
         address tokenOut;
@@ -432,22 +484,20 @@ library Orders {
         BuyParams calldata buyParams,
         TokenShares.Data storage tokenShares
     ) external {
-        uint256 tokenTransferCost = data.transferGasCosts[buyParams.tokenIn];
-        require(tokenTransferCost != 0, 'OS0F');
+        uint256 tokenTransferCost = getTransferGasCost(buyParams.tokenIn);
         checkOrderParams(
-            data,
             buyParams.to,
             buyParams.gasLimit,
             buyParams.submitDeadline,
             ORDER_BASE_COST.add(tokenTransferCost)
         );
         require(buyParams.amountOut != 0, 'OS23');
-        (address pairAddress, bool inverted) = getPair(data, buyParams.tokenIn, buyParams.tokenOut);
+        (address pairAddress, bool inverted) = getPair(buyParams.tokenIn, buyParams.tokenOut);
         require(!getBuyDisabled(data, pairAddress), 'OS49');
         uint256 value = msg.value;
 
         // allocate gas refund
-        if (buyParams.tokenIn == tokenShares.weth && buyParams.wrapUnwrap) {
+        if (buyParams.tokenIn == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
             value = msg.value.sub(buyParams.amountInMax, 'OS1E');
         }
 
@@ -459,8 +509,9 @@ library Orders {
 
         Order memory order = Order(
             0,
-            inverted ? BUY_INVERTED_TYPE : BUY_TYPE,
-            timestamp + data.delay, // validAfterTimestamp
+            OrderType.Buy,
+            inverted,
+            timestamp + DELAY, // validAfterTimestamp
             buyParams.wrapUnwrap,
             timestamp,
             buyParams.gasLimit,
@@ -484,14 +535,13 @@ library Orders {
     }
 
     function checkOrderParams(
-        Data storage data,
         address to,
         uint256 gasLimit,
         uint32 submitDeadline,
         uint256 minGasLimit
     ) private view {
         require(submitDeadline >= block.timestamp, 'OS04');
-        require(gasLimit <= data.maxGasLimit, 'OS3E');
+        require(gasLimit <= MAX_GAS_LIMIT, 'OS3E');
         require(gasLimit >= minGasLimit, 'OS3D');
         require(to != address(0), 'OS26');
     }
@@ -504,46 +554,19 @@ library Orders {
         futureFee = data.gasPrice.mul(gasLimit);
         require(value >= futureFee, 'OS1E');
         if (value > futureFee) {
-            TransferHelper.safeTransferETH(msg.sender, value.sub(futureFee), data.transferGasCosts[address(0)]);
+            TransferHelper.safeTransferETH(
+                msg.sender,
+                value.sub(futureFee),
+                getTransferGasCost(NATIVE_CURRENCY_SENTINEL)
+            );
         }
     }
 
     function updateGasPrice(Data storage data, uint256 gasUsed) external {
-        uint256 scale = Math.min(gasUsed, data.maxGasPriceImpact);
-        data.gasPrice = data.gasPrice.mul(data.gasPriceInertia.sub(scale)).add(tx.gasprice.mul(scale)).div(
-            data.gasPriceInertia
+        uint256 scale = Math.min(gasUsed, MAX_GAS_PRICE_IMPACT);
+        data.gasPrice = data.gasPrice.mul(GAS_PRICE_INERTIA.sub(scale)).add(tx.gasprice.mul(scale)).div(
+            GAS_PRICE_INERTIA
         );
-    }
-
-    function setMaxGasLimit(Data storage data, uint256 _maxGasLimit) external {
-        require(_maxGasLimit != data.maxGasLimit, 'OS01');
-        require(_maxGasLimit <= 10000000, 'OS2B');
-        data.maxGasLimit = _maxGasLimit;
-        emit MaxGasLimitSet(_maxGasLimit);
-    }
-
-    function setGasPriceInertia(Data storage data, uint256 _gasPriceInertia) external {
-        require(_gasPriceInertia != data.gasPriceInertia, 'OS01');
-        require(_gasPriceInertia >= 1, 'OS35');
-        data.gasPriceInertia = _gasPriceInertia;
-        emit GasPriceInertiaSet(_gasPriceInertia);
-    }
-
-    function setMaxGasPriceImpact(Data storage data, uint256 _maxGasPriceImpact) external {
-        require(_maxGasPriceImpact != data.maxGasPriceImpact, 'OS01');
-        require(_maxGasPriceImpact <= data.gasPriceInertia, 'OS33');
-        data.maxGasPriceImpact = _maxGasPriceImpact;
-        emit MaxGasPriceImpactSet(_maxGasPriceImpact);
-    }
-
-    function setTransferGasCost(
-        Data storage data,
-        address token,
-        uint256 gasCost
-    ) external {
-        require(gasCost != data.transferGasCosts[token], 'OS01');
-        data.transferGasCosts[token] = gasCost;
-        emit TransferGasCostSet(token, gasCost);
     }
 
     function refundLiquidity(
@@ -582,6 +605,7 @@ library Orders {
         bytes memory partialOrderData = abi.encodePacked(
             order.orderId,
             order.orderType,
+            order.inverted,
             order.validAfterTimestamp,
             order.unwrap,
             order.timestamp,
@@ -592,14 +616,14 @@ library Orders {
             order.value1,
             order.token0,
             order.token1,
-            order.to,
-            order.minSwapPrice
+            order.to
         );
 
         return
             keccak256(
                 abi.encodePacked(
                     partialOrderData,
+                    order.minSwapPrice,
                     order.maxSwapPrice,
                     order.swap,
                     order.priceAccumulator,
@@ -611,5 +635,39 @@ library Orders {
 
     function verifyOrder(Data storage data, Order memory order) external view {
         require(getOrderDigest(order) == data.orderQueue[order.orderId], 'OS71');
+    }
+
+    // prettier-ignore
+    // constant mapping for transferGasCost
+    /**
+     * @dev This function should either return a default value != 0 or revert.
+     */
+    function getTransferGasCost(address token) internal pure returns (uint256) {
+        if (token == NATIVE_CURRENCY_SENTINEL) return ETHER_TRANSFER_CALL_COST;
+        // #if defined(TRANSFER_GAS_COST__TOKEN_WETH) && (uint(TRANSFER_GAS_COST__TOKEN_WETH) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WETH_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_WETH;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_USDC) && (uint(TRANSFER_GAS_COST__TOKEN_USDC) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDC;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_USDT) && (uint(TRANSFER_GAS_COST__TOKEN_USDT) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDT;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_WBTC) && (uint(TRANSFER_GAS_COST__TOKEN_WBTC) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WBTC_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_WBTC;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_CVX) && (uint(TRANSFER_GAS_COST__TOKEN_CVX) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_CVX_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_CVX;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_SUSHI) && (uint(TRANSFER_GAS_COST__TOKEN_SUSHI) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SUSHI_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_SUSHI;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_STETH) && (uint(TRANSFER_GAS_COST__TOKEN_STETH) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_STETH;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_DAI) && (uint(TRANSFER_GAS_COST__TOKEN_DAI) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_DAI;
+        // #endif
+        return __MACRO__MAPPING.TRANSFER_GAS_COST__DEFAULT;
     }
 }

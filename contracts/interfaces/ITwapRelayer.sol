@@ -15,7 +15,6 @@ interface ITwapRelayer {
     event TwapIntervalSet(address pair, uint32 interval);
     event EthTransferGasCostSet(uint256 gasCost);
     event ExecutionGasLimitSet(uint256 limit);
-    event GasPriceMultiplierSet(uint256 multiplier);
     event TokenLimitMinSet(address token, uint256 limit);
     event TokenLimitMaxMultiplierSet(address token, uint256 limit);
     event ToleranceSet(address pair, uint16 tolerance);
@@ -57,13 +56,11 @@ interface ITwapRelayer {
     event RebalanceSellWithOneInch(address indexed oneInchRouter, uint256 gas, bytes data);
     event OneInchRouterWhitelisted(address indexed oneInchRouter, bool whitelisted);
 
-    function factory() external view returns (address);
+    function factory() external pure returns (address);
 
-    function delay() external view returns (address);
+    function delay() external pure returns (address);
 
-    function setDelay(address _delay) external;
-
-    function weth() external view returns (address);
+    function weth() external pure returns (address);
 
     function owner() external view returns (address);
 
@@ -77,41 +74,33 @@ interface ITwapRelayer {
 
     function setSwapFee(address pair, uint256 fee) external;
 
-    function twapInterval(address pair) external view returns (uint32);
-
-    function setTwapInterval(address pair, uint32 _interval) external;
+    function twapInterval(address pair) external pure returns (uint32);
 
     function isPairEnabled(address pair) external view returns (bool);
 
     function setPairEnabled(address pair, bool enabled) external;
 
-    function ethTransferGasCost() external view returns (uint256);
+    function ethTransferGasCost() external pure returns (uint256);
 
-    function setEthTransferGasCost(uint256 gasCost) external;
+    function executionGasLimit() external pure returns (uint256);
 
-    function executionGasLimit() external view returns (uint256);
+    function tokenLimitMin(address token) external pure returns (uint256);
 
-    function setExecutionGasLimit(uint256 limit) external;
+    function tokenLimitMaxMultiplier(address token) external pure returns (uint256);
 
-    function gasPriceMultiplier() external view returns (uint256);
-
-    function setGasPriceMultiplier(uint256 multiplier) external;
-
-    function tokenLimitMin(address token) external view returns (uint256);
-
-    function setTokenLimitMin(address token, uint256 limit) external;
-
-    function tokenLimitMaxMultiplier(address token) external view returns (uint256);
-
-    function setTokenLimitMaxMultiplier(address token, uint256 multiplier) external;
-
-    function tolerance(address pair) external view returns (uint16);
-
-    function setTolerance(address pair, uint16 _tolerance) external;
+    function tolerance(address pair) external pure returns (uint16);
 
     function setRebalancer(address _rebalancer) external;
 
     function whitelistOneInchRouter(address oneInchRouter, bool whitelisted) external;
+
+    function getTolerance(address pair) external pure returns (uint16);
+
+    function getTokenLimitMin(address token) external pure returns (uint256);
+
+    function getTokenLimitMaxMultiplier(address token) external pure returns (uint256);
+
+    function getTwapInterval(address pair) external pure returns (uint32);
 
     struct SellParams {
         address tokenIn;
