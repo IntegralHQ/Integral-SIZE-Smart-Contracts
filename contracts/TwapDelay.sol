@@ -61,21 +61,19 @@ contract TwapDelay is ITwapDelay {
         return orders.getSellDisabled(pair);
     }
 
-    function getOrderStatus(uint256 orderId, uint256 validAfterTimestamp)
-        external
-        view
-        override
-        returns (Orders.OrderStatus)
-    {
+    function getOrderStatus(
+        uint256 orderId,
+        uint256 validAfterTimestamp
+    ) external view override returns (Orders.OrderStatus) {
         return orders.getOrderStatus(orderId, validAfterTimestamp);
     }
 
-    uint256 private locked;
+    uint256 private locked = 1;
     modifier lock() {
-        require(locked == 0, 'TD06');
-        locked = 1;
+        require(locked == 1, 'TD06');
+        locked = 2;
         _;
-        locked = 0;
+        locked = 1;
     }
 
     function factory() external pure override returns (address) {
@@ -175,24 +173,16 @@ contract TwapDelay is ITwapDelay {
         emit BotSet(_bot, _isBot);
     }
 
-    function deposit(Orders.DepositParams calldata depositParams)
-        external
-        payable
-        override
-        lock
-        returns (uint256 orderId)
-    {
+    function deposit(
+        Orders.DepositParams calldata depositParams
+    ) external payable override lock returns (uint256 orderId) {
         orders.deposit(depositParams, tokenShares);
         return orders.newestOrderId;
     }
 
-    function withdraw(Orders.WithdrawParams calldata withdrawParams)
-        external
-        payable
-        override
-        lock
-        returns (uint256 orderId)
-    {
+    function withdraw(
+        Orders.WithdrawParams calldata withdrawParams
+    ) external payable override lock returns (uint256 orderId) {
         orders.withdraw(withdrawParams);
         return orders.newestOrderId;
     }
@@ -202,13 +192,9 @@ contract TwapDelay is ITwapDelay {
         return orders.newestOrderId;
     }
 
-    function relayerSell(Orders.SellParams calldata sellParams)
-        external
-        payable
-        override
-        lock
-        returns (uint256 orderId)
-    {
+    function relayerSell(
+        Orders.SellParams calldata sellParams
+    ) external payable override lock returns (uint256 orderId) {
         require(msg.sender == RELAYER_ADDRESS, 'TD00');
         orders.relayerSell(sellParams, tokenShares);
         return orders.newestOrderId;
@@ -371,12 +357,7 @@ contract TwapDelay is ITwapDelay {
         emit EthRefund(to, success, value);
     }
 
-    function refundToken(
-        address token,
-        address to,
-        uint256 share,
-        bool unwrap
-    ) private returns (bool) {
+    function refundToken(address token, address to, uint256 share, bool unwrap) private returns (bool) {
         if (share == 0) {
             return true;
         }
@@ -420,12 +401,7 @@ contract TwapDelay is ITwapDelay {
         _refundToken(token1, to, share1, unwrap);
     }
 
-    function _refundToken(
-        address token,
-        address to,
-        uint256 share,
-        bool unwrap
-    ) public payable {
+    function _refundToken(address token, address to, uint256 share, bool unwrap) public payable {
         require(msg.sender == address(this), 'TD00');
         if (token == TokenShares.WETH_ADDRESS && unwrap) {
             uint256 amount = tokenShares.sharesToAmount(token, share, 0, to);
@@ -436,11 +412,7 @@ contract TwapDelay is ITwapDelay {
         }
     }
 
-    function _refundLiquidity(
-        address pair,
-        address to,
-        uint256 liquidity
-    ) external payable {
+    function _refundLiquidity(address pair, address to, uint256 liquidity) external payable {
         require(msg.sender == address(this), 'TD00');
         return TransferHelper.safeTransfer(pair, to, liquidity);
     }
@@ -563,6 +535,9 @@ contract TwapDelay is ITwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_USDC)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC);
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_USDC_E)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC_E);
+        // #endif
         // #if defined(TOLERANCE__PAIR_WETH_USDT)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDT);
         // #endif
@@ -581,8 +556,26 @@ contract TwapDelay is ITwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_STETH)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_STETH);
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_WSTETH)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_WSTETH);
+        // #endif
         // #if defined(TOLERANCE__PAIR_WETH_DAI)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_DAI);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_RPL)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_RPL);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_SWISE)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_SWISE);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_LDO)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_LDO);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_GMX)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_GMX);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_ARB)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_ARB);
         // #endif
 
         emit TransferGasCostSet(Orders.NATIVE_CURRENCY_SENTINEL, Orders.ETHER_TRANSFER_CALL_COST);
@@ -591,6 +584,9 @@ contract TwapDelay is ITwapDelay {
         // #endif
         // #if defined(TRANSFER_GAS_COST__TOKEN_USDC)
         emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDC);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_USDC_E)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDC_E);
         // #endif
         // #if defined(TRANSFER_GAS_COST__TOKEN_USDT)
         emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDT);
@@ -607,8 +603,26 @@ contract TwapDelay is ITwapDelay {
         // #if defined(TRANSFER_GAS_COST__TOKEN_STETH)
         emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_STETH);
         // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_WSTETH)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_WSTETH);
+        // #endif
         // #if defined(TRANSFER_GAS_COST__TOKEN_DAI)
         emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_DAI);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_RPL)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_RPL_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_RPL);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_SWISE)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_SWISE_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_SWISE);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_LDO)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_LDO_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_LDO);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_GMX)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_GMX_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_GMX);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_ARB)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_ARB_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_ARB);
         // #endif
 
         // #if defined(IS_NON_REBASING__TOKEN_WETH)
@@ -616,6 +630,9 @@ contract TwapDelay is ITwapDelay {
         // #endif
         // #if defined(IS_NON_REBASING__TOKEN_USDC)
         emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDC);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_USDC_E)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDC_E);
         // #endif
         // #if defined(IS_NON_REBASING__TOKEN_USDT)
         emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDT);
@@ -632,8 +649,26 @@ contract TwapDelay is ITwapDelay {
         // #if defined(IS_NON_REBASING__TOKEN_STETH)
         emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_STETH);
         // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_WSTETH)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WSTETH);
+        // #endif
         // #if defined(IS_NON_REBASING__TOKEN_DAI)
         emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_DAI);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_RPL)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_RPL_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_RPL);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_SWISE)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_SWISE_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_SWISE);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_LDO)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_LDO_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_LDO);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_GMX)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_GMX_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_GMX);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_ARB)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_ARB_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_ARB);
         // #endif
     }
 
@@ -642,6 +677,9 @@ contract TwapDelay is ITwapDelay {
     function getTolerance(address/* #if !bool(TOLERANCE) */ pair/* #endif */) public virtual view override returns (uint16 tolerance) {
         // #if defined(TOLERANCE__PAIR_WETH_USDC) && (uint(TOLERANCE__PAIR_WETH_USDC) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_USDC_E) && (uint(TOLERANCE__PAIR_WETH_USDC_E) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC_E;
         // #endif
         // #if defined(TOLERANCE__PAIR_WETH_USDT) && (uint(TOLERANCE__PAIR_WETH_USDT) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDT;
@@ -661,8 +699,26 @@ contract TwapDelay is ITwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_STETH) && (uint(TOLERANCE__PAIR_WETH_STETH) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_STETH;
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_WSTETH) && (uint(TOLERANCE__PAIR_WETH_WSTETH) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_WSTETH;
+        // #endif
         // #if defined(TOLERANCE__PAIR_WETH_DAI) && (uint(TOLERANCE__PAIR_WETH_DAI) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_DAI;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_RPL) && (uint(TOLERANCE__PAIR_WETH_RPL) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_RPL;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_SWISE) && (uint(TOLERANCE__PAIR_WETH_SWISE) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_SWISE;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_LDO) && (uint(TOLERANCE__PAIR_WETH_LDO) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_LDO;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_GMX) && (uint(TOLERANCE__PAIR_WETH_GMX) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_GMX;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_ARB) && (uint(TOLERANCE__PAIR_WETH_ARB) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_ARB;
         // #endif
         return __MACRO__MAPPING.TOLERANCE__DEFAULT;
     }

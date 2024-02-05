@@ -36,20 +36,12 @@ abstract contract AbstractERC20 is ITwapERC20 {
         emit Transfer(from, address(0), value);
     }
 
-    function _approve(
-        address owner,
-        address spender,
-        uint256 value
-    ) internal {
+    function _approve(address owner, address spender, uint256 value) internal {
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) internal {
+    function _transfer(address from, address to, uint256 value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(from, to, value);
@@ -77,11 +69,7 @@ abstract contract AbstractERC20 is ITwapERC20 {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external override returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
         if (allowance[from][msg.sender] != uint256(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }

@@ -61,11 +61,7 @@ interface ITwapDelay {
 
     function getOrderStatus(uint256 orderId, uint256 validAfterTimestamp) external view returns (Orders.OrderStatus);
 
-    function setOrderTypesDisabled(
-        address pair,
-        Orders.OrderType[] calldata orderTypes,
-        bool disabled
-    ) external;
+    function setOrderTypesDisabled(address pair, Orders.OrderType[] calldata orderTypes, bool disabled) external;
 
     function setOwner(address _owner) external;
 

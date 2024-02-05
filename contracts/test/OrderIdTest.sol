@@ -35,11 +35,7 @@ contract OrderIdTest {
         emit OrderId(orderId);
     }
 
-    function approve(
-        address token,
-        address beneficiary,
-        uint256 value
-    ) public {
+    function approve(address token, address beneficiary, uint256 value) public {
         IERC20(token).approve(beneficiary, value);
     }
 }

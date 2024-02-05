@@ -23,7 +23,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
     uint32 private constant EXPIRATION_UPPER_LIMIT = 90 days;
     uint32 private constant EXPIRATION_LOWER_LIMIT = 30 minutes;
 
-    uint256 private constant GAS_PRECISION = 10**18;
+    uint256 private constant GAS_PRECISION = 10 ** 18;
 
     address public override owner;
     address public constant DELAY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F      /*__MACRO__GLOBAL.DELAY_ADDRESS*/; //prettier-ignore
@@ -40,7 +40,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
     mapping(uint256 => StoredOrder) private limitOrders;
     mapping(uint32 => PairInfo) private pairs;
 
-    uint256 private locked;
+    uint256 private locked = 1;
 
     constructor(address _bot) {
         owner = msg.sender;
@@ -51,10 +51,10 @@ contract TwapLimitOrder is ITwapLimitOrder {
     }
 
     modifier lock() {
-        require(locked == 0, 'TL06');
-        locked = 1;
+        require(locked == 1, 'TL06');
+        locked = 2;
         _;
-        locked = 0;
+        locked = 1;
     }
 
     function factory() external pure override returns (address) {
@@ -124,11 +124,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         emit EnqueueDisabledSet(_enqueueDisabled);
     }
 
-    function approve(
-        address token,
-        uint256 amount,
-        address to
-    ) external override lock {
+    function approve(address token, uint256 amount, address to) external override lock {
         require(msg.sender == owner, 'TL00');
         require(to != address(0), 'TL02');
         TransferHelper.safeApprove(token, to, amount);
@@ -209,11 +205,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         }
     }
 
-    function _executeOrder(
-        StoredOrder calldata order,
-        uint256 orderId,
-        address orderExecutor
-    ) external {
+    function _executeOrder(StoredOrder calldata order, uint256 orderId, address orderExecutor) external {
         uint256 gasStart = gasleft();
         require(msg.sender == address(this), 'TL00');
         _validateOrder(order);
@@ -309,12 +301,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         _forgetOrder(orderId);
     }
 
-    function _transferRefundToken(
-        address token,
-        address to,
-        uint256 share,
-        bool unwrap
-    ) external {
+    function _transferRefundToken(address token, address to, uint256 share, bool unwrap) external {
         require(msg.sender == address(this), 'TL00');
         if (token == TokenShares.WETH_ADDRESS && unwrap) {
             uint256 amount = tokenShares.sharesToAmount(token, share, 0, to);
@@ -341,11 +328,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         return success;
     }
 
-    function _performRefund(
-        StoredOrder calldata order,
-        address executor,
-        bool shouldRefundPrepaidGas
-    ) external {
+    function _performRefund(StoredOrder calldata order, address executor, bool shouldRefundPrepaidGas) external {
         require(msg.sender == address(this), 'TL00');
         (, address tokenIn, ) = _getPairInfo(order.pairId, order.inverted);
 
@@ -554,10 +537,10 @@ contract TwapLimitOrder is ITwapLimitOrder {
 
         if (sqrtRatioX96 <= type(uint128).max) {
             uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-            return FullMath.mulDiv(ratioX192, uint256(decimalsConverter), 2**192);
+            return FullMath.mulDiv(ratioX192, uint256(decimalsConverter), 2 ** 192);
         } else {
-            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2**64);
-            return FullMath.mulDiv(ratioX128, uint256(decimalsConverter), 2**128);
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2 ** 64);
+            return FullMath.mulDiv(ratioX128, uint256(decimalsConverter), 2 ** 128);
         }
     }
 
@@ -626,12 +609,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         emit EthRefund(to, success, value);
     }
 
-    function _refundToken(
-        address token,
-        address to,
-        uint256 share,
-        bool unwrap
-    ) private returns (bool) {
+    function _refundToken(address token, address to, uint256 share, bool unwrap) private returns (bool) {
         if (share == 0) {
             return true;
         }
@@ -644,14 +622,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         return success;
     }
 
-    function _getPair(address tokenA, address tokenB)
-        private
-        returns (
-            address pair,
-            uint32 pairId,
-            bool inverted
-        )
-    {
+    function _getPair(address tokenA, address tokenB) private returns (address pair, uint32 pairId, bool inverted) {
         inverted = tokenA > tokenB;
         pair = ITwapFactory(Orders.FACTORY_ADDRESS).getPair(tokenA, tokenB);
         require(pair != address(0), 'TL17');
@@ -662,15 +633,10 @@ contract TwapLimitOrder is ITwapLimitOrder {
         }
     }
 
-    function _getPairInfo(uint32 pairId, bool inverted)
-        private
-        view
-        returns (
-            address pair,
-            address tokenIn,
-            address tokenOut
-        )
-    {
+    function _getPairInfo(
+        uint32 pairId,
+        bool inverted
+    ) private view returns (address pair, address tokenIn, address tokenOut) {
         PairInfo storage info = pairs[pairId];
         pair = info.pair;
         (tokenIn, tokenOut) = inverted ? (info.token1, info.token0) : (info.token0, info.token1);
@@ -686,6 +652,9 @@ contract TwapLimitOrder is ITwapLimitOrder {
 
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_USDC)
         emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_USDC);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_USDC_E)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_USDC_E);
         // #endif
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_USDT)
         emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_USDT);
@@ -705,8 +674,26 @@ contract TwapLimitOrder is ITwapLimitOrder {
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_STETH)
         emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_STETH);
         // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_WSTETH)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_WSTETH);
+        // #endif
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_DAI)
         emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_DAI);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_RPL)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_RPL);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_SWISE)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_SWISE);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_LDO)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_LDO);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_GMX)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_GMX);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_ARB)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_ARB);
         // #endif
     }
 
@@ -715,6 +702,9 @@ contract TwapLimitOrder is ITwapLimitOrder {
     function getPriceTolerance(address/* #if !bool(PRICE_TOLERANCE) */ pair/* #endif */) public pure override returns (uint32 tolerance) {
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_USDC) && (uint(PRICE_TOLERANCE__PAIR_WETH_USDC) != uint(PRICE_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_USDC_E) && (uint(PRICE_TOLERANCE__PAIR_WETH_USDC_E) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_USDC_E;
         // #endif
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_USDT) && (uint(PRICE_TOLERANCE__PAIR_WETH_USDT) != uint(PRICE_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_USDT;
@@ -734,8 +724,26 @@ contract TwapLimitOrder is ITwapLimitOrder {
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_STETH) && (uint(PRICE_TOLERANCE__PAIR_WETH_STETH) != uint(PRICE_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_STETH;
         // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_WSTETH) && (uint(PRICE_TOLERANCE__PAIR_WETH_WSTETH) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_WSTETH;
+        // #endif
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_DAI) && (uint(PRICE_TOLERANCE__PAIR_WETH_DAI) != uint(PRICE_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_DAI;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_RPL) && (uint(PRICE_TOLERANCE__PAIR_WETH_RPL) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_RPL;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_SWISE) && (uint(PRICE_TOLERANCE__PAIR_WETH_SWISE) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_SWISE;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_LDO) && (uint(PRICE_TOLERANCE__PAIR_WETH_LDO) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_LDO;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_GMX) && (uint(PRICE_TOLERANCE__PAIR_WETH_GMX) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_GMX;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_ARB) && (uint(PRICE_TOLERANCE__PAIR_WETH_ARB) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_ARB;
         // #endif
         return __MACRO__MAPPING.PRICE_TOLERANCE__DEFAULT;
     }

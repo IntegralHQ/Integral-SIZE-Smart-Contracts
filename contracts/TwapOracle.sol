@@ -12,7 +12,7 @@ contract TwapOracle is ITwapOracle {
     using SafeMath for uint256;
     using SafeMath for int256;
 
-    uint256 private constant PRECISION = 10**18;
+    uint256 private constant PRECISION = 10 ** 18;
 
     uint8 public immutable override xDecimals;
     uint8 public immutable override yDecimals;
@@ -30,7 +30,7 @@ contract TwapOracle is ITwapOracle {
         owner = msg.sender;
         xDecimals = _xDecimals;
         yDecimals = _yDecimals;
-        decimalsConverter = (10**(18 + _xDecimals - _yDecimals)).toInt256();
+        decimalsConverter = (10 ** (18 + _xDecimals - _yDecimals)).toInt256();
 
         emit OwnerSet(msg.sender);
     }

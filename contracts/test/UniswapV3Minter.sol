@@ -15,11 +15,7 @@ contract UniswapV3Minter is IUniswapV3MintCallback {
         address token1;
     }
 
-    function uniswapV3MintCallback(
-        uint256 amount0Owed,
-        uint256 amount1Owed,
-        bytes calldata data
-    ) external override {
+    function uniswapV3MintCallback(uint256 amount0Owed, uint256 amount1Owed, bytes calldata data) external override {
         MintCallbackData memory decoded = abi.decode(data, (MintCallbackData));
         if (amount0Owed > 0) pay(decoded.token0, decoded.payer, msg.sender, amount0Owed);
         if (amount1Owed > 0) pay(decoded.token1, decoded.payer, msg.sender, amount1Owed);
@@ -46,12 +42,7 @@ contract UniswapV3Minter is IUniswapV3MintCallback {
         );
     }
 
-    function pay(
-        address token,
-        address payer,
-        address recipient,
-        uint256 value
-    ) internal {
+    function pay(address token, address payer, address recipient, uint256 value) internal {
         if (payer == address(this)) {
             TransferHelper.safeTransfer(token, recipient, value);
         } else {

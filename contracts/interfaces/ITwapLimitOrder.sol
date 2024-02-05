@@ -186,9 +186,5 @@ interface ITwapLimitOrder {
 
     function shouldExecute(uint256 orderId) external returns (bool);
 
-    function approve(
-        address token,
-        uint256 amount,
-        address to
-    ) external;
+    function approve(address token, uint256 amount, address to) external;
 }

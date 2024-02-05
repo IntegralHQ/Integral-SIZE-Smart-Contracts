@@ -6,7 +6,7 @@ pragma solidity 0.7.6;
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
 library SafeMath {
-    int256 private constant _INT256_MIN = -2**255;
+    int256 private constant _INT256_MIN = -2 ** 255;
 
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x + y) >= x, 'SM4E');
@@ -16,11 +16,7 @@ library SafeMath {
         z = sub(x, y, 'SM12');
     }
 
-    function sub(
-        uint256 x,
-        uint256 y,
-        string memory message
-    ) internal pure returns (uint256 z) {
+    function sub(uint256 x, uint256 y, string memory message) internal pure returns (uint256 z) {
         require((z = x - y) <= x, message);
     }
 

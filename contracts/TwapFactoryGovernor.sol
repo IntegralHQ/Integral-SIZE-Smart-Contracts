@@ -148,61 +148,37 @@ contract TwapFactoryGovernor is ITwapFactoryGovernor, ITwapFactoryGovernorInitia
         return ITwapFactory(factory).allPairsLength();
     }
 
-    function setMintFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external override {
+    function setMintFee(address tokenA, address tokenB, uint256 fee) external override {
         require(msg.sender == owner, 'FG00');
 
         return ITwapFactory(factory).setMintFee(tokenA, tokenB, fee);
     }
 
-    function setBurnFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external override {
+    function setBurnFee(address tokenA, address tokenB, uint256 fee) external override {
         require(msg.sender == owner, 'FG00');
 
         return ITwapFactory(factory).setBurnFee(tokenA, tokenB, fee);
     }
 
-    function setSwapFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external override {
+    function setSwapFee(address tokenA, address tokenB, uint256 fee) external override {
         require(msg.sender == owner, 'FG00');
 
         return ITwapFactory(factory).setSwapFee(tokenA, tokenB, fee);
     }
 
-    function setOracle(
-        address tokenA,
-        address tokenB,
-        address oracle
-    ) external override {
+    function setOracle(address tokenA, address tokenB, address oracle) external override {
         require(msg.sender == owner, 'FG00');
 
         return ITwapFactory(factory).setOracle(tokenA, tokenB, oracle);
     }
 
-    function setTrader(
-        address tokenA,
-        address tokenB,
-        address trader
-    ) external override {
+    function setTrader(address tokenA, address tokenB, address trader) external override {
         require(msg.sender == owner, 'FG00');
 
         return ITwapFactory(factory).setTrader(tokenA, tokenB, trader);
     }
 
-    function collectFees(
-        address tokenA,
-        address tokenB,
-        address to
-    ) external override {
+    function collectFees(address tokenA, address tokenB, address to) external override {
         require(msg.sender == owner, 'FG00');
 
         ITwapDelay(delay).syncPair(tokenA, tokenB);
@@ -210,11 +186,7 @@ contract TwapFactoryGovernor is ITwapFactoryGovernor, ITwapFactoryGovernorInitia
         return ITwapFactory(factory).collect(tokenA, tokenB, to);
     }
 
-    function withdrawToken(
-        address token,
-        uint256 amount,
-        address to
-    ) external override {
+    function withdrawToken(address token, uint256 amount, address to) external override {
         require(msg.sender == owner, 'FG00');
         require(to != address(0), 'FG02');
 
@@ -234,22 +206,14 @@ contract TwapFactoryGovernor is ITwapFactoryGovernor, ITwapFactoryGovernorInitia
         _distributeFees(tokenA, tokenB, pairAddress);
     }
 
-    function distributeFees(
-        address tokenA,
-        address tokenB,
-        address pairAddress
-    ) external override {
+    function distributeFees(address tokenA, address tokenB, address pairAddress) external override {
         require(msg.sender == delay, 'FG00');
 
         _distributeFees(tokenA, tokenB, pairAddress);
     }
 
     /// @dev The caller should update the reserves and fees on the pair (by using `ITwapPair.sync`) before calling this function.
-    function _distributeFees(
-        address tokenA,
-        address tokenB,
-        address pairAddress
-    ) private {
+    function _distributeFees(address tokenA, address tokenB, address pairAddress) private {
         uint256 tokenABalance = IERC20(tokenA).balanceOf(address(this));
         uint256 tokenBBalance = IERC20(tokenB).balanceOf(address(this));
         ITwapFactory(factory).collect(tokenA, tokenB, address(this));
@@ -264,11 +228,7 @@ contract TwapFactoryGovernor is ITwapFactoryGovernor, ITwapFactoryGovernorInitia
         }
     }
 
-    function _distributeFee(
-        address token,
-        address pairAddress,
-        uint256 amount
-    ) private {
+    function _distributeFee(address token, address pairAddress, uint256 amount) private {
         uint256 protocolAmount = amount.mul(protocolFeeRatio).div(PROTOCOL_FEE_RATIO_PRECISION);
         uint256 lpAmount = amount.sub(protocolAmount);
 
@@ -279,12 +239,10 @@ contract TwapFactoryGovernor is ITwapFactoryGovernor, ITwapFactoryGovernorInitia
         emit FeeDistributed(token, pairAddress, lpAmount, protocolAmount);
     }
 
-    function feesToDistribute(address tokenA, address tokenB)
-        external
-        view
-        override
-        returns (uint256 fee0ToDistribute, uint256 fee1ToDistribute)
-    {
+    function feesToDistribute(
+        address tokenA,
+        address tokenB
+    ) external view override returns (uint256 fee0ToDistribute, uint256 fee1ToDistribute) {
         address pairAddress = ITwapFactory(factory).getPair(tokenA, tokenB);
         require(pairAddress != address(0), 'FG17');
         (uint256 fee0, uint256 fee1) = ITwapPair(pairAddress).getFees();
@@ -295,12 +253,7 @@ contract TwapFactoryGovernor is ITwapFactoryGovernor, ITwapFactoryGovernorInitia
         fee1ToDistribute = fee1.sub(protocolFee1);
     }
 
-    function withdrawLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amount,
-        address to
-    ) external override {
+    function withdrawLiquidity(address tokenA, address tokenB, uint256 amount, address to) external override {
         require(msg.sender == owner, 'FG00');
 
         ITwapDelay(delay).syncPair(tokenA, tokenB);

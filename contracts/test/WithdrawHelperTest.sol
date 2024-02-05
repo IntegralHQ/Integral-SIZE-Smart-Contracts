@@ -7,11 +7,7 @@ import '../libraries/WithdrawHelper.sol';
 contract WithdrawHelperTest {
     constructor() {}
 
-    function transferToken(
-        uint256 balanceBefore,
-        address token,
-        address to
-    ) public {
+    function transferToken(uint256 balanceBefore, address token, address to) public {
         return WithdrawHelper._transferToken(balanceBefore, token, to);
     }
 }

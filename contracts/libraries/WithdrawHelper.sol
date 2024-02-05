@@ -11,22 +11,13 @@ import './Orders.sol';
 library WithdrawHelper {
     using SafeMath for uint256;
 
-    function _transferToken(
-        uint256 balanceBefore,
-        address token,
-        address to
-    ) internal {
+    function _transferToken(uint256 balanceBefore, address token, address to) internal {
         uint256 tokenAmount = IERC20(token).balanceOf(address(this)).sub(balanceBefore);
         TransferHelper.safeTransfer(token, to, tokenAmount);
     }
 
     // unwraps wrapped native currency
-    function _unwrapWeth(
-        uint256 ethAmount,
-        address weth,
-        address to,
-        uint256 gasLimit
-    ) internal returns (bool) {
+    function _unwrapWeth(uint256 ethAmount, address weth, address to, uint256 gasLimit) internal returns (bool) {
         IWETH(weth).withdraw(ethAmount);
         (bool success, ) = to.call{ value: ethAmount, gas: gasLimit }('');
         return success;
@@ -39,15 +30,7 @@ library WithdrawHelper {
         address weth,
         address to,
         uint256 gasLimit
-    )
-        external
-        returns (
-            bool,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) external returns (bool, uint256, uint256, uint256) {
         bool isToken0Weth = token0 == weth;
         address otherToken = isToken0Weth ? token1 : token0;
 

@@ -14,13 +14,13 @@ import './interfaces/ITwapOracle.sol';
 contract TwapPair is Reserves, TwapLPToken, ITwapPair {
     using SafeMath for uint256;
 
-    uint256 private constant PRECISION = 10**18;
+    uint256 private constant PRECISION = 10 ** 18;
 
     uint256 public override mintFee;
     uint256 public override burnFee;
     uint256 public override swapFee;
 
-    uint256 public constant override MINIMUM_LIQUIDITY = 10**3;
+    uint256 public constant override MINIMUM_LIQUIDITY = 10 ** 3;
 
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
@@ -94,11 +94,7 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
         _sync();
     }
 
-    function _safeTransfer(
-        address token,
-        address to,
-        uint256 value
-    ) private {
+    function _safeTransfer(address token, address to, uint256 value) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'TP05');
     }
@@ -112,12 +108,7 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
     }
 
     // called once by the factory at time of deployment
-    function initialize(
-        address _token0,
-        address _token1,
-        address _oracle,
-        address _trader
-    ) external override {
+    function initialize(address _token0, address _token1, address _oracle, address _trader) external override {
         require(msg.sender == factory, 'TP00');
         require(_oracle != address(0), 'TP02');
         require(isContract(_oracle), 'TP1D');
@@ -190,12 +181,7 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external override lock {
+    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external override lock {
         require(canTrade(msg.sender), 'TP0C');
         require(to != address(0), 'TP02');
         require((amount0Out > 0 && amount1Out == 0) || (amount1Out > 0 && amount0Out == 0), 'TP31');
@@ -257,36 +243,30 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
         }
     }
 
-    function getSwapAmount0In(uint256 amount1Out, bytes calldata data)
-        public
-        view
-        override
-        returns (uint256 swapAmount0In)
-    {
+    function getSwapAmount0In(
+        uint256 amount1Out,
+        bytes calldata data
+    ) public view override returns (uint256 swapAmount0In) {
         (uint112 reserve0, uint112 reserve1) = getReserves();
         uint256 balance1After = uint256(reserve1).sub(amount1Out);
         uint256 balance0After = ITwapOracle(oracle).tradeY(balance1After, reserve0, reserve1, data);
         return balance0After.sub(uint256(reserve0)).mul(PRECISION).ceil_div(PRECISION.sub(swapFee));
     }
 
-    function getSwapAmount1In(uint256 amount0Out, bytes calldata data)
-        public
-        view
-        override
-        returns (uint256 swapAmount1In)
-    {
+    function getSwapAmount1In(
+        uint256 amount0Out,
+        bytes calldata data
+    ) public view override returns (uint256 swapAmount1In) {
         (uint112 reserve0, uint112 reserve1) = getReserves();
         uint256 balance0After = uint256(reserve0).sub(amount0Out);
         uint256 balance1After = ITwapOracle(oracle).tradeX(balance0After, reserve0, reserve1, data);
         return balance1After.add(1).sub(uint256(reserve1)).mul(PRECISION).ceil_div(PRECISION.sub(swapFee));
     }
 
-    function getSwapAmount0Out(uint256 amount1In, bytes calldata data)
-        public
-        view
-        override
-        returns (uint256 swapAmount0Out)
-    {
+    function getSwapAmount0Out(
+        uint256 amount1In,
+        bytes calldata data
+    ) public view override returns (uint256 swapAmount0Out) {
         (uint112 reserve0, uint112 reserve1) = getReserves();
         uint256 fee = amount1In.mul(swapFee).div(PRECISION);
         uint256 balance0After = ITwapOracle(oracle).tradeY(
@@ -298,12 +278,10 @@ contract TwapPair is Reserves, TwapLPToken, ITwapPair {
         return uint256(reserve0).sub(balance0After);
     }
 
-    function getSwapAmount1Out(uint256 amount0In, bytes calldata data)
-        public
-        view
-        override
-        returns (uint256 swapAmount1Out)
-    {
+    function getSwapAmount1Out(
+        uint256 amount0In,
+        bytes calldata data
+    ) public view override returns (uint256 swapAmount1Out) {
         (uint112 reserve0, uint112 reserve1) = getReserves();
         uint256 fee = amount0In.mul(swapFee).div(PRECISION);
         uint256 balance1After = ITwapOracle(oracle).tradeX(

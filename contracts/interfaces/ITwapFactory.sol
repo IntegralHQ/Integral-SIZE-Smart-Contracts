@@ -15,55 +15,21 @@ interface ITwapFactory {
 
     function allPairsLength() external view returns (uint256);
 
-    function createPair(
-        address tokenA,
-        address tokenB,
-        address oracle,
-        address trader
-    ) external returns (address pair);
+    function createPair(address tokenA, address tokenB, address oracle, address trader) external returns (address pair);
 
     function setOwner(address) external;
 
-    function setMintFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external;
+    function setMintFee(address tokenA, address tokenB, uint256 fee) external;
 
-    function setBurnFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external;
+    function setBurnFee(address tokenA, address tokenB, uint256 fee) external;
 
-    function setSwapFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external;
+    function setSwapFee(address tokenA, address tokenB, uint256 fee) external;
 
-    function setOracle(
-        address tokenA,
-        address tokenB,
-        address oracle
-    ) external;
+    function setOracle(address tokenA, address tokenB, address oracle) external;
 
-    function setTrader(
-        address tokenA,
-        address tokenB,
-        address trader
-    ) external;
+    function setTrader(address tokenA, address tokenB, address trader) external;
 
-    function collect(
-        address tokenA,
-        address tokenB,
-        address to
-    ) external;
+    function collect(address tokenA, address tokenB, address to) external;
 
-    function withdraw(
-        address tokenA,
-        address tokenB,
-        uint256 amount,
-        address to
-    ) external;
+    function withdraw(address tokenA, address tokenB, uint256 amount, address to) external;
 }

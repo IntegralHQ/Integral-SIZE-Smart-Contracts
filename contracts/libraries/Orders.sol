@@ -364,11 +364,7 @@ library Orders {
         uint32 submitDeadline;
     }
 
-    function sell(
-        Data storage data,
-        SellParams calldata sellParams,
-        TokenShares.Data storage tokenShares
-    ) external {
+    function sell(Data storage data, SellParams calldata sellParams, TokenShares.Data storage tokenShares) external {
         uint256 tokenTransferCost = getTransferGasCost(sellParams.tokenIn);
         checkOrderParams(
             sellParams.to,
@@ -452,10 +448,10 @@ library Orders {
         emit SellEnqueued(order.orderId, order);
     }
 
-    function sellHelper(Data storage data, SellParams calldata sellParams)
-        internal
-        returns (address pairAddress, bool inverted)
-    {
+    function sellHelper(
+        Data storage data,
+        SellParams calldata sellParams
+    ) internal returns (address pairAddress, bool inverted) {
         require(sellParams.amountIn != 0, 'OS24');
         (pairAddress, inverted) = getPair(sellParams.tokenIn, sellParams.tokenOut);
         require(!getSellDisabled(data, pairAddress), 'OS13');
@@ -479,11 +475,7 @@ library Orders {
         uint32 submitDeadline;
     }
 
-    function buy(
-        Data storage data,
-        BuyParams calldata buyParams,
-        TokenShares.Data storage tokenShares
-    ) external {
+    function buy(Data storage data, BuyParams calldata buyParams, TokenShares.Data storage tokenShares) external {
         uint256 tokenTransferCost = getTransferGasCost(buyParams.tokenIn);
         checkOrderParams(
             buyParams.to,
@@ -534,23 +526,14 @@ library Orders {
         emit BuyEnqueued(order.orderId, order);
     }
 
-    function checkOrderParams(
-        address to,
-        uint256 gasLimit,
-        uint32 submitDeadline,
-        uint256 minGasLimit
-    ) private view {
+    function checkOrderParams(address to, uint256 gasLimit, uint32 submitDeadline, uint256 minGasLimit) private view {
         require(submitDeadline >= block.timestamp, 'OS04');
         require(gasLimit <= MAX_GAS_LIMIT, 'OS3E');
         require(gasLimit >= minGasLimit, 'OS3D');
         require(to != address(0), 'OS26');
     }
 
-    function allocateGasRefund(
-        Data storage data,
-        uint256 value,
-        uint256 gasLimit
-    ) private returns (uint256 futureFee) {
+    function allocateGasRefund(Data storage data, uint256 value, uint256 gasLimit) private returns (uint256 futureFee) {
         futureFee = data.gasPrice.mul(gasLimit);
         require(value >= futureFee, 'OS1E');
         if (value > futureFee) {
@@ -569,12 +552,7 @@ library Orders {
         );
     }
 
-    function refundLiquidity(
-        address pair,
-        address to,
-        uint256 liquidity,
-        bytes4 selector
-    ) internal returns (bool) {
+    function refundLiquidity(address pair, address to, uint256 liquidity, bytes4 selector) internal returns (bool) {
         if (liquidity == 0) {
             return true;
         }
@@ -650,6 +628,9 @@ library Orders {
         // #if defined(TRANSFER_GAS_COST__TOKEN_USDC) && (uint(TRANSFER_GAS_COST__TOKEN_USDC) != uint(TRANSFER_GAS_COST__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDC;
         // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_USDC_E) && (uint(TRANSFER_GAS_COST__TOKEN_USDC_E) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDC_E;
+        // #endif
         // #if defined(TRANSFER_GAS_COST__TOKEN_USDT) && (uint(TRANSFER_GAS_COST__TOKEN_USDT) != uint(TRANSFER_GAS_COST__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_USDT;
         // #endif
@@ -665,8 +646,26 @@ library Orders {
         // #if defined(TRANSFER_GAS_COST__TOKEN_STETH) && (uint(TRANSFER_GAS_COST__TOKEN_STETH) != uint(TRANSFER_GAS_COST__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_STETH;
         // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_WSTETH) && (uint(TRANSFER_GAS_COST__TOKEN_WSTETH) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_WSTETH;
+        // #endif
         // #if defined(TRANSFER_GAS_COST__TOKEN_DAI) && (uint(TRANSFER_GAS_COST__TOKEN_DAI) != uint(TRANSFER_GAS_COST__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_DAI;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_RPL) && (uint(TRANSFER_GAS_COST__TOKEN_RPL) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_RPL_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_RPL;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_SWISE) && (uint(TRANSFER_GAS_COST__TOKEN_SWISE) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SWISE_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_SWISE;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_LDO) && (uint(TRANSFER_GAS_COST__TOKEN_LDO) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_LDO_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_LDO;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_GMX) && (uint(TRANSFER_GAS_COST__TOKEN_GMX) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_GMX_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_GMX;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_ARB) && (uint(TRANSFER_GAS_COST__TOKEN_ARB) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_ARB_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_ARB;
         // #endif
         return __MACRO__MAPPING.TRANSFER_GAS_COST__DEFAULT;
     }

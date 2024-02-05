@@ -31,11 +31,7 @@ contract TokenGasTest {
         emit GasUsed(used);
     }
 
-    function transferOut(
-        address token,
-        address to,
-        uint256 value
-    ) public {
+    function transferOut(address token, address to, uint256 value) public {
         uint256 start = gasleft();
         token.safeTransfer(to, value);
         uint256 used = start - gasleft();

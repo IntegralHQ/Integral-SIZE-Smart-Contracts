@@ -13,11 +13,10 @@ contract TwapOracleTest is TwapOracle {
         return getAveragePrice(priceAccumulator, priceTimestamp);
     }
 
-    function testEncodePriceInfo(uint256 priceAccumulator, uint32 priceTimestamp)
-        external
-        view
-        returns (bytes memory priceInfo, uint256 price)
-    {
+    function testEncodePriceInfo(
+        uint256 priceAccumulator,
+        uint32 priceTimestamp
+    ) external view returns (bytes memory priceInfo, uint256 price) {
         // Copied from TwapDelay
         price = getAveragePrice(priceAccumulator, priceTimestamp);
         // Pack everything as 32 bytes / uint256 to simplify decoding

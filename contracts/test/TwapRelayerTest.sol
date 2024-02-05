@@ -8,7 +8,7 @@ import '../TwapRelayer.sol';
 contract TwapRelayerTest is TwapRelayer {
     using SafeMath for uint256;
 
-    uint256 private constant PRECISION = 10**18;
+    uint256 private constant PRECISION = 10 ** 18;
 
     function testSwapExactIn(
         address tokenIn,
@@ -16,14 +16,7 @@ contract TwapRelayerTest is TwapRelayer {
         uint256 amountIn,
         bool wrapUnwrap,
         address to
-    )
-        external
-        returns (
-            uint256 _amountIn,
-            uint256 _amountOut,
-            uint256 fee
-        )
-    {
+    ) external returns (uint256 _amountIn, uint256 _amountOut, uint256 fee) {
         return swapExactIn(tokenIn, tokenOut, amountIn, wrapUnwrap, to);
     }
 
@@ -33,14 +26,7 @@ contract TwapRelayerTest is TwapRelayer {
         uint256 amountOut,
         bool wrapUnwrap,
         address to
-    )
-        external
-        returns (
-            uint256 _amountIn,
-            uint256 _amountOut,
-            uint256 fee
-        )
-    {
+    ) external returns (uint256 _amountIn, uint256 _amountOut, uint256 fee) {
         return swapExactOut(tokenIn, tokenOut, amountOut, wrapUnwrap, to);
     }
 

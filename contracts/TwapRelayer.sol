@@ -21,7 +21,7 @@ import './libraries/Macros.sol';
 contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     using SafeMath for uint256;
 
-    uint256 private constant PRECISION = 10**18;
+    uint256 private constant PRECISION = 10 ** 18;
     address public constant FACTORY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F    /*__MACRO__GLOBAL.FACTORY_ADDRESS*/; //prettier-ignore
     address public constant WETH_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F       /*__MACRO__GLOBAL.TOKEN_WETH_ADDRESS*/; //prettier-ignore
     address public constant DELAY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F      /*__MACRO__GLOBAL.DELAY_ADDRESS*/; //prettier-ignore
@@ -52,7 +52,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     address public override rebalancer;
     mapping(address => bool) public override isOneInchRouterWhitelisted;
 
-    uint256 private locked;
+    uint256 private locked = 1;
 
     /*
      * DO NOT CHANGE THE ABOVE STATE VARIABLES.
@@ -61,19 +61,19 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
      */
 
     modifier lock() {
-        require(locked == 0, 'TR06');
-        locked = 1;
+        require(locked == 1, 'TR06');
+        locked = 2;
         _;
-        locked = 0;
+        locked = 1;
     }
 
     // This contract implements a proxy pattern.
     // The constructor is to set to prevent abuse of this implementation contract.
-    // Setting locked = 1 forces core features, e.g. buy(), to always revert.
+    // Setting locked = 2 forces core features, e.g. buy(), to always revert.
     constructor() {
         owner = msg.sender;
         initialized = 1;
-        locked = 1;
+        locked = 2;
     }
 
     // This function should be called through the proxy contract to initialize the proxy contract's storage.
@@ -82,10 +82,18 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
         initialized = 1;
         owner = msg.sender;
+        locked = 1;
 
         emit Initialized(FACTORY_ADDRESS, DELAY_ADDRESS, WETH_ADDRESS);
         emit OwnerSet(msg.sender);
         _emitEventWithDefaults();
+    }
+
+    // This function should be called through the proxy contract to update lock
+    function initializeLock() external {
+        require(msg.sender == owner, 'TR00');
+        require(locked == 0, 'TR5B');
+        locked = 1;
     }
 
     function setOwner(address _owner) external override {
@@ -270,14 +278,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         uint256 amountIn,
         bool wrapUnwrap,
         address to
-    )
-        internal
-        returns (
-            uint256 _amountIn,
-            uint256 _amountOut,
-            uint256 fee
-        )
-    {
+    ) internal returns (uint256 _amountIn, uint256 _amountOut, uint256 fee) {
         (address pair, bool inverted) = getPair(tokenIn, tokenOut);
         require(isPairEnabled[pair], 'TR5A');
 
@@ -296,14 +297,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         uint256 amountOut,
         bool wrapUnwrap,
         address to
-    )
-        internal
-        returns (
-            uint256 _amountIn,
-            uint256 _amountOut,
-            uint256 fee
-        )
-    {
+    ) internal returns (uint256 _amountIn, uint256 _amountOut, uint256 fee) {
         (address pair, bool inverted) = getPair(tokenIn, tokenOut);
         require(isPairEnabled[pair], 'TR5A');
 
@@ -322,7 +316,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         bool inverted,
         uint256 amountOut
     ) internal view returns (uint256 amountIn) {
-        (uint8 xDecimals, uint8 yDecimals, uint256 price) = getPriceByPairAddress(pair, inverted);
+        (uint8 xDecimals, uint8 yDecimals, uint256 price) = _getPriceByPairAddress(pair, inverted);
         uint256 decimalsConverter = getDecimalsConverter(xDecimals, yDecimals, inverted);
         amountIn = amountOut.mul(decimalsConverter).ceil_div(price);
     }
@@ -332,7 +326,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         bool inverted,
         uint256 amountIn
     ) internal view returns (uint256 amountOut) {
-        (uint8 xDecimals, uint8 yDecimals, uint256 price) = getPriceByPairAddress(pair, inverted);
+        (uint8 xDecimals, uint8 yDecimals, uint256 price) = _getPriceByPairAddress(pair, inverted);
         uint256 decimalsConverter = getDecimalsConverter(xDecimals, yDecimals, inverted);
         amountOut = amountIn.mul(price).div(decimalsConverter);
     }
@@ -342,54 +336,67 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         uint8 yDecimals,
         bool inverted
     ) internal pure returns (uint256 decimalsConverter) {
-        decimalsConverter = 10**(18 + (inverted ? yDecimals - xDecimals : xDecimals - yDecimals));
+        decimalsConverter = 10 ** (18 + (inverted ? yDecimals - xDecimals : xDecimals - yDecimals));
     }
 
-    function getPriceByPairAddress(address pair, bool inverted)
-        public
-        view
-        override
-        returns (
-            uint8 xDecimals,
-            uint8 yDecimals,
-            uint256 price
-        )
-    {
+    function getPriceByPairAddress(
+        address pair,
+        bool inverted
+    ) external view override returns (uint8 xDecimals, uint8 yDecimals, uint256 price) {
+        require(isPairEnabled[pair], 'TR5A');
+        (xDecimals, yDecimals, price) = _getPriceByPairAddress(pair, inverted);
+    }
+
+    /**
+     * @dev Ensure that the `pair` is enabled before invoking this function.
+     */
+    function _getPriceByPairAddress(
+        address pair,
+        bool inverted
+    ) internal view returns (uint8 xDecimals, uint8 yDecimals, uint256 price) {
         uint256 spotPrice;
         uint256 averagePrice;
         (spotPrice, averagePrice, xDecimals, yDecimals) = getPricesFromOracle(pair);
 
         if (inverted) {
-            price = uint256(10**36).div(spotPrice > averagePrice ? spotPrice : averagePrice);
+            price = uint256(10 ** 36).div(spotPrice > averagePrice ? spotPrice : averagePrice);
         } else {
             price = spotPrice < averagePrice ? spotPrice : averagePrice;
         }
     }
 
-    function getPriceByTokenAddresses(address tokenIn, address tokenOut) public view override returns (uint256 price) {
+    function getPriceByTokenAddresses(
+        address tokenIn,
+        address tokenOut
+    ) external view override returns (uint256 price) {
         (address pair, bool inverted) = getPair(tokenIn, tokenOut);
-        (, , price) = getPriceByPairAddress(pair, inverted);
+        require(isPairEnabled[pair], 'TR5A');
+        (, , price) = _getPriceByPairAddress(pair, inverted);
     }
 
-    function getPoolState(address token0, address token1)
+    /**
+     * @dev Ensure that the pair for 'tokenIn' and 'tokenOut' is enabled before invoking this function.
+     */
+    function _getPriceByTokenAddresses(address tokenIn, address tokenOut) internal view returns (uint256 price) {
+        (address pair, bool inverted) = getPair(tokenIn, tokenOut);
+        (, , price) = _getPriceByPairAddress(pair, inverted);
+    }
+
+    function getPoolState(
+        address token0,
+        address token1
+    )
         external
         view
         override
-        returns (
-            uint256 price,
-            uint256 fee,
-            uint256 limitMin0,
-            uint256 limitMax0,
-            uint256 limitMin1,
-            uint256 limitMax1
-        )
+        returns (uint256 price, uint256 fee, uint256 limitMin0, uint256 limitMax0, uint256 limitMin1, uint256 limitMax1)
     {
         (address pair, ) = getPair(token0, token1);
         require(isPairEnabled[pair], 'TR5A');
 
         fee = swapFee[pair];
 
-        price = getPriceByTokenAddresses(token0, token1);
+        price = _getPriceByTokenAddresses(token0, token1);
 
         limitMin0 = getTokenLimitMin(token0);
         limitMax0 = IERC20(token0).balanceOf(address(this)).mul(getTokenLimitMaxMultiplier(token0)).div(PRECISION);
@@ -405,6 +412,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         require(amountIn > 0, 'TR24');
 
         (address pair, bool inverted) = getPair(tokenIn, tokenOut);
+        require(isPairEnabled[pair], 'TR5A');
 
         uint256 fee = amountIn.mul(swapFee[pair]).div(PRECISION);
         uint256 amountInMinusFee = amountIn.sub(fee);
@@ -420,22 +428,16 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         require(amountOut > 0, 'TR23');
 
         (address pair, bool inverted) = getPair(tokenIn, tokenOut);
+        require(isPairEnabled[pair], 'TR5A');
 
         checkLimits(tokenOut, amountOut);
         uint256 calculatedAmountIn = calculateAmountIn(pair, inverted, amountOut);
         amountIn = calculatedAmountIn.mul(PRECISION).ceil_div(PRECISION.sub(swapFee[pair]));
     }
 
-    function getPricesFromOracle(address pair)
-        internal
-        view
-        returns (
-            uint256 spotPrice,
-            uint256 averagePrice,
-            uint8 xDecimals,
-            uint8 yDecimals
-        )
-    {
+    function getPricesFromOracle(
+        address pair
+    ) internal view returns (uint256 spotPrice, uint256 averagePrice, uint8 xDecimals, uint8 yDecimals) {
         ITwapOracleV3 oracle = ITwapOracleV3(ITwapPair(pair).oracle());
 
         xDecimals = oracle.xDecimals();
@@ -466,18 +468,14 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
         if (sqrtRatioX96 <= type(uint128).max) {
             uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-            return FullMath.mulDiv(ratioX192, decimalsConverter, 2**192);
+            return FullMath.mulDiv(ratioX192, decimalsConverter, 2 ** 192);
         } else {
-            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2**64);
-            return FullMath.mulDiv(ratioX128, decimalsConverter, 2**128);
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2 ** 64);
+            return FullMath.mulDiv(ratioX128, decimalsConverter, 2 ** 128);
         }
     }
 
-    function transferIn(
-        address token,
-        uint256 amount,
-        bool wrap
-    ) internal returns (uint256) {
+    function transferIn(address token, uint256 amount, bool wrap) internal returns (uint256) {
         if (amount == 0) {
             return 0;
         }
@@ -496,12 +494,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         }
     }
 
-    function transferOut(
-        address to,
-        address token,
-        uint256 amount,
-        bool unwrap
-    ) internal returns (uint256) {
+    function transferOut(address to, address token, uint256 amount, bool unwrap) internal returns (uint256) {
         if (amount == 0) {
             return 0;
         }
@@ -532,11 +525,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         );
     }
 
-    function approve(
-        address token,
-        uint256 amount,
-        address to
-    ) external override lock {
+    function approve(address token, uint256 amount, address to) external override lock {
         require(msg.sender == owner, 'TR00');
         require(to != address(0), 'TR02');
 
@@ -545,11 +534,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         emit Approve(token, to, amount);
     }
 
-    function withdraw(
-        address token,
-        uint256 amount,
-        address to
-    ) external override lock {
+    function withdraw(address token, uint256 amount, address to) external override lock {
         require(msg.sender == owner, 'TR00');
         require(to != address(0), 'TR02');
         if (token == Orders.NATIVE_CURRENCY_SENTINEL) {
@@ -560,11 +545,7 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         emit Withdraw(token, to, amount);
     }
 
-    function rebalanceSellWithDelay(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn
-    ) external override lock {
+    function rebalanceSellWithDelay(address tokenIn, address tokenOut, uint256 amountIn) external override lock {
         require(msg.sender == rebalancer, 'TR00');
 
         uint256 delayOrderId = ITwapDelay(DELAY_ADDRESS).sell{ value: calculatePrepay() }(
@@ -602,6 +583,18 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         emit RebalanceSellWithOneInch(oneInchRouter, _gas, data);
     }
 
+    function wrapEth(uint256 amount) external override lock {
+        require(msg.sender == owner, 'TR00');
+        IWETH(WETH_ADDRESS).deposit{ value: amount }();
+        emit WrapEth(amount);
+    }
+
+    function unwrapWeth(uint256 amount) external override lock {
+        require(msg.sender == owner, 'TR00');
+        IWETH(WETH_ADDRESS).withdraw(amount);
+        emit UnwrapWeth(amount);
+    }
+
     // prettier-ignore
     function _emitEventWithDefaults() internal {
         emit DelaySet(DELAY_ADDRESS);
@@ -610,6 +603,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
 
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDC)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDC);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDC_E)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDC_E);
         // #endif
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDT)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDT);
@@ -629,8 +625,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_STETH)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_STETH);
         // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_WSTETH)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_WSTETH);
+        // #endif
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_DAI)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_DAI);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_RPL)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_RPL);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_SWISE)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_SWISE);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_LDO)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_LDO);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_GMX)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_GMX);
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_ARB)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_ARB);
         // #endif
 
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_WETH)
@@ -638,6 +652,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #endif
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDC)
         emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDC);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDC_E)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDC_E);
         // #endif
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDT)
         emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDT);
@@ -654,8 +671,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_STETH)
         emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_STETH);
         // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_WSTETH)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_WSTETH);
+        // #endif
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_DAI)
         emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_DAI);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_RPL)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_RPL_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_RPL);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_SWISE)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_SWISE_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_SWISE);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_LDO)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_LDO_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_LDO);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_GMX)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_GMX_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_GMX);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_ARB)
+        emit TokenLimitMinSet(__MACRO__GLOBAL.TOKEN_ARB_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_ARB);
         // #endif
 
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WETH)
@@ -663,6 +698,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #endif
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC)
         emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_USDC_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC_E)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC_E);
         // #endif
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT)
         emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_USDT_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT);
@@ -679,12 +717,33 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH)
         emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_STETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH);
         // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WSTETH)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WSTETH);
+        // #endif
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI)
         emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_DAI_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_RPL)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_RPL_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_RPL);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SWISE)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_SWISE_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SWISE);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_LDO)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_LDO_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_LDO);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_GMX)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_GMX_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_GMX);
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_ARB)
+        emit TokenLimitMaxMultiplierSet(__MACRO__GLOBAL.TOKEN_ARB_ADDRESS, __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_ARB);
         // #endif
 
         // #if defined(TWAP_INTERVAL__PAIR_WETH_USDC)
         emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDC);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_USDC_E)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDC_E);
         // #endif
         // #if defined(TWAP_INTERVAL__PAIR_WETH_USDT)
         emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDT);
@@ -704,8 +763,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(TWAP_INTERVAL__PAIR_WETH_STETH)
         emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_STETH);
         // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_WSTETH)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_WSTETH);
+        // #endif
         // #if defined(TWAP_INTERVAL__PAIR_WETH_DAI)
         emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_DAI);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_RPL)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_RPL);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_SWISE)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_SWISE);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_LDO)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_LDO);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_GMX)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_GMX);
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_ARB)
+        emit TwapIntervalSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_ARB);
         // #endif
     }
 
@@ -714,6 +791,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     function getTolerance(address/* #if !bool(RELAYER_TOLERANCE) */ pair/* #endif */) public pure override returns (uint16) {
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDC) && (uint(RELAYER_TOLERANCE__PAIR_WETH_USDC) != uint(RELAYER_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDC_E) && (uint(RELAYER_TOLERANCE__PAIR_WETH_USDC_E) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDC_E;
         // #endif
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_USDT) && (uint(RELAYER_TOLERANCE__PAIR_WETH_USDT) != uint(RELAYER_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_USDT;
@@ -733,8 +813,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_STETH) && (uint(RELAYER_TOLERANCE__PAIR_WETH_STETH) != uint(RELAYER_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_STETH;
         // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_WSTETH) && (uint(RELAYER_TOLERANCE__PAIR_WETH_WSTETH) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_WSTETH;
+        // #endif
         // #if defined(RELAYER_TOLERANCE__PAIR_WETH_DAI) && (uint(RELAYER_TOLERANCE__PAIR_WETH_DAI) != uint(RELAYER_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_DAI;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_RPL) && (uint(RELAYER_TOLERANCE__PAIR_WETH_RPL) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_RPL;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_SWISE) && (uint(RELAYER_TOLERANCE__PAIR_WETH_SWISE) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_SWISE;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_LDO) && (uint(RELAYER_TOLERANCE__PAIR_WETH_LDO) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_LDO;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_GMX) && (uint(RELAYER_TOLERANCE__PAIR_WETH_GMX) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_GMX;
+        // #endif
+        // #if defined(RELAYER_TOLERANCE__PAIR_WETH_ARB) && (uint(RELAYER_TOLERANCE__PAIR_WETH_ARB) != uint(RELAYER_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.RELAYER_TOLERANCE__PAIR_WETH_ARB;
         // #endif
         return __MACRO__MAPPING.RELAYER_TOLERANCE__DEFAULT;
     }
@@ -747,6 +845,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #endif
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDC) && (uint(TOKEN_LIMIT_MIN__TOKEN_USDC) != uint(TOKEN_LIMIT_MIN__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDC;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDC_E) && (uint(TOKEN_LIMIT_MIN__TOKEN_USDC_E) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDC_E;
         // #endif
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_USDT) && (uint(TOKEN_LIMIT_MIN__TOKEN_USDT) != uint(TOKEN_LIMIT_MIN__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_USDT;
@@ -763,8 +864,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_STETH) && (uint(TOKEN_LIMIT_MIN__TOKEN_STETH) != uint(TOKEN_LIMIT_MIN__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_STETH;
         // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_WSTETH) && (uint(TOKEN_LIMIT_MIN__TOKEN_WSTETH) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_WSTETH;
+        // #endif
         // #if defined(TOKEN_LIMIT_MIN__TOKEN_DAI) && (uint(TOKEN_LIMIT_MIN__TOKEN_DAI) != uint(TOKEN_LIMIT_MIN__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_DAI;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_RPL) && (uint(TOKEN_LIMIT_MIN__TOKEN_RPL) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_RPL_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_RPL;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_SWISE) && (uint(TOKEN_LIMIT_MIN__TOKEN_SWISE) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SWISE_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_SWISE;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_LDO) && (uint(TOKEN_LIMIT_MIN__TOKEN_LDO) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_LDO_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_LDO;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_GMX) && (uint(TOKEN_LIMIT_MIN__TOKEN_GMX) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_GMX_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_GMX;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MIN__TOKEN_ARB) && (uint(TOKEN_LIMIT_MIN__TOKEN_ARB) != uint(TOKEN_LIMIT_MIN__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_ARB_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MIN__TOKEN_ARB;
         // #endif
         return __MACRO__MAPPING.TOKEN_LIMIT_MIN__DEFAULT;
     }
@@ -777,6 +896,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #endif
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC_E) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC_E) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDC_E;
         // #endif
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_USDT;
@@ -793,8 +915,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_STETH;
         // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WSTETH) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WSTETH) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_WSTETH;
+        // #endif
         // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_DAI;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_RPL) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_RPL) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_RPL_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_RPL;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SWISE) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SWISE) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SWISE_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_SWISE;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_LDO) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_LDO) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_LDO_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_LDO;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_GMX) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_GMX) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_GMX_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_GMX;
+        // #endif
+        // #if defined(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_ARB) && (uint(TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_ARB) != uint(TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_ARB_ADDRESS) return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__TOKEN_ARB;
         // #endif
         return __MACRO__MAPPING.TOKEN_LIMIT_MAX_MULTIPLIER__DEFAULT;
     }
@@ -804,6 +944,9 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
     function getTwapInterval(address/* #if !bool(TWAP_INTERVAL) */ pair/* #endif */) public pure override returns (uint32) {
         // #if defined(TWAP_INTERVAL__PAIR_WETH_USDC) && (uint(TWAP_INTERVAL__PAIR_WETH_USDC) != uint(TWAP_INTERVAL__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDC;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_USDC_E) && (uint(TWAP_INTERVAL__PAIR_WETH_USDC_E) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDC_E;
         // #endif
         // #if defined(TWAP_INTERVAL__PAIR_WETH_USDT) && (uint(TWAP_INTERVAL__PAIR_WETH_USDT) != uint(TWAP_INTERVAL__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_USDT;
@@ -823,8 +966,26 @@ contract TwapRelayer is ITwapRelayer, ITwapRelayerInitializable {
         // #if defined(TWAP_INTERVAL__PAIR_WETH_STETH) && (uint(TWAP_INTERVAL__PAIR_WETH_STETH) != uint(TWAP_INTERVAL__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_STETH;
         // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_WSTETH) && (uint(TWAP_INTERVAL__PAIR_WETH_WSTETH) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_WSTETH;
+        // #endif
         // #if defined(TWAP_INTERVAL__PAIR_WETH_DAI) && (uint(TWAP_INTERVAL__PAIR_WETH_DAI) != uint(TWAP_INTERVAL__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_DAI;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_RPL) && (uint(TWAP_INTERVAL__PAIR_WETH_RPL) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_RPL;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_SWISE) && (uint(TWAP_INTERVAL__PAIR_WETH_SWISE) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_SWISE;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_LDO) && (uint(TWAP_INTERVAL__PAIR_WETH_LDO) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_LDO;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_GMX) && (uint(TWAP_INTERVAL__PAIR_WETH_GMX) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_GMX;
+        // #endif
+        // #if defined(TWAP_INTERVAL__PAIR_WETH_ARB) && (uint(TWAP_INTERVAL__PAIR_WETH_ARB) != uint(TWAP_INTERVAL__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.TWAP_INTERVAL__PAIR_WETH_ARB;
         // #endif
         return __MACRO__MAPPING.TWAP_INTERVAL__DEFAULT;
     }

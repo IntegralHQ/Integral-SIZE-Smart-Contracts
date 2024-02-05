@@ -9,12 +9,7 @@ contract IntegralToken is IIntegralToken, AbstractERC20 {
     address public owner;
     mapping(address => bool) public isMinter;
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals,
-        uint256 _totalSupply
-    ) {
+    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _totalSupply) {
         owner = msg.sender;
         name = _name;
         symbol = _symbol;

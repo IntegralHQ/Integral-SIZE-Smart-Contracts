@@ -42,6 +42,9 @@ contract DelayTest is TwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_USDC) && (uint(TOLERANCE__PAIR_WETH_USDC) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_ADDRESS)  return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC;
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_USDC_E) && (uint(TOLERANCE__PAIR_WETH_USDC_E) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_USDC_E_ADDRESS)  return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDC_E;
+        // #endif
         // #if defined(TOLERANCE__PAIR_WETH_USDT) && (uint(TOLERANCE__PAIR_WETH_USDT) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_USDT_ADDRESS)  return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_USDT;
         // #endif
@@ -60,8 +63,26 @@ contract DelayTest is TwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_STETH) && (uint(TOLERANCE__PAIR_WETH_STETH) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_STETH_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_STETH;
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_WSTETH) && (uint(TOLERANCE__PAIR_WETH_WSTETH) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_WSTETH_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_WSTETH;
+        // #endif
         // #if defined(TOLERANCE__PAIR_WETH_DAI) && (uint(TOLERANCE__PAIR_WETH_DAI) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_DAI_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_DAI;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_RPL) && (uint(TOLERANCE__PAIR_WETH_RPL) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_RPL_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_RPL;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_SWISE) && (uint(TOLERANCE__PAIR_WETH_SWISE) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_SWISE_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_SWISE;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_LDO) && (uint(TOLERANCE__PAIR_WETH_LDO) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LDO_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_LDO;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_GMX) && (uint(TOLERANCE__PAIR_WETH_GMX) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_GMX_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_GMX;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_ARB) && (uint(TOLERANCE__PAIR_WETH_ARB) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_ARB;
         // #endif
 
         return 0;

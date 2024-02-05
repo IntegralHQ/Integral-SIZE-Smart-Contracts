@@ -5,7 +5,9 @@ pragma solidity 0.7.6;
 pragma abicoder v2;
 
 interface ITwapReader {
-    function getPairParameters(address pair)
+    function getPairParameters(
+        address pair
+    )
         external
         view
         returns (

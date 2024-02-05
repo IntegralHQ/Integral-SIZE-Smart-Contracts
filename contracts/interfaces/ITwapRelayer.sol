@@ -55,6 +55,8 @@ interface ITwapRelayer {
     );
     event RebalanceSellWithOneInch(address indexed oneInchRouter, uint256 gas, bytes data);
     event OneInchRouterWhitelisted(address indexed oneInchRouter, bool whitelisted);
+    event WrapEth(uint256 amount);
+    event UnwrapWeth(uint256 amount);
 
     function factory() external pure returns (address);
 
@@ -126,18 +128,17 @@ interface ITwapRelayer {
 
     function buy(BuyParams memory buyParams) external payable returns (uint256 orderId);
 
-    function getPriceByPairAddress(address pair, bool inverted)
-        external
-        view
-        returns (
-            uint8 xDecimals,
-            uint8 yDecimals,
-            uint256 price
-        );
+    function getPriceByPairAddress(
+        address pair,
+        bool inverted
+    ) external view returns (uint8 xDecimals, uint8 yDecimals, uint256 price);
 
     function getPriceByTokenAddresses(address tokenIn, address tokenOut) external view returns (uint256 price);
 
-    function getPoolState(address token0, address token1)
+    function getPoolState(
+        address token0,
+        address token1
+    )
         external
         view
         returns (
@@ -149,35 +150,15 @@ interface ITwapRelayer {
             uint256 limitMax1
         );
 
-    function quoteSell(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn
-    ) external view returns (uint256 amountOut);
+    function quoteSell(address tokenIn, address tokenOut, uint256 amountIn) external view returns (uint256 amountOut);
 
-    function quoteBuy(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountOut
-    ) external view returns (uint256 amountIn);
+    function quoteBuy(address tokenIn, address tokenOut, uint256 amountOut) external view returns (uint256 amountIn);
 
-    function approve(
-        address token,
-        uint256 amount,
-        address to
-    ) external;
+    function approve(address token, uint256 amount, address to) external;
 
-    function withdraw(
-        address token,
-        uint256 amount,
-        address to
-    ) external;
+    function withdraw(address token, uint256 amount, address to) external;
 
-    function rebalanceSellWithDelay(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn
-    ) external;
+    function rebalanceSellWithDelay(address tokenIn, address tokenOut, uint256 amountIn) external;
 
     function rebalanceSellWithOneInch(
         address tokenIn,
@@ -186,4 +167,8 @@ interface ITwapRelayer {
         uint256 _gas,
         bytes calldata data
     ) external;
+
+    function wrapEth(uint256 amount) external;
+
+    function unwrapWeth(uint256 amount) external;
 }

@@ -52,66 +52,37 @@ contract TwapFactory is ITwapFactory {
         emit OwnerSet(_owner);
     }
 
-    function setMintFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external override {
+    function setMintFee(address tokenA, address tokenB, uint256 fee) external override {
         require(msg.sender == owner, 'TF00');
         _getPair(tokenA, tokenB).setMintFee(fee);
     }
 
-    function setBurnFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external override {
+    function setBurnFee(address tokenA, address tokenB, uint256 fee) external override {
         require(msg.sender == owner, 'TF00');
         _getPair(tokenA, tokenB).setBurnFee(fee);
     }
 
-    function setSwapFee(
-        address tokenA,
-        address tokenB,
-        uint256 fee
-    ) external override {
+    function setSwapFee(address tokenA, address tokenB, uint256 fee) external override {
         require(msg.sender == owner, 'TF00');
         _getPair(tokenA, tokenB).setSwapFee(fee);
     }
 
-    function setOracle(
-        address tokenA,
-        address tokenB,
-        address oracle
-    ) external override {
+    function setOracle(address tokenA, address tokenB, address oracle) external override {
         require(msg.sender == owner, 'TF00');
         _getPair(tokenA, tokenB).setOracle(oracle);
     }
 
-    function setTrader(
-        address tokenA,
-        address tokenB,
-        address trader
-    ) external override {
+    function setTrader(address tokenA, address tokenB, address trader) external override {
         require(msg.sender == owner, 'TF00');
         _getPair(tokenA, tokenB).setTrader(trader);
     }
 
-    function collect(
-        address tokenA,
-        address tokenB,
-        address to
-    ) external override {
+    function collect(address tokenA, address tokenB, address to) external override {
         require(msg.sender == owner, 'TF00');
         _getPair(tokenA, tokenB).collect(to);
     }
 
-    function withdraw(
-        address tokenA,
-        address tokenB,
-        uint256 amount,
-        address to
-    ) external override {
+    function withdraw(address tokenA, address tokenB, uint256 amount, address to) external override {
         require(msg.sender == owner, 'TF00');
         ITwapPair pair = _getPair(tokenA, tokenB);
         pair.transfer(address(pair), amount);

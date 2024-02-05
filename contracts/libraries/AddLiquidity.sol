@@ -16,15 +16,7 @@ library AddLiquidity {
         address pair,
         uint256 amount0Desired,
         uint256 amount1Desired
-    )
-        internal
-        view
-        returns (
-            uint256 amount0,
-            uint256 amount1,
-            uint256 swapToken
-        )
-    {
+    ) internal view returns (uint256 amount0, uint256 amount1, uint256 swapToken) {
         if (amount0Desired == 0 || amount1Desired == 0) {
             if (amount0Desired > 0) {
                 swapToken = 1;
@@ -65,14 +57,7 @@ library AddLiquidity {
         address token1,
         uint256 amount0Desired,
         uint256 amount1Desired
-    )
-        external
-        returns (
-            uint256 amount0Left,
-            uint256 amount1Left,
-            uint256 swapToken
-        )
-    {
+    ) external returns (uint256 amount0Left, uint256 amount1Left, uint256 swapToken) {
         uint256 amount0;
         uint256 amount1;
         (amount0, amount1, swapToken) = addLiquidity(pair, amount0Desired, amount1Desired);
@@ -127,22 +112,12 @@ library AddLiquidity {
         amount1Left = amount1.sub(amount1In);
     }
 
-    function getPrice(
-        uint256 amount0,
-        uint256 amount1,
-        address pair
-    ) internal view returns (uint256) {
+    function getPrice(uint256 amount0, uint256 amount1, address pair) internal view returns (uint256) {
         ITwapOracle oracle = ITwapOracle(ITwapPair(pair).oracle());
         return amount1.mul(uint256(oracle.decimalsConverter())).div(amount0);
     }
 
-    function _refundDeposit(
-        address to,
-        address token0,
-        address token1,
-        uint256 amount0,
-        uint256 amount1
-    ) internal {
+    function _refundDeposit(address to, address token0, address token1, uint256 amount0, uint256 amount1) internal {
         if (amount0 > 0) {
             TransferHelper.safeTransfer(token0, to, amount0);
         }

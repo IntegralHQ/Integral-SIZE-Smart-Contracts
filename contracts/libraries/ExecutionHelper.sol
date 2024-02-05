@@ -87,14 +87,7 @@ library ExecutionHelper {
         Orders.Order calldata order,
         address pairAddress,
         TokenShares.Data storage tokenShares
-    )
-        private
-        returns (
-            uint256 amount0Left,
-            uint256 amount1Left,
-            uint256 swapToken
-        )
-    {
+    ) private returns (uint256 amount0Left, uint256 amount1Left, uint256 swapToken) {
         uint256 amount0Desired = tokenShares.sharesToAmount(order.token0, order.value0, order.amountLimit0, order.to);
         uint256 amount1Desired = tokenShares.sharesToAmount(order.token1, order.value1, order.amountLimit1, order.to);
         (amount0Left, amount1Left, swapToken) = AddLiquidity.addLiquidityAndMint(

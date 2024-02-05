@@ -57,21 +57,11 @@ interface ITwapPair is ITwapERC20, IReserves {
 
     function collect(address to) external;
 
-    function swap(
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external;
+    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external;
 
     function sync() external;
 
-    function initialize(
-        address _token0,
-        address _token1,
-        address _oracle,
-        address _trader
-    ) external;
+    function initialize(address _token0, address _token1, address _oracle, address _trader) external;
 
     function getSwapAmount0In(uint256 amount1Out, bytes calldata data) external view returns (uint256 swapAmount0In);
 

@@ -17,7 +17,9 @@ contract TwapReader is ITwapReader {
         return size > 0;
     }
 
-    function getPairParameters(address pairAddress)
+    function getPairParameters(
+        address pairAddress
+    )
         external
         view
         override

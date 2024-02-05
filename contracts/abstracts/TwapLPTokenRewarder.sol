@@ -15,7 +15,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
     using SafeMath for int256;
     using TransferHelper for address;
 
-    uint256 private locked;
+    uint256 private locked = 1;
 
     uint256 internal constant ACCUMULATED_ITGR_PRECISION = 1e12;
 
@@ -38,10 +38,10 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
     }
 
     modifier lock() {
-        require(locked == 0, 'LR06');
-        locked = 1;
+        require(locked == 1, 'LR06');
+        locked = 2;
         _;
-        locked = 0;
+        locked = 1;
     }
 
     /**
@@ -96,11 +96,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
      * @param allocationPoints Allocation points of the new pool.
      * @dev Call `updatePools` or `updateAllPools` function before adding a new pool to update all active pools.
      */
-    function addPool(
-        address token,
-        uint256 allocationPoints,
-        bool withPoolsUpdate
-    ) external override {
+    function addPool(address token, uint256 allocationPoints, bool withPoolsUpdate) external override {
         require(msg.sender == owner, 'LR00');
         require(addedLpTokens[token] == false, 'LR69');
 
@@ -129,11 +125,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
      * @param allocationPoints New allocation points of the pool.
      * @dev Call `updatePools` or `updateAllPools` function before setting allocation points to update all active pools.
      */
-    function setPoolAllocationPoints(
-        uint256 pid,
-        uint256 allocationPoints,
-        bool withPoolsUpdate
-    ) external override {
+    function setPoolAllocationPoints(uint256 pid, uint256 allocationPoints, bool withPoolsUpdate) external override {
         require(msg.sender == owner, 'LR00');
 
         if (withPoolsUpdate) {
@@ -152,11 +144,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
      * @param amount Amount of LP token to stake.
      * @param to Receiver of staked LP token `amount` profit.
      */
-    function stake(
-        uint256 pid,
-        uint256 amount,
-        address to
-    ) external override lock {
+    function stake(uint256 pid, uint256 amount, address to) external override lock {
         require(!stakeDisabled, 'LR70');
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = users[pid][to];
@@ -177,11 +165,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
      * @param amount Amount of staked LP toked to unstake.
      * @param to LP tokens receiver.
      */
-    function unstake(
-        uint256 pid,
-        uint256 amount,
-        address to
-    ) external override lock {
+    function unstake(uint256 pid, uint256 amount, address to) external override lock {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = users[pid][msg.sender];
 
@@ -218,11 +202,7 @@ abstract contract TwapLPTokenRewarder is ITwapLPTokenRewarder {
      * @param amount Amount of staked LP token to unstake.
      * @param to Reward and LP tokens receiver.
      */
-    function unstakeAndClaim(
-        uint256 pid,
-        uint256 amount,
-        address to
-    ) external override lock {
+    function unstakeAndClaim(uint256 pid, uint256 amount, address to) external override lock {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = users[pid][msg.sender];
 

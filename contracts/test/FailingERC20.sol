@@ -35,7 +35,7 @@ contract FailingERC20 {
     function _wasteGas(uint256 iterations) internal pure returns (uint256) {
         uint256 result = 2;
         for (uint256 i; i < iterations; ++i) {
-            result += result**3;
+            result += result ** 3;
         }
         return result;
     }
@@ -46,20 +46,12 @@ contract FailingERC20 {
         emit Transfer(address(0), to, value);
     }
 
-    function _approve(
-        address owner,
-        address spender,
-        uint256 value
-    ) private {
+    function _approve(address owner, address spender, uint256 value) private {
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) private {
+    function _transfer(address from, address to, uint256 value) private {
         require(totalTransfers < revertAfter, 'FA_TRANSFER_OOPS');
         ++totalTransfers;
         if (wasteTransferGas) {
@@ -85,11 +77,7 @@ contract FailingERC20 {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
         if (allowance[from][msg.sender] != uint256(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }

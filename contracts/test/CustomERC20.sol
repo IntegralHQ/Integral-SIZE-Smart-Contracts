@@ -5,12 +5,7 @@ pragma solidity 0.7.6;
 import '../abstracts/AbstractERC20.sol';
 
 contract CustomERC20 is AbstractERC20 {
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals,
-        uint256 _totalSupply
-    ) {
+    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _totalSupply) {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;

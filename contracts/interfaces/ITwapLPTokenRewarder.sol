@@ -40,17 +40,9 @@ interface ITwapLPTokenRewarder {
 
     function poolCount() external view returns (uint256 length);
 
-    function addPool(
-        address token,
-        uint256 allocationPoints,
-        bool withPoolsUpdate
-    ) external;
+    function addPool(address token, uint256 allocationPoints, bool withPoolsUpdate) external;
 
-    function setPoolAllocationPoints(
-        uint256 pid,
-        uint256 allocationPoints,
-        bool withPoolsUpdate
-    ) external;
+    function setPoolAllocationPoints(uint256 pid, uint256 allocationPoints, bool withPoolsUpdate) external;
 
     function updatePool(uint256 pid) external returns (PoolInfo memory pool);
 
@@ -58,27 +50,15 @@ interface ITwapLPTokenRewarder {
 
     function updateAllPools() external;
 
-    function stake(
-        uint256 pid,
-        uint256 amount,
-        address to
-    ) external;
+    function stake(uint256 pid, uint256 amount, address to) external;
 
-    function unstake(
-        uint256 pid,
-        uint256 amount,
-        address to
-    ) external;
+    function unstake(uint256 pid, uint256 amount, address to) external;
 
     function emergencyUnstake(uint256 pid, address to) external;
 
     function claim(uint256 pid, address to) external;
 
-    function unstakeAndClaim(
-        uint256 pid,
-        uint256 amount,
-        address to
-    ) external;
+    function unstakeAndClaim(uint256 pid, uint256 amount, address to) external;
 
     function claimable(uint256 pid, address userAddress) external view returns (uint256 _claimable);
 }

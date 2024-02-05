@@ -13,9 +13,9 @@ library TokenShares {
     using SafeMath for uint256;
     using TransferHelper for address;
 
-    uint256 private constant PRECISION = 10**18;
-    uint256 private constant TOLERANCE = 10**18 + 10**16;
-    uint256 private constant TOTAL_SHARES_PRECISION = 10**18;
+    uint256 private constant PRECISION = 10 ** 18;
+    uint256 private constant TOLERANCE = 10 ** 18 + 10 ** 16;
+    uint256 private constant TOTAL_SHARES_PRECISION = 10 ** 18;
 
     event UnwrapFailed(address to, uint256 amount);
 
@@ -57,12 +57,7 @@ library TokenShares {
         return value;
     }
 
-    function amountToShares(
-        Data storage data,
-        address token,
-        uint256 amount,
-        bool wrap
-    ) external returns (uint256) {
+    function amountToShares(Data storage data, address token, uint256 amount, bool wrap) external returns (uint256) {
         if (amount == 0) {
             return 0;
         }
@@ -148,6 +143,9 @@ library TokenShares {
         // #if defined(IS_NON_REBASING__TOKEN_USDC) && (uint(IS_NON_REBASING__TOKEN_USDC) != uint(IS_NON_REBASING__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDC_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDC;
         // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_USDC_E) && (uint(IS_NON_REBASING__TOKEN_USDC_E) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_USDC_E_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDC_E;
+        // #endif
         // #if defined(IS_NON_REBASING__TOKEN_USDT) && (uint(IS_NON_REBASING__TOKEN_USDT) != uint(IS_NON_REBASING__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_USDT_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_USDT;
         // #endif
@@ -163,8 +161,26 @@ library TokenShares {
         // #if defined(IS_NON_REBASING__TOKEN_STETH) && (uint(IS_NON_REBASING__TOKEN_STETH) != uint(IS_NON_REBASING__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_STETH_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_STETH;
         // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_WSTETH) && (uint(IS_NON_REBASING__TOKEN_WSTETH) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_WSTETH_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WSTETH;
+        // #endif
         // #if defined(IS_NON_REBASING__TOKEN_DAI) && (uint(IS_NON_REBASING__TOKEN_DAI) != uint(IS_NON_REBASING__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_DAI_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_DAI;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_RPL) && (uint(IS_NON_REBASING__TOKEN_RPL) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_RPL_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_RPL;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_SWISE) && (uint(IS_NON_REBASING__TOKEN_SWISE) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_SWISE_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_SWISE;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_LDO) && (uint(IS_NON_REBASING__TOKEN_LDO) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_LDO_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_LDO;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_GMX) && (uint(IS_NON_REBASING__TOKEN_GMX) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_GMX_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_GMX;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_ARB) && (uint(IS_NON_REBASING__TOKEN_ARB) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_ARB_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_ARB;
         // #endif
         return __MACRO__MAPPING.IS_NON_REBASING__DEFAULT;
     }

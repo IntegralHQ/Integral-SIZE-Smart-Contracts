@@ -14,7 +14,7 @@ contract TwapOracleV3 is ITwapOracleV3 {
     using SafeMath for uint256;
     using SafeMath for int256;
 
-    uint256 private constant PRECISION = 10**18;
+    uint256 private constant PRECISION = 10 ** 18;
 
     uint8 public immutable override xDecimals;
     uint8 public immutable override yDecimals;
@@ -33,7 +33,7 @@ contract TwapOracleV3 is ITwapOracleV3 {
         owner = msg.sender;
         xDecimals = _xDecimals;
         yDecimals = _yDecimals;
-        decimalsConverter = (10**(18 + _xDecimals - _yDecimals)).toInt256();
+        decimalsConverter = (10 ** (18 + _xDecimals - _yDecimals)).toInt256();
 
         emit OwnerSet(msg.sender);
     }
@@ -90,10 +90,10 @@ contract TwapOracleV3 is ITwapOracleV3 {
 
         if (sqrtPriceX96 <= type(uint128).max) {
             uint256 priceX192 = uint256(sqrtPriceX96) * sqrtPriceX96;
-            return FullMath.mulDiv(priceX192, uint256(decimalsConverter), 2**192);
+            return FullMath.mulDiv(priceX192, uint256(decimalsConverter), 2 ** 192);
         } else {
-            uint256 priceX128 = FullMath.mulDiv(sqrtPriceX96, sqrtPriceX96, 2**64);
-            return FullMath.mulDiv(priceX128, uint256(decimalsConverter), 2**128);
+            uint256 priceX128 = FullMath.mulDiv(sqrtPriceX96, sqrtPriceX96, 2 ** 64);
+            return FullMath.mulDiv(priceX128, uint256(decimalsConverter), 2 ** 128);
         }
     }
 
@@ -111,10 +111,10 @@ contract TwapOracleV3 is ITwapOracleV3 {
 
         if (sqrtRatioX96 <= type(uint128).max) {
             uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-            return FullMath.mulDiv(ratioX192, uint256(decimalsConverter), 2**192);
+            return FullMath.mulDiv(ratioX192, uint256(decimalsConverter), 2 ** 192);
         } else {
-            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2**64);
-            return FullMath.mulDiv(ratioX128, uint256(decimalsConverter), 2**128);
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 2 ** 64);
+            return FullMath.mulDiv(ratioX128, uint256(decimalsConverter), 2 ** 128);
         }
     }
 
