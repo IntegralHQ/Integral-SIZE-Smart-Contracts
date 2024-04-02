@@ -175,7 +175,8 @@ contract TwapLimitOrder is ITwapLimitOrder {
         require(!enqueueDisabled, 'TL61');
         require(expiration >= EXPIRATION_LOWER_LIMIT, 'TL64');
         require(expiration <= EXPIRATION_UPPER_LIMIT, 'TL65');
-        require(_isTwapIntervalValid(sellParams.tokenIn, sellParams.tokenOut, twapInterval), 'TL66');
+        require(sellParams.tokens.length == 2, 'TL35');
+        require(_isTwapIntervalValid(sellParams.tokens[0], sellParams.tokens[1], twapInterval), 'TL66');
         return _sellLimitOrder(sellParams, block.timestamp.add(expiration).toUint32(), twapInterval, price);
     }
 
@@ -188,7 +189,8 @@ contract TwapLimitOrder is ITwapLimitOrder {
         require(!enqueueDisabled, 'TL61');
         require(expiration >= EXPIRATION_LOWER_LIMIT, 'TL64');
         require(expiration <= EXPIRATION_UPPER_LIMIT, 'TL65');
-        require(_isTwapIntervalValid(buyParams.tokenIn, buyParams.tokenOut, twapInterval), 'TL66');
+        require(buyParams.tokens.length == 2, 'TL35');
+        require(_isTwapIntervalValid(buyParams.tokens[0], buyParams.tokens[1], twapInterval), 'TL66');
         return _buyLimitOrder(buyParams, block.timestamp.add(expiration).toUint32(), twapInterval, price);
     }
 
@@ -251,12 +253,14 @@ contract TwapLimitOrder is ITwapLimitOrder {
         uint256 value = _gasPrice.mul(order.gasLimit);
         (, address tokenIn, address tokenOut) = _getPairInfo(order.pairId, order.inverted);
         uint256 amountIn = tokenShares.sharesToAmount(tokenIn, order.shares, 0, order.to);
+        address[] memory tokens = new address[](2);
+        tokens[0] = tokenIn;
+        tokens[1] = tokenOut;
 
         if (order.orderType == LimitOrderType.Buy) {
             delayOrderId = ITwapDelay(DELAY_ADDRESS).buy{ value: value }(
                 Orders.BuyParams(
-                    tokenIn,
-                    tokenOut,
+                    tokens,
                     amountIn,
                     order.amountOut,
                     false,
@@ -268,8 +272,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         } else {
             delayOrderId = ITwapDelay(DELAY_ADDRESS).sell{ value: value }(
                 Orders.SellParams(
-                    tokenIn,
-                    tokenOut,
+                    tokens,
                     amountIn,
                     order.amountOut,
                     false,
@@ -355,20 +358,20 @@ contract TwapLimitOrder is ITwapLimitOrder {
             buyParams.submitDeadline,
             expiration,
             Orders.BUY_ORDER_BASE_COST.add(
-                Orders.getTransferGasCost(buyParams.tokenIn).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
+                Orders.getTransferGasCost(buyParams.tokens[0]).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
             )
         );
 
         uint256 value = msg.value;
         // allocate gas refund
-        if (buyParams.tokenIn == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
+        if (buyParams.tokens[0] == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
             value = value.sub(buyParams.amountInMax, 'TL1E');
         }
 
         uint256 _gasPrice = gasPrice();
         _allocateGasRefund(value, buyParams.gasLimit, _gasPrice);
-        uint256 shares = tokenShares.amountToShares(buyParams.tokenIn, buyParams.amountInMax, buyParams.wrapUnwrap);
-        (address pairAddress, uint32 pairId, bool inverted) = _getPair(buyParams.tokenIn, buyParams.tokenOut);
+        uint256 shares = tokenShares.amountToShares(buyParams.tokens[0], buyParams.amountInMax, buyParams.wrapUnwrap);
+        (address pairAddress, uint32 pairId, bool inverted) = _getPair(buyParams.tokens[0], buyParams.tokens[1]);
         require(isPairEnabled[pairAddress], 'TL5A');
         StoredOrder memory buyOrder;
         buyOrder.orderType = LimitOrderType.Buy;
@@ -420,20 +423,20 @@ contract TwapLimitOrder is ITwapLimitOrder {
             sellParams.submitDeadline,
             expiration,
             Orders.SELL_ORDER_BASE_COST.add(
-                Orders.getTransferGasCost(sellParams.tokenIn).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
+                Orders.getTransferGasCost(sellParams.tokens[0]).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
             )
         );
 
         uint256 value = msg.value;
         // allocate gas refund
-        if (sellParams.tokenIn == TokenShares.WETH_ADDRESS && sellParams.wrapUnwrap) {
+        if (sellParams.tokens[0] == TokenShares.WETH_ADDRESS && sellParams.wrapUnwrap) {
             value = value.sub(sellParams.amountIn, 'TL1E');
         }
 
         uint256 _gasPrice = gasPrice();
         _allocateGasRefund(value, sellParams.gasLimit, _gasPrice);
-        uint256 shares = tokenShares.amountToShares(sellParams.tokenIn, sellParams.amountIn, sellParams.wrapUnwrap);
-        (address pairAddress, uint32 pairId, bool inverted) = _getPair(sellParams.tokenIn, sellParams.tokenOut);
+        uint256 shares = tokenShares.amountToShares(sellParams.tokens[0], sellParams.amountIn, sellParams.wrapUnwrap);
+        (address pairAddress, uint32 pairId, bool inverted) = _getPair(sellParams.tokens[0], sellParams.tokens[1]);
         require(isPairEnabled[pairAddress], 'TL5A');
 
         StoredOrder memory sellOrder;

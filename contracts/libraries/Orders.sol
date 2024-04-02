@@ -95,7 +95,6 @@ library Orders {
     struct Order {
         uint256 orderId;
         OrderType orderType;
-        bool inverted;
         uint256 validAfterTimestamp;
         bool unwrap;
         uint256 timestamp;
@@ -104,13 +103,11 @@ library Orders {
         uint256 liquidity;
         uint256 value0; // Deposit: share0, Withdraw: amount0Min, Sell: shareIn, Buy: shareInMax
         uint256 value1; // Deposit: share1, Withdraw: amount1Min, Sell: amountOutMin, Buy: amountOut
-        address token0; // Sell: tokenIn, Buy: tokenIn
-        address token1; // Sell: tokenOut, Buy: tokenOut
+        address[] tokens; // Sell/Buy: first token -> tokenIn, last token -> tokenOut
         address to;
         uint256 minSwapPrice;
         uint256 maxSwapPrice;
         bool swap;
-        uint256 priceAccumulator;
         uint256 amountLimit0;
         uint256 amountLimit1;
     }
@@ -274,27 +271,27 @@ library Orders {
             depositParams.wrap
         );
 
-        (uint256 priceAccumulator, uint256 timestamp) = ITwapOracle(ITwapPair(pairAddress).oracle()).getPriceInfo();
+        address[] memory tokens = new address[](2);
+        (tokens[0], tokens[1]) = inverted
+            ? (depositParams.token1, depositParams.token0)
+            : (depositParams.token0, depositParams.token1);
 
         Order memory order = Order(
             0,
             OrderType.Deposit,
-            inverted,
-            timestamp + DELAY, // validAfterTimestamp
+            block.timestamp + DELAY, // validAfterTimestamp
             depositParams.wrap,
-            timestamp,
+            block.timestamp,
             depositParams.gasLimit,
             data.gasPrice,
             0, // liquidity
             shares0,
             shares1,
-            inverted ? depositParams.token1 : depositParams.token0,
-            inverted ? depositParams.token0 : depositParams.token1,
+            tokens,
             depositParams.to,
             depositParams.minSwapPrice,
             depositParams.maxSwapPrice,
             depositParams.swap,
-            priceAccumulator,
             inverted ? depositParams.amount1 : depositParams.amount0,
             inverted ? depositParams.amount0 : depositParams.amount1
         );
@@ -329,10 +326,14 @@ library Orders {
         allocateGasRefund(data, msg.value, withdrawParams.gasLimit);
         pair.safeTransferFrom(msg.sender, address(this), withdrawParams.liquidity);
 
+        address[] memory tokens = new address[](2);
+        (tokens[0], tokens[1]) = inverted
+            ? (withdrawParams.token1, withdrawParams.token0)
+            : (withdrawParams.token0, withdrawParams.token1);
+
         Order memory order = Order(
             0,
             OrderType.Withdraw,
-            inverted,
             block.timestamp + DELAY, // validAfterTimestamp
             withdrawParams.unwrap,
             0, // timestamp
@@ -341,13 +342,11 @@ library Orders {
             withdrawParams.liquidity,
             inverted ? withdrawParams.amount1Min : withdrawParams.amount0Min,
             inverted ? withdrawParams.amount0Min : withdrawParams.amount1Min,
-            inverted ? withdrawParams.token1 : withdrawParams.token0,
-            inverted ? withdrawParams.token0 : withdrawParams.token1,
+            tokens,
             withdrawParams.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            0, // priceAccumulator
             0, // amountLimit0
             0 // amountLimit1
         );
@@ -357,8 +356,7 @@ library Orders {
     }
 
     struct SellParams {
-        address tokenIn;
-        address tokenOut;
+        address[] tokens;
         uint256 amountIn;
         uint256 amountOutMin;
         bool wrapUnwrap;
@@ -368,38 +366,48 @@ library Orders {
     }
 
     function sell(Data storage data, SellParams calldata sellParams, TokenShares.Data storage tokenShares) external {
+        uint256 hops = sellParams.tokens.length - 1;
+        require(hops >= 1 && hops <= 3, 'OS33');
+        require(sellParams.amountIn != 0, 'OS24');
+
         checkOrderParams(
             sellParams.to,
             sellParams.gasLimit,
             sellParams.submitDeadline,
-            SELL_ORDER_BASE_COST + getTransferGasCost(sellParams.tokenIn)
+            SELL_ORDER_BASE_COST + getTransferGasCost(sellParams.tokens[0])
         );
 
-        (address pairAddress, bool inverted) = sellHelper(data, sellParams);
+        for (uint256 i; i < hops; ++i) {
+            (address pairAddress, ) = getPair(sellParams.tokens[i], sellParams.tokens[i + 1]);
+            require(!getSellDisabled(data, pairAddress), 'OS13');
+        }
 
-        (uint256 priceAccumulator, uint256 timestamp) = ITwapOracle(ITwapPair(pairAddress).oracle()).getPriceInfo();
+        // allocate gas refund
+        uint256 value = msg.value;
+        if (sellParams.wrapUnwrap && sellParams.tokens[0] == TokenShares.WETH_ADDRESS) {
+            value = msg.value.sub(sellParams.amountIn, 'OS1E');
+        }
+        allocateGasRefund(data, value, sellParams.gasLimit);
 
-        uint256 shares = tokenShares.amountToShares(sellParams.tokenIn, sellParams.amountIn, sellParams.wrapUnwrap);
+        // Calculating shares only for the first token in the tokens path (the input token)
+        uint256 shares = tokenShares.amountToShares(sellParams.tokens[0], sellParams.amountIn, sellParams.wrapUnwrap);
 
         Order memory order = Order(
             0,
             OrderType.Sell,
-            inverted,
-            timestamp + DELAY, // validAfterTimestamp
+            block.timestamp + DELAY, // validAfterTimestamp
             sellParams.wrapUnwrap,
-            timestamp,
+            block.timestamp,
             sellParams.gasLimit,
             data.gasPrice,
             0, // liquidity
             shares,
             sellParams.amountOutMin,
-            sellParams.tokenIn,
-            sellParams.tokenOut,
+            sellParams.tokens,
             sellParams.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            priceAccumulator,
             sellParams.amountIn,
             0 // amountLimit1
         );
@@ -413,17 +421,25 @@ library Orders {
         SellParams calldata sellParams,
         TokenShares.Data storage tokenShares
     ) external {
+        uint256 hops = sellParams.tokens.length - 1;
+        require(hops >= 1 && hops <= 3, 'OS33');
+        require(sellParams.amountIn != 0, 'OS24');
+
         checkOrderParams(
             sellParams.to,
             sellParams.gasLimit,
             sellParams.submitDeadline,
-            SELL_ORDER_BASE_COST + getTransferGasCost(sellParams.tokenIn)
+            SELL_ORDER_BASE_COST + getTransferGasCost(sellParams.tokens[0])
         );
 
-        (, bool inverted) = sellHelper(data, sellParams);
+        for (uint256 i; i < hops; ++i) {
+            (address pairAddress, ) = getPair(sellParams.tokens[i], sellParams.tokens[i + 1]);
+            require(!getSellDisabled(data, pairAddress), 'OS13');
+        }
 
+        // Calculating shares only for the first token in the tokens path (the input token)
         uint256 shares = tokenShares.amountToSharesWithoutTransfer(
-            sellParams.tokenIn,
+            sellParams.tokens[0],
             sellParams.amountIn,
             sellParams.wrapUnwrap
         );
@@ -431,7 +447,6 @@ library Orders {
         Order memory order = Order(
             0,
             OrderType.Sell,
-            inverted,
             block.timestamp + DELAY, // validAfterTimestamp
             false, // Never wrap/unwrap
             block.timestamp,
@@ -440,13 +455,11 @@ library Orders {
             0, // liquidity
             shares,
             sellParams.amountOutMin,
-            sellParams.tokenIn,
-            sellParams.tokenOut,
+            sellParams.tokens,
             sellParams.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            0, // priceAccumulator - oracleV3 pairs don't need priceAccumulator
             sellParams.amountIn,
             0 // amountLimit1
         );
@@ -455,25 +468,8 @@ library Orders {
         emit SellEnqueued(order.orderId, order);
     }
 
-    function sellHelper(
-        Data storage data,
-        SellParams calldata sellParams
-    ) internal returns (address pairAddress, bool inverted) {
-        require(sellParams.amountIn != 0, 'OS24');
-        (pairAddress, inverted) = getPair(sellParams.tokenIn, sellParams.tokenOut);
-        require(!getSellDisabled(data, pairAddress), 'OS13');
-
-        // allocate gas refund
-        uint256 value = msg.value;
-        if (sellParams.wrapUnwrap && sellParams.tokenIn == TokenShares.WETH_ADDRESS) {
-            value = msg.value.sub(sellParams.amountIn, 'OS1E');
-        }
-        allocateGasRefund(data, value, sellParams.gasLimit);
-    }
-
     struct BuyParams {
-        address tokenIn;
-        address tokenOut;
+        address[] tokens;
         uint256 amountInMax;
         uint256 amountOut;
         bool wrapUnwrap;
@@ -483,47 +479,48 @@ library Orders {
     }
 
     function buy(Data storage data, BuyParams calldata buyParams, TokenShares.Data storage tokenShares) external {
+        uint256 hops = buyParams.tokens.length - 1;
+        require(hops >= 1 && hops <= 3, 'OS33');
+
         checkOrderParams(
             buyParams.to,
             buyParams.gasLimit,
             buyParams.submitDeadline,
-            BUY_ORDER_BASE_COST + getTransferGasCost(buyParams.tokenIn)
+            BUY_ORDER_BASE_COST + getTransferGasCost(buyParams.tokens[0])
         );
         require(buyParams.amountOut != 0, 'OS23');
-        (address pairAddress, bool inverted) = getPair(buyParams.tokenIn, buyParams.tokenOut);
-        require(!getBuyDisabled(data, pairAddress), 'OS49');
-        uint256 value = msg.value;
 
-        // allocate gas refund
-        if (buyParams.tokenIn == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
-            value = msg.value.sub(buyParams.amountInMax, 'OS1E');
+        for (uint256 i; i < hops; ++i) {
+            (address pairAddress, ) = getPair(buyParams.tokens[i], buyParams.tokens[i + 1]);
+            require(!getBuyDisabled(data, pairAddress), 'OS49');
         }
 
+        // allocate gas refund
+        uint256 value = msg.value;
+        if (buyParams.tokens[0] == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
+            value = msg.value.sub(buyParams.amountInMax, 'OS1E');
+        }
         allocateGasRefund(data, value, buyParams.gasLimit);
 
-        uint256 shares = tokenShares.amountToShares(buyParams.tokenIn, buyParams.amountInMax, buyParams.wrapUnwrap);
-
-        (uint256 priceAccumulator, uint256 timestamp) = ITwapOracle(ITwapPair(pairAddress).oracle()).getPriceInfo();
+        // Calculating shares only for the first token in the tokens path (the input token)
+        uint256 shares = tokenShares.amountToShares(buyParams.tokens[0], buyParams.amountInMax, buyParams.wrapUnwrap);
 
         Order memory order = Order(
             0,
             OrderType.Buy,
-            inverted,
-            timestamp + DELAY, // validAfterTimestamp
+            block.timestamp + DELAY, // validAfterTimestamp
             buyParams.wrapUnwrap,
-            timestamp,
+            block.timestamp,
             buyParams.gasLimit,
             data.gasPrice,
             0, // liquidity
             shares,
             buyParams.amountOut,
-            buyParams.tokenIn,
-            buyParams.tokenOut,
+            buyParams.tokens,
             buyParams.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            priceAccumulator,
             buyParams.amountInMax,
             0 // amountLimit1
         );
@@ -585,7 +582,6 @@ library Orders {
         bytes memory partialOrderData = abi.encodePacked(
             order.orderId,
             order.orderType,
-            order.inverted,
             order.validAfterTimestamp,
             order.unwrap,
             order.timestamp,
@@ -594,8 +590,7 @@ library Orders {
             order.liquidity,
             order.value0,
             order.value1,
-            order.token0,
-            order.token1,
+            order.tokens,
             order.to
         );
 
@@ -606,7 +601,6 @@ library Orders {
                     order.minSwapPrice,
                     order.maxSwapPrice,
                     order.swap,
-                    order.priceAccumulator,
                     order.amountLimit0,
                     order.amountLimit1
                 )

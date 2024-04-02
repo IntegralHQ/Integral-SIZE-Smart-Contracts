@@ -17,7 +17,7 @@ contract TwapRelayerTest is TwapRelayer {
         bool wrapUnwrap,
         address to
     ) external returns (uint256 _amountIn, uint256 _amountOut, uint256 fee) {
-        return swapExactIn(tokenIn, tokenOut, amountIn, wrapUnwrap, to);
+        (_amountIn, _amountOut, fee, ) = swapExactIn(tokenIn, tokenOut, amountIn, wrapUnwrap, to);
     }
 
     function testSwapExactOut(
@@ -26,8 +26,8 @@ contract TwapRelayerTest is TwapRelayer {
         uint256 amountOut,
         bool wrapUnwrap,
         address to
-    ) external returns (uint256 _amountIn, uint256 _amountOut, uint256 fee) {
-        return swapExactOut(tokenIn, tokenOut, amountOut, wrapUnwrap, to);
+    ) external returns (uint256 _amountIn, uint256 fee) {
+        (_amountIn, fee, ) = swapExactOut(tokenIn, tokenOut, amountOut, wrapUnwrap, to);
     }
 
     function testGetAveragePrice(

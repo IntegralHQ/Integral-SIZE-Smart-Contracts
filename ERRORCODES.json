@@ -354,11 +354,8 @@
     ]
   },
   "33": {
-    "errorMessage": "[UNUSED]",
-    "userMessages": [
-      "Gas price impact exceeds inertia",
-      "Please contact support"
-    ]
+    "errorMessage": "TOKENS PATH MUST HAVE AT LEAST 2 AND AT MOST 4 TOKENS",
+    "userMessages": []
   },
   "34": {
     "errorMessage": "INVALID INT CONVERSION",
@@ -368,11 +365,8 @@
     ]
   },
   "35": {
-    "errorMessage": "[UNUSED]",
-    "userMessages": [
-      "Gas price inertia too low",
-      "Please contact support"
-    ]
+    "errorMessage": "TOKENS PATH MUST HAVE EXACTLY 2 TOKENS FOR LIMIT ORDERS",
+    "userMessages": []
   },
   "36": {
     "errorMessage": "INSUFFICIENT TOTAL SUPPLY",

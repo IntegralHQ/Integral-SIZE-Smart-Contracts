@@ -851,13 +851,13 @@
       "verified": true
     },
     "orders": {
-      "address": "0xF5A7A14AF4A0654b46795F167bfe4250c7D47594",
-      "checksum": "5bf89804e342fed5a48cc92dc2bd8818b97b069faa5de10934c39db7e14c861d",
+      "address": "0x4dC3d7aE9Cb50634637a3FA448461CA7df33D6cA",
+      "checksum": "792117b56b81aa2c04107db2fc918eb3bd21c5106f078c25395eeca9860adf52",
       "verified": true
     },
     "delay": {
-      "address": "0x2eE603Dca0C037734e2DA4E78E715AC09d2aB162",
-      "checksum": "d2f4848fa12632e62d00c38d4768465fa49f57ece28fe9d31954fd24f1839268",
+      "address": "0x44620fB101aad71AdA57B46ba002290928c1bBC7",
+      "checksum": "94727970dfd586f032bea5eaa13ec527af88c2e168c70b5663ef680be850fbdc",
       "verified": true
     },
     "oraclesV2": {
@@ -1017,8 +1017,8 @@
       "verified": true
     },
     "relayer": {
-      "address": "0xd49c86EDc757038Ed693b3F2baD4bE6c226222cD",
-      "checksum": "19cae4ce0cec8dbff8f5af519472a28c7786c72a17548814b6d1a3129782b88b",
+      "address": "0xc41A806257b8eD2e7Dc4ef336BC53AA506540d25",
+      "checksum": "c72540c983c91b668583d1716a96510137a55f54472b4c4a1a3cf853330b2daf",
       "verified": true
     },
     "relayerProxy": {
@@ -1041,13 +1041,18 @@
       "verified": true
     },
     "executionHelper": {
-      "address": "0xc26823767155C7a5f178C93BEE14774a0ACF8dBA",
-      "checksum": "0bb21abcd3c8d9fd3aef3d6012cfe90bcce552e6e5d3372d28c17fefba0e0c15",
+      "address": "0xd04d8bcf25063Ef7f9EAbd371b37F1FD48C430Cd",
+      "checksum": "0c455b2f4efaca74981dc1c3d28468a19f1b6806bcec23486befd037b199187a",
       "verified": true
     },
     "factoryGovernorProxy": {
       "address": "0x09f97d654DA42546D724EFA94A2B0e28984F3458",
       "checksum": "73814cbb77bbf0918d79ddfd53d0495b9a3e786f0a31113480a4c72be5664cf1",
+      "verified": true
+    },
+    "relayerMacros": {
+      "address": "0x513B12504799ea1A587ad6223a2D15dC7591863D",
+      "checksum": "987783a952633b4804262f467a50d942cb29df6c541a0695774db8cf0fa1ec9d",
       "verified": true
     }
   },
