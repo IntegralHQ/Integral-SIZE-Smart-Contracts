@@ -384,8 +384,8 @@
   "37": {
     "errorMessage": "INSUFFICIENT OUTPUT AMOUNT",
     "userMessages": [
-      "Order exceeds available tokens",
-      "Retry the order with a different proportion of tokens"
+      "Order slippage exceeded",
+      "Retry with a higher slippage tolerance"
     ]
   },
   "38": {

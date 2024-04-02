@@ -110,7 +110,15 @@
     "set-owner": "ts-node scripts/owner/index.ts",
     "set-minter": "ts-node scripts/minter/index.ts",
     "set-trader": "ts-node scripts/trader/index.ts",
-    "read-delay": "ts-node scripts/readDelay/index.ts"
+    "read-delay": "ts-node scripts/readDelay/index.ts",
+    "fuzz:build:mainnet": "DEFAULT_NETWORK='mainnet' hardhat --config hardhat.tokens.config.ts compile",
+    "fuzz:build:arbitrum": "DEFAULT_NETWORK='arbitrum' hardhat --config hardhat.tokens.config.ts compile",
+    "fuzz:deploy:mainnet": "DEFAULT_NETWORK='mainnet' hardhat --config hardhat.tokens.config.ts run 'scripts/fuzz/deploy/amm.ts'",
+    "fuzz:deploy:pool:mainnet": "DEFAULT_NETWORK='mainnet' hardhat --config hardhat.tokens.config.ts run 'scripts/fuzz/deploy/pools.ts'",
+    "fuzz:deploy:arbitrum": "DEFAULT_NETWORK='arbitrum' hardhat --config hardhat.tokens.config.ts run 'scripts/fuzz/deploy/amm.ts'",
+    "fuzz:deploy:pool:arbitrum": "DEFAULT_NETWORK='arbitrum' hardhat --config hardhat.tokens.config.ts run 'scripts/fuzz/deploy/pools.ts'",
+    "fuzz:test:mainnet": "DEFAULT_NETWORK='mainnet' hardhat --config hardhat.tokens.config.ts test",
+    "fuzz:test:arbitrum": "DEFAULT_NETWORK='arbitrum' hardhat --config hardhat.tokens.config.ts test"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.1.1",

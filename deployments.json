@@ -30,8 +30,8 @@
   "arbitrum": {
     "owner": "0x81e297E9529c5A7a8A172cCC8D60195ecD2dADA2",
     "delay": {
-      "address": "0xb0abc66f199Fb295DC3F6e968e8bA0db03821102",
-      "checksum": "d2d053ecfa12984f29bd670f14d9796822c3f8ae2cc7c861c46c9ddf4d1b1dd3",
+      "address": "0x0Ac75dE41E50010A59296A3917A00de397F8e418",
+      "checksum": "5c0231cdf8a3e4adb84e2a01bf15723f783b6ddb44ce1b63dd6c955c4f0d1bf6",
       "verified": true
     },
     "tokens": {
@@ -121,8 +121,8 @@
       "verified": true
     },
     "orders": {
-      "address": "0x6caF97d27ABCd37F1ff26DEE618eB0d7003ab839",
-      "checksum": "f243c4a95a3f7e18cc423e036b19170290e1934bed0af1625bd43b0f2c1132c6",
+      "address": "0xEedc27A4699F85dd4242B4c029C504a72DF3CEb1",
+      "checksum": "67550df51dfee69801c7b0cf86e6bb5ac0a1c45c4c8bd450053e2bb0c3f09607",
       "verified": true
     },
     "oraclesV3": {
@@ -160,27 +160,27 @@
     "pairs": {
       "weth-usdc.e": {
         "address": "0x4BCa34ad27Df83566016B55c60Dd80a9eB14913b",
-        "verified": false
+        "verified": true
       },
       "weth-usdc": {
         "address": "0x12b8bC27Ca8A997680F49d1A6FC1D93D552aacbe",
-        "verified": false
+        "verified": true
       },
       "weth-usdt": {
         "address": "0xf31778748B3364fC43d6ab6AAc4f52E2C29B6353",
-        "verified": false
+        "verified": true
       },
       "weth-wsteth": {
         "address": "0x7A0f899EF730FE178E0574B8DAb4440cA336e415",
-        "verified": false
+        "verified": true
       },
       "weth-gmx": {
         "address": "0xFA5AA52f6b5BAF76bD095504aD097E7d5bB9A88a",
-        "verified": false
+        "verified": true
       },
       "weth-arb": {
         "address": "0x24E24Acd861642B4244bb1297D8944D84c2E9625",
-        "verified": false
+        "verified": true
       }
     },
     "reader": {
@@ -194,8 +194,8 @@
       "verified": true
     },
     "relayer": {
-      "address": "0xfe70D9211AaADfb4465958A943Dde04c5ebc68e6",
-      "checksum": "0042f8d0da94541055af2aacb7c287ca84811689c439d60d7d4b31d1b1b7d61b",
+      "address": "0x8b892A99DE54b2B9e44c1F2c03A23789118053C0",
+      "checksum": "583aab1cf9dd787bebc876e08297047fb7a15a02a3a6f38410de79b05d3263af",
       "verified": true
     },
     "relayerProxy": {
@@ -741,6 +741,26 @@
         "address": "0x62C94Eb3D77F87Ab9B6DcD41c6e70D7dF944c277",
         "checksum": "d254e78f46d65065127eddfebe501a845c599cf03c1c8baf7d43f1efad43516e",
         "verified": true
+      },
+      "mkr": {
+        "address": "0x71CCc032e57f8AE1aa22d01cEb72A9c716e281d0",
+        "checksum": "d254e78f46d65065127eddfebe501a845c599cf03c1c8baf7d43f1efad43516e",
+        "verified": true
+      },
+      "uni": {
+        "address": "0xb36f434d82390357470B8452d53836c4ACF23a0B",
+        "checksum": "d254e78f46d65065127eddfebe501a845c599cf03c1c8baf7d43f1efad43516e",
+        "verified": true
+      },
+      "link": {
+        "address": "0x7e9617c101b3643834E4C7Ab5A2217e55CB03dbc",
+        "checksum": "d254e78f46d65065127eddfebe501a845c599cf03c1c8baf7d43f1efad43516e",
+        "verified": true
+      },
+      "mnt": {
+        "address": "0x3565CAAcAa6faA4449CF059809DFE959Fe624097",
+        "checksum": "d254e78f46d65065127eddfebe501a845c599cf03c1c8baf7d43f1efad43516e",
+        "verified": true
       }
     },
     "uniswapV2": {
@@ -789,6 +809,22 @@
       "weth-ldo": {
         "address": "0xc7154405D44753250C0760e0722cb1fF430884E9",
         "verified": false
+      },
+      "weth-mkr": {
+        "address": "0x932E2c9C6F52a2DbFb9155d20E441eA146d107B2",
+        "verified": false
+      },
+      "weth-uni": {
+        "address": "0x1ABdcd99F9cf2337aaf7540EFC82b5DCb8AA3336",
+        "verified": false
+      },
+      "weth-link": {
+        "address": "0xAF470CdDD09DdeCd55ae22C046cb0ABC8cf2451e",
+        "verified": false
+      },
+      "weth-mnt": {
+        "address": "0x534022E049a7Dcf8Df34e0e659d6053d04cE140e",
+        "verified": false
       }
     },
     "sushiswapV2": {
@@ -800,28 +836,28 @@
       "verified": true
     },
     "tokenShares": {
-      "address": "0x5609BECf3B0134252d24b9EeE3724d5836bC4cb1",
-      "checksum": "3222bbf487077e4cf33e423568490739f9223ab58efe2f927d2825da65f44a2e",
+      "address": "0x361E4f197f25e779678566C6274Bc99597c8A62F",
+      "checksum": "6af516cca89d4e95b6d85f74f5e563ff17582382e9ecde5c7ea5f6c64c76f598",
       "verified": true
     },
     "withdrawHelper": {
-      "address": "0x1685040038509a66e0F5c524D68cDe8f846E8dCd",
-      "checksum": "e40c47b0554299ee06f6b8591336e822536714f2938edd64bbdcb3e1949da82b",
+      "address": "0xA0432E4b7A5D2A253687833438862d0615651960",
+      "checksum": "557bfbdb1eaec7a79d593722cc0d73b995592c5f61b8a4933718108176fa0326",
       "verified": true
     },
     "addLiquidity": {
-      "address": "0x9b81c985AEB7827042E01c06107aDa97fD791ad6",
-      "checksum": "ab10cf0230fe04d80d2046982bc84272392c654a39a328668f68939721c5cbf8",
+      "address": "0xcCAc4924286B6B634A1E7Cd77dE6eD7B381bcE5b",
+      "checksum": "99b130d55405adf6d875150bb30a2fe47710f39f917924d0e950a86efac7dbff",
       "verified": true
     },
     "orders": {
-      "address": "0x2329b9529D46e5EaF92f74aBf1C066d4e3bCFAc9",
-      "checksum": "df0b3d9af873a777d8f2e9efeb31ab7ccf3ada73f1e063c0d7d3e39c0ab4d009",
-      "verified": false
+      "address": "0xF5A7A14AF4A0654b46795F167bfe4250c7D47594",
+      "checksum": "5bf89804e342fed5a48cc92dc2bd8818b97b069faa5de10934c39db7e14c861d",
+      "verified": true
     },
     "delay": {
-      "address": "0x29D3C37FE0Ef9575409c64Dcc53Bf4C6fe0eEdC1",
-      "checksum": "2f547faf19965386037771547690a3d370827efdea58fb0f5a0818f8b12de5d4",
+      "address": "0x2eE603Dca0C037734e2DA4E78E715AC09d2aB162",
+      "checksum": "d2f4848fa12632e62d00c38d4768465fa49f57ece28fe9d31954fd24f1839268",
       "verified": true
     },
     "oraclesV2": {
@@ -839,7 +875,7 @@
       },
       "weth-steth": {
         "address": "0x5b2d3C36fb8665eeFc0D3AEab4a64dE6aDe1B7b9",
-        "checksum": "297531407278e2d8388240a4dc6eb8db082eaa7ec35f19daaf7375f93ea3ac79",
+        "checksum": "8d316d511d437698e46b1e7d6557601bbf0d9f7ccaf6d3aea93e7dc2985a8e4f",
         "verified": true
       },
       "usdc-usdt": {
@@ -854,42 +890,62 @@
       },
       "weth-usdc": {
         "address": "0xCc96a28c21D770aEb15F3886750acbB42ae25fE4",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "weth-usdt": {
         "address": "0xd8F967555dD59991b2c41e32b2EdBBD3e671d280",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "usdc-usdt": {
         "address": "0x9126e44902E78e9232306E07C530D09d15F701bf",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "weth-wbtc": {
         "address": "0xc88C6C0365c62c54F73fbb8c8AD610dBaBe495dc",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "weth-wsteth": {
         "address": "0x9Cb2466f6CeF224Fb26a66295DeA318C7A88d1B5",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "weth-rpl": {
         "address": "0x69A244b05ebbA0FB8e12307208D0DdD19f6f7FD2",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "weth-swise": {
         "address": "0x39db2c1Dc2B20545Cde8B0a74eFc6Bf241d5ce4F",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       },
       "weth-ldo": {
         "address": "0xa8a8Afa752dc0a336835C54Fb99dbA981467701f",
-        "checksum": "26462c1f6b899ccd53822882af48a1c6ad30b3072c37a04bfe0a15d213afe600",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-mkr": {
+        "address": "0x73da710F46bb210f504B5328AEC790B40D2fD292",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-uni": {
+        "address": "0xFfA80153eA9704d9354D78f3306BaC999Dd24e29",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-link": {
+        "address": "0xa16f0D039Ff0fb7b0E8C8211d15cfdFDd2bDf772",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-mnt": {
+        "address": "0xA0f17d02E49404e157128e9E2FA66C90ED4af028",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
       }
     },
@@ -932,11 +988,27 @@
       "weth-ldo": {
         "address": "0x68edD7c3Bf830FDa7490E1a39A9c936d1D2001f0",
         "verified": true
+      },
+      "weth-mkr": {
+        "address": "0x30DA6C799Ae5FCB01b28415cE8868F9fff49509a",
+        "verified": true
+      },
+      "weth-uni": {
+        "address": "0xEB2c5453eE3b840fd176E7c11176067BE1827ae9",
+        "verified": true
+      },
+      "weth-link": {
+        "address": "0x4fe0Bf0462ea8D4c4BA689afAf1B48738f61e552",
+        "verified": true
+      },
+      "weth-mnt": {
+        "address": "0x2C9dD3b3C7BA61A6dD86601C001aE34f05D189Cd",
+        "verified": true
       }
     },
     "reader": {
       "address": "0xfe30D496e64383467e133F2aDC769Dbf288CA5aB",
-      "checksum": "cefe1f3f17d87ff33d82cf15c938b69d43d97f5afe6fa99e754fc38b99a9b10c",
+      "checksum": "c572cb3486f72a37c91b971eda960277963ed731815c04efb0eb5326bcd1e818",
       "verified": true
     },
     "multicall": {
@@ -945,8 +1017,9 @@
       "verified": true
     },
     "relayer": {
-      "address": "0xa855a7744927f86d1B1Ef66a6937a455f9a0E5b1",
-      "checksum": "5e2aaa8c8d0cbfd7f62acc5e7cfe99d87f9872ba6d744d7f6d4de27e42d43922"
+      "address": "0xd49c86EDc757038Ed693b3F2baD4bE6c226222cD",
+      "checksum": "19cae4ce0cec8dbff8f5af519472a28c7786c72a17548814b6d1a3129782b88b",
+      "verified": true
     },
     "relayerProxy": {
       "address": "0xB69C7579B209a346a2429E6A99645CD72EDe5C8E",
@@ -964,13 +1037,13 @@
     },
     "factoryGovernor": {
       "address": "0x81E175c16723B0c669890A1974C40E3eeF7F7fC4",
-      "checksum": "fc4419e4fc95bf299d51c30691c272e1f91db212041cffd76ccd354ad2a6c70d",
+      "checksum": "7f1f2370694afc0022af99254cc72f12d2f9eb9a2af20b4c8d87efece17198bc",
       "verified": true
     },
     "executionHelper": {
-      "address": "0xc28cAFc2C92e1d1B90b4dF1a281a404059fFd28e",
-      "checksum": "fc1462a335cf11cdae42bc12897d33e592f2c09792648f9db9000fd7c3d3236a",
-      "verified": false
+      "address": "0xc26823767155C7a5f178C93BEE14774a0ACF8dBA",
+      "checksum": "0bb21abcd3c8d9fd3aef3d6012cfe90bcce552e6e5d3372d28c17fefba0e0c15",
+      "verified": true
     },
     "factoryGovernorProxy": {
       "address": "0x09f97d654DA42546D724EFA94A2B0e28984F3458",
@@ -1176,7 +1249,8 @@
         "verified": false
       },
       "link": {
-        "address": "0x514910771af9ca656af840dff83e8264ecf986ca"
+        "address": "0x514910771af9ca656af840dff83e8264ecf986ca",
+        "verified": true
       },
       "cvx": {
         "address": "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B",
@@ -1205,6 +1279,18 @@
       },
       "ldo": {
         "address": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
+        "verified": true
+      },
+      "mkr": {
+        "address": "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2",
+        "verified": true
+      },
+      "uni": {
+        "address": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+        "verified": true
+      },
+      "mnt": {
+        "address": "0x3c3a81e81dc49A522A592e7622A7E711c06bf354",
         "verified": true
       }
     },
@@ -1252,6 +1338,22 @@
       },
       "weth-ldo": {
         "address": "0xbEE7Ef1adfaa628536Ebc0C1EBF082DbDC27265F",
+        "verified": true
+      },
+      "weth-mkr": {
+        "address": "0x51baDc1622C63d1E448A4F1aC1DC008b8a27Fe67",
+        "verified": true
+      },
+      "weth-uni": {
+        "address": "0x0e52DB138Df9CE54Bc9D9330f418015eD512830A",
+        "verified": true
+      },
+      "weth-link": {
+        "address": "0xDDE7684D88E0B482B2b455936fe0D22dd48CDcb3",
+        "verified": true
+      },
+      "weth-mnt": {
+        "address": "0x43102f07414D95eF71EC9aEbA011b8595BA010D0",
         "verified": true
       }
     },
@@ -1301,8 +1403,8 @@
       "verified": true
     },
     "tokenShares": {
-      "address": "0xC31Fe768E2bB210b268FB09aa59d085d7B5Cc876",
-      "checksum": "292f8c88a405cc3717d817de0c4d2fb5ac2d940a44c55c318a08a0bd1cf4a02b",
+      "address": "0xe92b1734FC37f8acC950D0d13a41475372958730",
+      "checksum": "1bfe20651dd8ed297b662e6898286699009c8aba02cd48661c54ea1bb01b1bb9",
       "verified": true
     },
     "withdrawHelper": {
@@ -1316,13 +1418,13 @@
       "verified": true
     },
     "orders": {
-      "address": "0x555B43Aaaf8673A9306c254BC18eF9C6Ca03227E",
-      "checksum": "d03740e47097fe95ead60c38dae492a99baa66978341ce40cee6bd693ae05a77",
+      "address": "0x465e0b6518603e0d75B4737daC052845cF855925",
+      "checksum": "03b35cf82408bfe621a3b2b61fb81751a4f42eee3786fb3d4e337fcbfcc5df8c",
       "verified": true
     },
     "delay": {
-      "address": "0x66Bc3Ee5B95f45Cc564cc494dE74AF53802CC250",
-      "checksum": "51c616bbe9247a19e96a0ee358b6ef5535f550b47f546416ad7ed3e9cda621b6",
+      "address": "0xc3a99a855D060D727367c599Ecb2423e0bEbEe24",
+      "checksum": "efd72827c41d7328a7036c14b617fd07101952ed5c880156fc42bfee6ac4f6a5",
       "verified": true
     },
     "reader": {
@@ -1381,6 +1483,22 @@
       "weth-ldo": {
         "address": "0xa3f558aebAecAf0e11cA4b2199cC5Ed341edfd74",
         "verified": false
+      },
+      "weth-mkr": {
+        "address": "0xe8c6c9227491C0a8156A0106A0204d881BB7E531",
+        "verified": false
+      },
+      "weth-uni": {
+        "address": "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801",
+        "verified": false
+      },
+      "weth-link": {
+        "address": "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8",
+        "verified": false
+      },
+      "weth-mnt": {
+        "address": "0xF4c5e0F4590b6679B3030d29A84857F226087FeF",
+        "verified": false
       }
     },
     "multicall": {
@@ -1431,11 +1549,31 @@
         "address": "0x64D492D658BeF32eD2e422D317Bd66A4380340D7",
         "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
         "verified": true
+      },
+      "weth-mkr": {
+        "address": "0xc64A01a0072E1D75170086E9CAC458E6126228CC",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-uni": {
+        "address": "0xa7E989c0C0e2510ED56C0DD7B5720E7ce8543754",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-link": {
+        "address": "0x24B2d6C379D30113282f17B5dD1661B3dc17DedE",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
+      },
+      "weth-mnt": {
+        "address": "0xa4BEa71eB0f3b20cf672b4E4784099DFAce0533C",
+        "checksum": "bec7cccae03df4a2af54ba855d447c784c0211fbc423e6b6084f637d2f4bd076",
+        "verified": true
       }
     },
     "relayer": {
-      "address": "0x0E83e4273eFb4128A8C15809C97071D87482406c",
-      "checksum": "138cb87ef51fcaabaf30ce47f17d66461087117b35a537fdcf42ebb56b774540",
+      "address": "0xAf780dE01Dc9C6FF4c29C6556B4666E852951584",
+      "checksum": "6ad301a823a19cf0ad77ecc18ae5e95eb4323158059250af2f196eeeb7a0901b",
       "verified": true
     },
     "relayerProxy": {
@@ -1458,8 +1596,8 @@
       "verified": true
     },
     "executionHelper": {
-      "address": "0x99E35d0a557FD7966BCA0Efc71e384FAAF13c9d0",
-      "checksum": "2ab2e57ccbafe0730def30de7220ae96272ffb1be46d80b077d8938d2d30de87",
+      "address": "0x4A1dbC839b4eBAD8dB9058e856E90cb41DFfce1F",
+      "checksum": "611866f0b0b824c96c9959c39d7b6c5727f3e6d4c49db395f3dadd1c238bcac3",
       "verified": true
     }
   }

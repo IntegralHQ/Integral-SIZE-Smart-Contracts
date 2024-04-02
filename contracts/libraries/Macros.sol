@@ -19,6 +19,10 @@ library __MACRO__GLOBAL {
     address public constant PAIR_WETH_LDO_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
     address public constant PAIR_WETH_GMX_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
     address public constant PAIR_WETH_ARB_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant PAIR_WETH_MKR_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant PAIR_WETH_UNI_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant PAIR_WETH_LINK_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant PAIR_WETH_MNT_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
 
     address public constant TOKEN_WETH_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
     address public constant TOKEN_USDC_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
@@ -35,6 +39,10 @@ library __MACRO__GLOBAL {
     address public constant TOKEN_LDO_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
     address public constant TOKEN_GMX_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
     address public constant TOKEN_ARB_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant TOKEN_MKR_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant TOKEN_UNI_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant TOKEN_LINK_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
+    address public constant TOKEN_MNT_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
 
     address public constant FACTORY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
     address public constant DELAY_ADDRESS = 0x0f0f0F0f0f0F0F0f0F0F0F0F0F0F0f0f0F0F0F0F;
@@ -57,6 +65,10 @@ library __MACRO__MAPPING {
     uint16 public constant TOLERANCE__PAIR_WETH_LDO = 0x0F0F;
     uint16 public constant TOLERANCE__PAIR_WETH_GMX = 0x0F0F;
     uint16 public constant TOLERANCE__PAIR_WETH_ARB = 0x0F0F;
+    uint16 public constant TOLERANCE__PAIR_WETH_MKR = 0x0F0F;
+    uint16 public constant TOLERANCE__PAIR_WETH_UNI = 0x0F0F;
+    uint16 public constant TOLERANCE__PAIR_WETH_LINK = 0x0F0F;
+    uint16 public constant TOLERANCE__PAIR_WETH_MNT = 0x0F0F;
 
     uint16 public constant RELAYER_TOLERANCE__DEFAULT = 0x0F0F;
     uint16 public constant RELAYER_TOLERANCE__PAIR_WETH_USDC = 0x0F0F;
@@ -125,6 +137,10 @@ library __MACRO__MAPPING {
     uint256 public constant TRANSFER_GAS_COST__TOKEN_LDO = 0x0F0F;
     uint256 public constant TRANSFER_GAS_COST__TOKEN_GMX = 0x0F0F;
     uint256 public constant TRANSFER_GAS_COST__TOKEN_ARB = 0x0F0F;
+    uint256 public constant TRANSFER_GAS_COST__TOKEN_MKR = 0x0F0F;
+    uint256 public constant TRANSFER_GAS_COST__TOKEN_UNI = 0x0F0F;
+    uint256 public constant TRANSFER_GAS_COST__TOKEN_LINK = 0x0F0F;
+    uint256 public constant TRANSFER_GAS_COST__TOKEN_MNT = 0x0F0F;
 
     uint32 public constant TWAP_INTERVAL__DEFAULT = 0x0F0F;
     uint32 public constant TWAP_INTERVAL__PAIR_WETH_USDC = 0x0F0F;
@@ -159,6 +175,10 @@ library __MACRO__MAPPING {
     bool public constant IS_NON_REBASING__TOKEN_LDO = false;
     bool public constant IS_NON_REBASING__TOKEN_GMX = false;
     bool public constant IS_NON_REBASING__TOKEN_ARB = false;
+    bool public constant IS_NON_REBASING__TOKEN_MKR = false;
+    bool public constant IS_NON_REBASING__TOKEN_UNI = false;
+    bool public constant IS_NON_REBASING__TOKEN_LINK = false;
+    bool public constant IS_NON_REBASING__TOKEN_MNT = false;
 
     uint32 public constant PRICE_TOLERANCE__DEFAULT = 0x0F0F;
     uint32 public constant PRICE_TOLERANCE__PAIR_WETH_USDC = 0x0F0F;
@@ -176,4 +196,8 @@ library __MACRO__MAPPING {
     uint32 public constant PRICE_TOLERANCE__PAIR_WETH_LDO = 0x0F0F;
     uint32 public constant PRICE_TOLERANCE__PAIR_WETH_GMX = 0x0F0F;
     uint32 public constant PRICE_TOLERANCE__PAIR_WETH_ARB = 0x0F0F;
+    uint32 public constant PRICE_TOLERANCE__PAIR_WETH_MKR = 0x0F0F;
+    uint32 public constant PRICE_TOLERANCE__PAIR_WETH_UNI = 0x0F0F;
+    uint32 public constant PRICE_TOLERANCE__PAIR_WETH_LINK = 0x0F0F;
+    uint32 public constant PRICE_TOLERANCE__PAIR_WETH_MNT = 0x0F0F;
 }

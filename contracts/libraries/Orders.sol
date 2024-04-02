@@ -43,7 +43,7 @@ library Orders {
     event RefundFailed(address indexed to, address indexed token, uint256 amount, bytes data);
 
     // Note on gas estimation for the full order execution in the UI:
-    // Add (ORDER_BASE_COST + token transfer costs) to the actual gas usage
+    // Add (*_ORDER_BASE_COST + token transfer costs) to the actual gas usage
     // of the TwapDelay._execute* functions when updating gas cost in the UI.
     // Remember that ETH unwrap is part of those functions. It is optional,
     // but also needs to be included in the estimate.
@@ -58,7 +58,13 @@ library Orders {
     uint256 public constant PAIR_TRANSFER_COST = 55_000;
     uint256 public constant REFUND_BASE_COST =
         BOT_ETHER_TRANSFER_COST + ETHER_TRANSFER_COST + BUFFER_COST + ORDER_EXECUTED_EVENT_COST;
-    uint256 public constant ORDER_BASE_COST = EXECUTE_PREPARATION_COST + REFUND_BASE_COST;
+    uint256 private constant ORDER_BASE_COST = EXECUTE_PREPARATION_COST + REFUND_BASE_COST;
+    uint256 public constant TOKEN_REFUND_BASE_COST = 20_000; // cost of performing token refund logic (excluding token transfer)
+
+    uint256 public constant DEPOSIT_ORDER_BASE_COST = ORDER_BASE_COST + 2 * TOKEN_REFUND_BASE_COST;
+    uint256 public constant WITHDRAW_ORDER_BASE_COST = ORDER_BASE_COST;
+    uint256 public constant SELL_ORDER_BASE_COST = ORDER_BASE_COST + TOKEN_REFUND_BASE_COST;
+    uint256 public constant BUY_ORDER_BASE_COST = ORDER_BASE_COST + TOKEN_REFUND_BASE_COST;
 
     // Masks used for setting order disabled
     // Different bits represent different order types
@@ -231,17 +237,14 @@ library Orders {
         DepositParams calldata depositParams,
         TokenShares.Data storage tokenShares
     ) external {
-        {
-            // scope for checks, avoids stack too deep errors
-            uint256 token0TransferCost = getTransferGasCost(depositParams.token0);
-            uint256 token1TransferCost = getTransferGasCost(depositParams.token1);
-            checkOrderParams(
-                depositParams.to,
-                depositParams.gasLimit,
-                depositParams.submitDeadline,
-                ORDER_BASE_COST.add(token0TransferCost).add(token1TransferCost)
-            );
-        }
+        checkOrderParams(
+            depositParams.to,
+            depositParams.gasLimit,
+            depositParams.submitDeadline,
+            DEPOSIT_ORDER_BASE_COST +
+                getTransferGasCost(depositParams.token0) +
+                getTransferGasCost(depositParams.token1)
+        );
         require(depositParams.amount0 != 0 || depositParams.amount1 != 0, 'OS25');
         (address pairAddress, bool inverted) = getPair(depositParams.token0, depositParams.token1);
         require(!getDepositDisabled(data, pairAddress), 'OS46');
@@ -319,7 +322,7 @@ library Orders {
             withdrawParams.to,
             withdrawParams.gasLimit,
             withdrawParams.submitDeadline,
-            ORDER_BASE_COST.add(PAIR_TRANSFER_COST)
+            WITHDRAW_ORDER_BASE_COST + PAIR_TRANSFER_COST
         );
         require(withdrawParams.liquidity != 0, 'OS22');
 
@@ -365,12 +368,11 @@ library Orders {
     }
 
     function sell(Data storage data, SellParams calldata sellParams, TokenShares.Data storage tokenShares) external {
-        uint256 tokenTransferCost = getTransferGasCost(sellParams.tokenIn);
         checkOrderParams(
             sellParams.to,
             sellParams.gasLimit,
             sellParams.submitDeadline,
-            ORDER_BASE_COST.add(tokenTransferCost)
+            SELL_ORDER_BASE_COST + getTransferGasCost(sellParams.tokenIn)
         );
 
         (address pairAddress, bool inverted) = sellHelper(data, sellParams);
@@ -411,7 +413,12 @@ library Orders {
         SellParams calldata sellParams,
         TokenShares.Data storage tokenShares
     ) external {
-        checkOrderParams(sellParams.to, sellParams.gasLimit, sellParams.submitDeadline, ORDER_BASE_COST);
+        checkOrderParams(
+            sellParams.to,
+            sellParams.gasLimit,
+            sellParams.submitDeadline,
+            SELL_ORDER_BASE_COST + getTransferGasCost(sellParams.tokenIn)
+        );
 
         (, bool inverted) = sellHelper(data, sellParams);
 
@@ -476,12 +483,11 @@ library Orders {
     }
 
     function buy(Data storage data, BuyParams calldata buyParams, TokenShares.Data storage tokenShares) external {
-        uint256 tokenTransferCost = getTransferGasCost(buyParams.tokenIn);
         checkOrderParams(
             buyParams.to,
             buyParams.gasLimit,
             buyParams.submitDeadline,
-            ORDER_BASE_COST.add(tokenTransferCost)
+            BUY_ORDER_BASE_COST + getTransferGasCost(buyParams.tokenIn)
         );
         require(buyParams.amountOut != 0, 'OS23');
         (address pairAddress, bool inverted) = getPair(buyParams.tokenIn, buyParams.tokenOut);
@@ -537,11 +543,7 @@ library Orders {
         futureFee = data.gasPrice.mul(gasLimit);
         require(value >= futureFee, 'OS1E');
         if (value > futureFee) {
-            TransferHelper.safeTransferETH(
-                msg.sender,
-                value.sub(futureFee),
-                getTransferGasCost(NATIVE_CURRENCY_SENTINEL)
-            );
+            TransferHelper.safeTransferETH(msg.sender, value - futureFee, getTransferGasCost(NATIVE_CURRENCY_SENTINEL));
         }
     }
 
@@ -666,6 +668,18 @@ library Orders {
         // #endif
         // #if defined(TRANSFER_GAS_COST__TOKEN_ARB) && (uint(TRANSFER_GAS_COST__TOKEN_ARB) != uint(TRANSFER_GAS_COST__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_ARB_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_ARB;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_MKR) && (uint(TRANSFER_GAS_COST__TOKEN_MKR) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_MKR_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_MKR;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_UNI) && (uint(TRANSFER_GAS_COST__TOKEN_UNI) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_UNI_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_UNI;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_LINK) && (uint(TRANSFER_GAS_COST__TOKEN_LINK) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_LINK_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_LINK;
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_MNT) && (uint(TRANSFER_GAS_COST__TOKEN_MNT) != uint(TRANSFER_GAS_COST__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_MNT_ADDRESS) return __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_MNT;
         // #endif
         return __MACRO__MAPPING.TRANSFER_GAS_COST__DEFAULT;
     }

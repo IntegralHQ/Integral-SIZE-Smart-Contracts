@@ -216,7 +216,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         );
         if (!executionSuccess) {
             (, address tokenIn, ) = _getPairInfo(order.pairId, order.inverted);
-            if (!_refundToken(tokenIn, order.to, order.shares, order.wrapUnwrap)) {
+            if (!_refundToken(tokenIn, order.to, order.shares, order.wrapUnwrap, false)) {
                 limitOrders[orderId].status = LimitOrderStatus.RefundFailed;
             } else {
                 limitOrders[orderId].status = LimitOrderStatus.Failed;
@@ -335,7 +335,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         bool canOwnerRefund = order.expiration < block.timestamp.sub(365 days) && executor == owner;
         address to = canOwnerRefund ? owner : order.to;
 
-        require(_refundToken(tokenIn, to, order.shares, order.wrapUnwrap), 'TL14');
+        require(_refundToken(tokenIn, to, order.shares, order.wrapUnwrap, true), 'TL14');
         if (shouldRefundPrepaidGas) {
             uint256 value = order.gasPrice.mul(order.gasLimit);
             require(_refundEth(payable(to), value), 'TL40');
@@ -348,14 +348,15 @@ contract TwapLimitOrder is ITwapLimitOrder {
         uint32 twapInterval,
         uint256 price
     ) internal returns (uint256 orderId) {
-        uint256 tokenTransferCost = Orders.getTransferGasCost(buyParams.tokenIn);
         require(buyParams.amountOut != 0, 'TL23');
         _checkOrderParams(
             buyParams.to,
             buyParams.gasLimit,
             buyParams.submitDeadline,
             expiration,
-            Orders.ORDER_BASE_COST.add(tokenTransferCost.mul(GAS_MULTIPLIER).div(GAS_PRECISION))
+            Orders.BUY_ORDER_BASE_COST.add(
+                Orders.getTransferGasCost(buyParams.tokenIn).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
+            )
         );
 
         uint256 value = msg.value;
@@ -412,14 +413,15 @@ contract TwapLimitOrder is ITwapLimitOrder {
         uint32 twapInterval,
         uint256 price
     ) internal returns (uint256 orderId) {
-        uint256 tokenTransferCost = Orders.getTransferGasCost(sellParams.tokenIn);
         require(sellParams.amountIn != 0, 'TL24');
         _checkOrderParams(
             sellParams.to,
             sellParams.gasLimit,
             sellParams.submitDeadline,
             expiration,
-            Orders.ORDER_BASE_COST.add(tokenTransferCost.mul(GAS_MULTIPLIER).div(GAS_PRECISION))
+            Orders.SELL_ORDER_BASE_COST.add(
+                Orders.getTransferGasCost(sellParams.tokenIn).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
+            )
         );
 
         uint256 value = msg.value;
@@ -609,13 +611,19 @@ contract TwapLimitOrder is ITwapLimitOrder {
         emit EthRefund(to, success, value);
     }
 
-    function _refundToken(address token, address to, uint256 share, bool unwrap) private returns (bool) {
+    function _refundToken(
+        address token,
+        address to,
+        uint256 share,
+        bool unwrap,
+        bool forwardAllGas
+    ) private returns (bool) {
         if (share == 0) {
             return true;
         }
-        (bool success, bytes memory data) = address(this).call{ gas: Orders.getTransferGasCost(token) }(
-            abi.encodeWithSelector(this._transferRefundToken.selector, token, to, share, unwrap)
-        );
+        (bool success, bytes memory data) = address(this).call{
+            gas: forwardAllGas ? gasleft() : Orders.TOKEN_REFUND_BASE_COST + Orders.getTransferGasCost(token)
+        }(abi.encodeWithSelector(this._transferRefundToken.selector, token, to, share, unwrap));
         if (!success) {
             emit RefundFailed(to, token, share, data);
         }
@@ -695,6 +703,18 @@ contract TwapLimitOrder is ITwapLimitOrder {
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_ARB)
         emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_ARB);
         // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MKR)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MKR);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_UNI)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_UNI);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_LINK)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_LINK);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MNT)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MNT);
+        // #endif
     }
 
     // prettier-ignore
@@ -744,6 +764,18 @@ contract TwapLimitOrder is ITwapLimitOrder {
         // #endif
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_ARB) && (uint(PRICE_TOLERANCE__PAIR_WETH_ARB) != uint(PRICE_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_ARB;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MKR) && (uint(PRICE_TOLERANCE__PAIR_WETH_MKR) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MKR;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_UNI) && (uint(PRICE_TOLERANCE__PAIR_WETH_UNI) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_UNI;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_LINK) && (uint(PRICE_TOLERANCE__PAIR_WETH_LINK) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_LINK;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MNT) && (uint(PRICE_TOLERANCE__PAIR_WETH_MNT) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MNT;
         // #endif
         return __MACRO__MAPPING.PRICE_TOLERANCE__DEFAULT;
     }
