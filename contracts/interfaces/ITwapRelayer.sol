@@ -12,12 +12,8 @@ interface ITwapRelayer {
     event DelaySet(address delay);
     event PairEnabledSet(address pair, bool enabled);
     event SwapFeeSet(address pair, uint256 fee);
-    event TwapIntervalSet(address pair, uint32 interval);
-    event EthTransferGasCostSet(uint256 gasCost);
     event ExecutionGasLimitSet(uint256 limit);
-    event TokenLimitMinSet(address token, uint256 limit);
-    event TokenLimitMaxMultiplierSet(address token, uint256 limit);
-    event ToleranceSet(address pair, uint16 tolerance);
+
     event Approve(address token, address to, uint256 amount);
     event Withdraw(address token, address to, uint256 amount);
     event Sell(
@@ -86,10 +82,6 @@ interface ITwapRelayer {
 
     function executionGasLimit() external pure returns (uint256);
 
-    function tokenLimitMin(address token) external pure returns (uint256);
-
-    function tokenLimitMaxMultiplier(address token) external pure returns (uint256);
-
     function tolerance(address pair) external pure returns (uint16);
 
     function setRebalancer(address _rebalancer) external;
@@ -98,9 +90,7 @@ interface ITwapRelayer {
 
     function getTolerance(address pair) external pure returns (uint16);
 
-    function getTokenLimitMin(address token) external pure returns (uint256);
-
-    function getTokenLimitMaxMultiplier(address token) external pure returns (uint256);
+    function getTokenLimits(address token) external pure returns (uint256 min, uint256 max);
 
     function getTwapInterval(address pair) external pure returns (uint32);
 
@@ -134,6 +124,8 @@ interface ITwapRelayer {
     ) external view returns (uint8 xDecimals, uint8 yDecimals, uint256 price);
 
     function getPriceByTokenAddresses(address tokenIn, address tokenOut) external view returns (uint256 price);
+
+    function isPathEnabled(address tokenIn, address tokenOut) external view returns (bool);
 
     function getPoolState(
         address token0,

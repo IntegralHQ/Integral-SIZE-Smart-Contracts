@@ -214,28 +214,29 @@ contract TwapDelay is ITwapDelay {
         bool orderExecuted;
         bool senderCanExecute = isBot[msg.sender] || isBot[address(0)];
         for (uint256 i; i < ordersLength; ++i) {
-            if (_orders[i].orderId <= orders.lastProcessedOrderId) {
+            Orders.Order calldata order = _orders[i];
+            if (order.orderId <= orders.lastProcessedOrderId) {
                 continue;
             }
-            if (orders.canceled[_orders[i].orderId]) {
-                orders.dequeueOrder(_orders[i].orderId);
+            if (orders.canceled[order.orderId]) {
+                orders.dequeueOrder(order.orderId);
                 continue;
             }
-            orders.verifyOrder(_orders[i]);
-            uint256 validAfterTimestamp = _orders[i].validAfterTimestamp;
+            orders.verifyOrder(order);
+            uint256 validAfterTimestamp = order.validAfterTimestamp;
             if (validAfterTimestamp >= block.timestamp) {
                 break;
             }
             require(senderCanExecute || block.timestamp >= validAfterTimestamp + BOT_EXECUTION_TIME, 'TD00');
             orderExecuted = true;
-            if (_orders[i].orderType == Orders.OrderType.Deposit) {
-                executeDeposit(_orders[i]);
-            } else if (_orders[i].orderType == Orders.OrderType.Withdraw) {
-                executeWithdraw(_orders[i]);
-            } else if (_orders[i].orderType == Orders.OrderType.Sell) {
-                executeSell(_orders[i]);
-            } else if (_orders[i].orderType == Orders.OrderType.Buy) {
-                executeBuy(_orders[i]);
+            if (order.orderType == Orders.OrderType.Deposit) {
+                executeDeposit(order);
+            } else if (order.orderType == Orders.OrderType.Withdraw) {
+                executeWithdraw(order);
+            } else if (order.orderType == Orders.OrderType.Sell) {
+                executeSell(order);
+            } else if (order.orderType == Orders.OrderType.Buy) {
+                executeBuy(order);
             }
         }
         if (orderExecuted) {
@@ -250,9 +251,9 @@ contract TwapDelay is ITwapDelay {
 
         (bool executionSuccess, bytes memory data) = address(this).call{
             gas: order.gasLimit.sub(
-                Orders.ORDER_BASE_COST.add(Orders.getTransferGasCost(order.token0)).add(
-                    Orders.getTransferGasCost(order.token1)
-                )
+                Orders.DEPOSIT_ORDER_BASE_COST +
+                    Orders.getTransferGasCost(order.tokens[0]) +
+                    Orders.getTransferGasCost(order.tokens[1])
             )
         }(abi.encodeWithSelector(this._executeDeposit.selector, order));
 
@@ -260,11 +261,12 @@ contract TwapDelay is ITwapDelay {
         if (!executionSuccess) {
             refundSuccess = refundTokens(
                 order.to,
-                order.token0,
+                order.tokens[0],
                 order.value0,
-                order.token1,
+                order.tokens[1],
                 order.value1,
-                order.unwrap
+                order.unwrap,
+                false
             );
         }
         finalizeOrder(refundSuccess);
@@ -278,12 +280,12 @@ contract TwapDelay is ITwapDelay {
         orders.dequeueOrder(order.orderId);
 
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.PAIR_TRANSFER_COST))
+            gas: order.gasLimit.sub(Orders.WITHDRAW_ORDER_BASE_COST + Orders.PAIR_TRANSFER_COST)
         }(abi.encodeWithSelector(this._executeWithdraw.selector, order));
 
         bool refundSuccess = true;
         if (!executionSuccess) {
-            (address pair, ) = Orders.getPair(order.token0, order.token1);
+            (address pair, ) = Orders.getPair(order.tokens[0], order.tokens[1]);
             refundSuccess = Orders.refundLiquidity(pair, order.to, order.liquidity, this._refundLiquidity.selector);
         }
         finalizeOrder(refundSuccess);
@@ -297,12 +299,11 @@ contract TwapDelay is ITwapDelay {
         orders.dequeueOrder(order.orderId);
 
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.getTransferGasCost(order.token0)))
+            gas: order.gasLimit.sub(Orders.SELL_ORDER_BASE_COST + Orders.getTransferGasCost(order.tokens[0]))
         }(abi.encodeWithSelector(this._executeSell.selector, order));
-
         bool refundSuccess = true;
         if (!executionSuccess) {
-            refundSuccess = refundToken(order.token0, order.to, order.value0, order.unwrap);
+            refundSuccess = refundToken(order.tokens[0], order.to, order.value0, order.unwrap, false);
         }
         finalizeOrder(refundSuccess);
         (uint256 gasUsed, uint256 ethRefund) = refund(order.gasLimit, order.gasPrice, gasStart, order.to);
@@ -315,12 +316,11 @@ contract TwapDelay is ITwapDelay {
         orders.dequeueOrder(order.orderId);
 
         (bool executionSuccess, bytes memory data) = address(this).call{
-            gas: order.gasLimit.sub(Orders.ORDER_BASE_COST.add(Orders.getTransferGasCost(order.token0)))
+            gas: order.gasLimit.sub(Orders.BUY_ORDER_BASE_COST + Orders.getTransferGasCost(order.tokens[0]))
         }(abi.encodeWithSelector(this._executeBuy.selector, order));
-
         bool refundSuccess = true;
         if (!executionSuccess) {
-            refundSuccess = refundToken(order.token0, order.to, order.value0, order.unwrap);
+            refundSuccess = refundToken(order.tokens[0], order.to, order.value0, order.unwrap, false);
         }
         finalizeOrder(refundSuccess);
         (uint256 gasUsed, uint256 ethRefund) = refund(order.gasLimit, order.gasPrice, gasStart, order.to);
@@ -357,13 +357,19 @@ contract TwapDelay is ITwapDelay {
         emit EthRefund(to, success, value);
     }
 
-    function refundToken(address token, address to, uint256 share, bool unwrap) private returns (bool) {
+    function refundToken(
+        address token,
+        address to,
+        uint256 share,
+        bool unwrap,
+        bool forwardAllGas
+    ) private returns (bool) {
         if (share == 0) {
             return true;
         }
-        (bool success, bytes memory data) = address(this).call{ gas: Orders.getTransferGasCost(token) }(
-            abi.encodeWithSelector(this._refundToken.selector, token, to, share, unwrap)
-        );
+        (bool success, bytes memory data) = address(this).call{
+            gas: forwardAllGas ? gasleft() : Orders.TOKEN_REFUND_BASE_COST + Orders.getTransferGasCost(token)
+        }(abi.encodeWithSelector(this._refundToken.selector, token, to, share, unwrap));
         if (!success) {
             emit Orders.RefundFailed(to, token, share, data);
         }
@@ -376,10 +382,16 @@ contract TwapDelay is ITwapDelay {
         uint256 share0,
         address token1,
         uint256 share1,
-        bool unwrap
+        bool unwrap,
+        bool forwardAllGas
     ) private returns (bool) {
         (bool success, bytes memory data) = address(this).call{
-            gas: Orders.getTransferGasCost(token0).add(Orders.getTransferGasCost(token1))
+            gas: forwardAllGas
+                ? gasleft()
+                : 2 *
+                    Orders.TOKEN_REFUND_BASE_COST +
+                    Orders.getTransferGasCost(token0) +
+                    Orders.getTransferGasCost(token1)
         }(abi.encodeWithSelector(this._refundTokens.selector, to, token0, share0, token1, share1, unwrap));
         if (!success) {
             emit Orders.RefundFailed(to, token0, share0, data);
@@ -420,10 +432,10 @@ contract TwapDelay is ITwapDelay {
     function _executeDeposit(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
 
-        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
+        (address pairAddress, ) = Orders.getPair(order.tokens[0], order.tokens[1]);
 
         ITwapPair(pairAddress).sync();
-        ITwapFactoryGovernor(factoryGovernor).distributeFees(order.token0, order.token1, pairAddress);
+        ITwapFactoryGovernor(factoryGovernor).distributeFees(order.tokens[0], order.tokens[1], pairAddress);
         ITwapPair(pairAddress).sync();
         ExecutionHelper.executeDeposit(order, pairAddress, getTolerance(pairAddress), tokenShares);
     }
@@ -431,10 +443,10 @@ contract TwapDelay is ITwapDelay {
     function _executeWithdraw(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
 
-        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
+        (address pairAddress, ) = Orders.getPair(order.tokens[0], order.tokens[1]);
 
         ITwapPair(pairAddress).sync();
-        ITwapFactoryGovernor(factoryGovernor).distributeFees(order.token0, order.token1, pairAddress);
+        ITwapFactoryGovernor(factoryGovernor).distributeFees(order.tokens[0], order.tokens[1], pairAddress);
         ITwapPair(pairAddress).sync();
         ExecutionHelper.executeWithdraw(order);
     }
@@ -442,27 +454,62 @@ contract TwapDelay is ITwapDelay {
     function _executeBuy(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
 
-        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
         ExecutionHelper.ExecuteBuySellParams memory orderParams;
         orderParams.order = order;
-        orderParams.pairAddress = pairAddress;
-        orderParams.pairTolerance = getTolerance(pairAddress);
 
-        ITwapPair(pairAddress).sync();
-        ExecutionHelper.executeBuy(orderParams, tokenShares);
+        uint256 hops = order.tokens.length - 1;
+        ExecutionHelper.HopParams[] memory hopParams = new ExecutionHelper.HopParams[](hops);
+        for (uint256 i; i < hops; ++i) {
+            hopParams[i] = _getHopParams(order.tokens[i], order.tokens[i + 1]);
+        }
+        orderParams.hopParams = hopParams;
+
+        if (hops == 1) {
+            ExecutionHelper.executeBuy(orderParams, tokenShares);
+        } else {
+            ExecutionHelper.executeMultihopBuy(orderParams, tokenShares);
+        }
     }
 
     function _executeSell(Orders.Order calldata order) external payable {
         require(msg.sender == address(this), 'TD00');
 
-        (address pairAddress, ) = Orders.getPair(order.token0, order.token1);
         ExecutionHelper.ExecuteBuySellParams memory orderParams;
         orderParams.order = order;
-        orderParams.pairAddress = pairAddress;
-        orderParams.pairTolerance = getTolerance(pairAddress);
 
+        uint256 hops = order.tokens.length - 1;
+        ExecutionHelper.HopParams[] memory hopParams = new ExecutionHelper.HopParams[](hops);
+        for (uint256 i; i < hops; ++i) {
+            hopParams[i] = _getHopParams(order.tokens[i], order.tokens[i + 1]);
+        }
+        orderParams.hopParams = hopParams;
+
+        if (hops == 1) {
+            ExecutionHelper.executeSell(orderParams, tokenShares);
+        } else {
+            ExecutionHelper.executeMultihopSell(orderParams, tokenShares);
+        }
+    }
+
+    function _getHopParams(
+        address token0,
+        address token1
+    ) internal returns (ExecutionHelper.HopParams memory hopParams) {
+        (address pairAddress, bool inverted) = Orders.getPair(token0, token1);
         ITwapPair(pairAddress).sync();
-        ExecutionHelper.executeSell(orderParams, tokenShares);
+
+        (bytes memory priceInfo, address oracle) = ExecutionHelper.encodePriceInfo(pairAddress);
+
+        hopParams = ExecutionHelper.HopParams(
+            0, // amountIn, will be calculated subsequently
+            0, // amountOut, will be calculated subsequently
+            ITwapPair(pairAddress).swapFee(),
+            uint256(getTolerance(pairAddress)),
+            priceInfo,
+            pairAddress,
+            oracle,
+            inverted
+        );
     }
 
     /// @dev The `order` must be verified by calling `Orders.verifyOrder` before calling this function.
@@ -471,12 +518,15 @@ contract TwapDelay is ITwapDelay {
 
         if (order.orderType == Orders.OrderType.Deposit) {
             address to = canOwnerRefund ? owner : order.to;
-            require(refundTokens(to, order.token0, order.value0, order.token1, order.value1, order.unwrap), 'TD14');
+            require(
+                refundTokens(to, order.tokens[0], order.value0, order.tokens[1], order.value1, order.unwrap, true),
+                'TD14'
+            );
             if (shouldRefundEth) {
                 require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
         } else if (order.orderType == Orders.OrderType.Withdraw) {
-            (address pair, ) = Orders.getPair(order.token0, order.token1);
+            (address pair, ) = Orders.getPair(order.tokens[0], order.tokens[1]);
             address to = canOwnerRefund ? owner : order.to;
             require(Orders.refundLiquidity(pair, to, order.liquidity, this._refundLiquidity.selector), 'TD14');
             if (shouldRefundEth) {
@@ -484,13 +534,13 @@ contract TwapDelay is ITwapDelay {
             }
         } else if (order.orderType == Orders.OrderType.Sell) {
             address to = canOwnerRefund ? owner : order.to;
-            require(refundToken(order.token0, to, order.value0, order.unwrap), 'TD14');
+            require(refundToken(order.tokens[0], to, order.value0, order.unwrap, true), 'TD14');
             if (shouldRefundEth) {
                 require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
         } else if (order.orderType == Orders.OrderType.Buy) {
             address to = canOwnerRefund ? owner : order.to;
-            require(refundToken(order.token0, to, order.value0, order.unwrap), 'TD14');
+            require(refundToken(order.tokens[0], to, order.value0, order.unwrap, true), 'TD14');
             if (shouldRefundEth) {
                 require(refundEth(payable(to), order.gasPrice.mul(order.gasLimit)), 'TD40');
             }
@@ -577,6 +627,18 @@ contract TwapDelay is ITwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_ARB)
         emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_ARB);
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_MKR)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_MKR);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_UNI)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_UNI);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_LINK)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_LINK);
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_MNT)
+        emit ToleranceSet(__MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS, __MACRO__MAPPING.TOLERANCE__PAIR_WETH_MNT);
+        // #endif
 
         emit TransferGasCostSet(Orders.NATIVE_CURRENCY_SENTINEL, Orders.ETHER_TRANSFER_CALL_COST);
         // #if defined(TRANSFER_GAS_COST__TOKEN_WETH)
@@ -624,6 +686,18 @@ contract TwapDelay is ITwapDelay {
         // #if defined(TRANSFER_GAS_COST__TOKEN_ARB)
         emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_ARB_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_ARB);
         // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_MKR)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_MKR_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_MKR);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_UNI)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_UNI_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_UNI);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_LINK)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_LINK_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_LINK);
+        // #endif
+        // #if defined(TRANSFER_GAS_COST__TOKEN_MNT)
+        emit TransferGasCostSet(__MACRO__GLOBAL.TOKEN_MNT_ADDRESS, __MACRO__MAPPING.TRANSFER_GAS_COST__TOKEN_MNT);
+        // #endif
 
         // #if defined(IS_NON_REBASING__TOKEN_WETH)
         emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_WETH_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_WETH);
@@ -669,6 +743,18 @@ contract TwapDelay is ITwapDelay {
         // #endif
         // #if defined(IS_NON_REBASING__TOKEN_ARB)
         emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_ARB_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_ARB);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_MKR)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_MKR_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_MKR);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_UNI)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_UNI_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_UNI);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_LINK)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_LINK_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_LINK);
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_MNT)
+        emit NonRebasingTokenSet(__MACRO__GLOBAL.TOKEN_MNT_ADDRESS, __MACRO__MAPPING.IS_NON_REBASING__TOKEN_MNT);
         // #endif
     }
 
@@ -719,6 +805,18 @@ contract TwapDelay is ITwapDelay {
         // #endif
         // #if defined(TOLERANCE__PAIR_WETH_ARB) && (uint(TOLERANCE__PAIR_WETH_ARB) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_ARB;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_MKR) && (uint(TOLERANCE__PAIR_WETH_MKR) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_MKR;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_UNI) && (uint(TOLERANCE__PAIR_WETH_UNI) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_UNI;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_LINK) && (uint(TOLERANCE__PAIR_WETH_LINK) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_LINK;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_MNT) && (uint(TOLERANCE__PAIR_WETH_MNT) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS) return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_MNT;
         // #endif
         return __MACRO__MAPPING.TOLERANCE__DEFAULT;
     }

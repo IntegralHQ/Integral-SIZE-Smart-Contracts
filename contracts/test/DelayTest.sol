@@ -84,6 +84,18 @@ contract DelayTest is TwapDelay {
         // #if defined(TOLERANCE__PAIR_WETH_ARB) && (uint(TOLERANCE__PAIR_WETH_ARB) != uint(TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_ARB;
         // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_MKR) && (uint(TOLERANCE__PAIR_WETH_MKR) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_MKR;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_UNI) && (uint(TOLERANCE__PAIR_WETH_UNI) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_UNI;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_LINK) && (uint(TOLERANCE__PAIR_WETH_LINK) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_LINK;
+        // #endif
+        // #if defined(TOLERANCE__PAIR_WETH_MNT) && (uint(TOLERANCE__PAIR_WETH_MNT) != uint(TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS)   return __MACRO__MAPPING.TOLERANCE__PAIR_WETH_MNT;
+        // #endif
 
         return 0;
     }

@@ -182,6 +182,18 @@ library TokenShares {
         // #if defined(IS_NON_REBASING__TOKEN_ARB) && (uint(IS_NON_REBASING__TOKEN_ARB) != uint(IS_NON_REBASING__DEFAULT))
         if (token == __MACRO__GLOBAL.TOKEN_ARB_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_ARB;
         // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_MKR) && (uint(IS_NON_REBASING__TOKEN_MKR) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_MKR_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_MKR;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_UNI) && (uint(IS_NON_REBASING__TOKEN_UNI) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_UNI_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_UNI;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_LINK) && (uint(IS_NON_REBASING__TOKEN_LINK) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_LINK_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_LINK;
+        // #endif
+        // #if defined(IS_NON_REBASING__TOKEN_MNT) && (uint(IS_NON_REBASING__TOKEN_MNT) != uint(IS_NON_REBASING__DEFAULT))
+        if (token == __MACRO__GLOBAL.TOKEN_MNT_ADDRESS) return __MACRO__MAPPING.IS_NON_REBASING__TOKEN_MNT;
+        // #endif
         return __MACRO__MAPPING.IS_NON_REBASING__DEFAULT;
     }
 }

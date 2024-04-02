@@ -175,7 +175,8 @@ contract TwapLimitOrder is ITwapLimitOrder {
         require(!enqueueDisabled, 'TL61');
         require(expiration >= EXPIRATION_LOWER_LIMIT, 'TL64');
         require(expiration <= EXPIRATION_UPPER_LIMIT, 'TL65');
-        require(_isTwapIntervalValid(sellParams.tokenIn, sellParams.tokenOut, twapInterval), 'TL66');
+        require(sellParams.tokens.length == 2, 'TL35');
+        require(_isTwapIntervalValid(sellParams.tokens[0], sellParams.tokens[1], twapInterval), 'TL66');
         return _sellLimitOrder(sellParams, block.timestamp.add(expiration).toUint32(), twapInterval, price);
     }
 
@@ -188,7 +189,8 @@ contract TwapLimitOrder is ITwapLimitOrder {
         require(!enqueueDisabled, 'TL61');
         require(expiration >= EXPIRATION_LOWER_LIMIT, 'TL64');
         require(expiration <= EXPIRATION_UPPER_LIMIT, 'TL65');
-        require(_isTwapIntervalValid(buyParams.tokenIn, buyParams.tokenOut, twapInterval), 'TL66');
+        require(buyParams.tokens.length == 2, 'TL35');
+        require(_isTwapIntervalValid(buyParams.tokens[0], buyParams.tokens[1], twapInterval), 'TL66');
         return _buyLimitOrder(buyParams, block.timestamp.add(expiration).toUint32(), twapInterval, price);
     }
 
@@ -216,7 +218,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         );
         if (!executionSuccess) {
             (, address tokenIn, ) = _getPairInfo(order.pairId, order.inverted);
-            if (!_refundToken(tokenIn, order.to, order.shares, order.wrapUnwrap)) {
+            if (!_refundToken(tokenIn, order.to, order.shares, order.wrapUnwrap, false)) {
                 limitOrders[orderId].status = LimitOrderStatus.RefundFailed;
             } else {
                 limitOrders[orderId].status = LimitOrderStatus.Failed;
@@ -251,12 +253,14 @@ contract TwapLimitOrder is ITwapLimitOrder {
         uint256 value = _gasPrice.mul(order.gasLimit);
         (, address tokenIn, address tokenOut) = _getPairInfo(order.pairId, order.inverted);
         uint256 amountIn = tokenShares.sharesToAmount(tokenIn, order.shares, 0, order.to);
+        address[] memory tokens = new address[](2);
+        tokens[0] = tokenIn;
+        tokens[1] = tokenOut;
 
         if (order.orderType == LimitOrderType.Buy) {
             delayOrderId = ITwapDelay(DELAY_ADDRESS).buy{ value: value }(
                 Orders.BuyParams(
-                    tokenIn,
-                    tokenOut,
+                    tokens,
                     amountIn,
                     order.amountOut,
                     false,
@@ -268,8 +272,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         } else {
             delayOrderId = ITwapDelay(DELAY_ADDRESS).sell{ value: value }(
                 Orders.SellParams(
-                    tokenIn,
-                    tokenOut,
+                    tokens,
                     amountIn,
                     order.amountOut,
                     false,
@@ -335,7 +338,7 @@ contract TwapLimitOrder is ITwapLimitOrder {
         bool canOwnerRefund = order.expiration < block.timestamp.sub(365 days) && executor == owner;
         address to = canOwnerRefund ? owner : order.to;
 
-        require(_refundToken(tokenIn, to, order.shares, order.wrapUnwrap), 'TL14');
+        require(_refundToken(tokenIn, to, order.shares, order.wrapUnwrap, true), 'TL14');
         if (shouldRefundPrepaidGas) {
             uint256 value = order.gasPrice.mul(order.gasLimit);
             require(_refundEth(payable(to), value), 'TL40');
@@ -348,26 +351,27 @@ contract TwapLimitOrder is ITwapLimitOrder {
         uint32 twapInterval,
         uint256 price
     ) internal returns (uint256 orderId) {
-        uint256 tokenTransferCost = Orders.getTransferGasCost(buyParams.tokenIn);
         require(buyParams.amountOut != 0, 'TL23');
         _checkOrderParams(
             buyParams.to,
             buyParams.gasLimit,
             buyParams.submitDeadline,
             expiration,
-            Orders.ORDER_BASE_COST.add(tokenTransferCost.mul(GAS_MULTIPLIER).div(GAS_PRECISION))
+            Orders.BUY_ORDER_BASE_COST.add(
+                Orders.getTransferGasCost(buyParams.tokens[0]).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
+            )
         );
 
         uint256 value = msg.value;
         // allocate gas refund
-        if (buyParams.tokenIn == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
+        if (buyParams.tokens[0] == TokenShares.WETH_ADDRESS && buyParams.wrapUnwrap) {
             value = value.sub(buyParams.amountInMax, 'TL1E');
         }
 
         uint256 _gasPrice = gasPrice();
         _allocateGasRefund(value, buyParams.gasLimit, _gasPrice);
-        uint256 shares = tokenShares.amountToShares(buyParams.tokenIn, buyParams.amountInMax, buyParams.wrapUnwrap);
-        (address pairAddress, uint32 pairId, bool inverted) = _getPair(buyParams.tokenIn, buyParams.tokenOut);
+        uint256 shares = tokenShares.amountToShares(buyParams.tokens[0], buyParams.amountInMax, buyParams.wrapUnwrap);
+        (address pairAddress, uint32 pairId, bool inverted) = _getPair(buyParams.tokens[0], buyParams.tokens[1]);
         require(isPairEnabled[pairAddress], 'TL5A');
         StoredOrder memory buyOrder;
         buyOrder.orderType = LimitOrderType.Buy;
@@ -412,26 +416,27 @@ contract TwapLimitOrder is ITwapLimitOrder {
         uint32 twapInterval,
         uint256 price
     ) internal returns (uint256 orderId) {
-        uint256 tokenTransferCost = Orders.getTransferGasCost(sellParams.tokenIn);
         require(sellParams.amountIn != 0, 'TL24');
         _checkOrderParams(
             sellParams.to,
             sellParams.gasLimit,
             sellParams.submitDeadline,
             expiration,
-            Orders.ORDER_BASE_COST.add(tokenTransferCost.mul(GAS_MULTIPLIER).div(GAS_PRECISION))
+            Orders.SELL_ORDER_BASE_COST.add(
+                Orders.getTransferGasCost(sellParams.tokens[0]).mul(GAS_MULTIPLIER).div(GAS_PRECISION)
+            )
         );
 
         uint256 value = msg.value;
         // allocate gas refund
-        if (sellParams.tokenIn == TokenShares.WETH_ADDRESS && sellParams.wrapUnwrap) {
+        if (sellParams.tokens[0] == TokenShares.WETH_ADDRESS && sellParams.wrapUnwrap) {
             value = value.sub(sellParams.amountIn, 'TL1E');
         }
 
         uint256 _gasPrice = gasPrice();
         _allocateGasRefund(value, sellParams.gasLimit, _gasPrice);
-        uint256 shares = tokenShares.amountToShares(sellParams.tokenIn, sellParams.amountIn, sellParams.wrapUnwrap);
-        (address pairAddress, uint32 pairId, bool inverted) = _getPair(sellParams.tokenIn, sellParams.tokenOut);
+        uint256 shares = tokenShares.amountToShares(sellParams.tokens[0], sellParams.amountIn, sellParams.wrapUnwrap);
+        (address pairAddress, uint32 pairId, bool inverted) = _getPair(sellParams.tokens[0], sellParams.tokens[1]);
         require(isPairEnabled[pairAddress], 'TL5A');
 
         StoredOrder memory sellOrder;
@@ -609,13 +614,19 @@ contract TwapLimitOrder is ITwapLimitOrder {
         emit EthRefund(to, success, value);
     }
 
-    function _refundToken(address token, address to, uint256 share, bool unwrap) private returns (bool) {
+    function _refundToken(
+        address token,
+        address to,
+        uint256 share,
+        bool unwrap,
+        bool forwardAllGas
+    ) private returns (bool) {
         if (share == 0) {
             return true;
         }
-        (bool success, bytes memory data) = address(this).call{ gas: Orders.getTransferGasCost(token) }(
-            abi.encodeWithSelector(this._transferRefundToken.selector, token, to, share, unwrap)
-        );
+        (bool success, bytes memory data) = address(this).call{
+            gas: forwardAllGas ? gasleft() : Orders.TOKEN_REFUND_BASE_COST + Orders.getTransferGasCost(token)
+        }(abi.encodeWithSelector(this._transferRefundToken.selector, token, to, share, unwrap));
         if (!success) {
             emit RefundFailed(to, token, share, data);
         }
@@ -695,6 +706,18 @@ contract TwapLimitOrder is ITwapLimitOrder {
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_ARB)
         emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_ARB);
         // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MKR)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MKR);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_UNI)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_UNI);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_LINK)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_LINK);
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MNT)
+        emit PriceToleranceSet(__MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS, __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MNT);
+        // #endif
     }
 
     // prettier-ignore
@@ -744,6 +767,18 @@ contract TwapLimitOrder is ITwapLimitOrder {
         // #endif
         // #if defined(PRICE_TOLERANCE__PAIR_WETH_ARB) && (uint(PRICE_TOLERANCE__PAIR_WETH_ARB) != uint(PRICE_TOLERANCE__DEFAULT))
         if (pair == __MACRO__GLOBAL.PAIR_WETH_ARB_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_ARB;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MKR) && (uint(PRICE_TOLERANCE__PAIR_WETH_MKR) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MKR_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MKR;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_UNI) && (uint(PRICE_TOLERANCE__PAIR_WETH_UNI) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_UNI_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_UNI;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_LINK) && (uint(PRICE_TOLERANCE__PAIR_WETH_LINK) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_LINK_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_LINK;
+        // #endif
+        // #if defined(PRICE_TOLERANCE__PAIR_WETH_MNT) && (uint(PRICE_TOLERANCE__PAIR_WETH_MNT) != uint(PRICE_TOLERANCE__DEFAULT))
+        if (pair == __MACRO__GLOBAL.PAIR_WETH_MNT_ADDRESS) return __MACRO__MAPPING.PRICE_TOLERANCE__PAIR_WETH_MNT;
         // #endif
         return __MACRO__MAPPING.PRICE_TOLERANCE__DEFAULT;
     }

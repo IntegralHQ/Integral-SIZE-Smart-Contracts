@@ -18,6 +18,22 @@ contract OrdersTest {
 
     uint256 public constant DELAY = 1 weeks;
 
+    struct Order {
+        uint256 validAfterTimestamp;
+        bool unwrap;
+        uint256 timestamp;
+        uint256 gasLimit;
+        uint256 gasPrice;
+        uint256 liquidity;
+        uint256 value0;
+        uint256 value1;
+        address[] tokens;
+        address to;
+        uint256 minSwapPrice;
+        uint256 maxSwapPrice;
+        bool swap;
+    }
+
     function delay() external pure returns (uint256) {
         return DELAY;
     }
@@ -34,39 +50,23 @@ contract OrdersTest {
         return orders.orderQueue[orderId];
     }
 
-    function _enqueueDepositOrder(
-        address[2] calldata tokens,
-        uint256 share0,
-        uint256 share1,
-        uint256 minSwapPrice,
-        uint256 maxSwapPrice,
-        bool unwrap,
-        bool swap,
-        address to,
-        uint256 gasPrice,
-        uint256 gasLimit,
-        uint32 validAfterTimestamp,
-        uint256 priceAccumulator
-    ) external {
+    function _enqueueDepositOrder(Order calldata orderInfo) external {
         Orders.Order memory order = Orders.Order(
             0,
             Orders.OrderType.Deposit,
-            false,
-            validAfterTimestamp,
-            unwrap,
+            orderInfo.validAfterTimestamp,
+            orderInfo.unwrap,
             0,
-            gasLimit,
-            gasPrice,
+            orderInfo.gasLimit,
+            orderInfo.gasPrice,
             0,
-            share0,
-            share1,
-            tokens[0],
-            tokens[1],
-            to,
-            minSwapPrice,
-            maxSwapPrice,
-            swap,
-            priceAccumulator,
+            orderInfo.value0,
+            orderInfo.value1,
+            orderInfo.tokens,
+            orderInfo.to,
+            orderInfo.minSwapPrice,
+            orderInfo.maxSwapPrice,
+            orderInfo.swap,
             0,
             0
         );
@@ -75,36 +75,23 @@ contract OrdersTest {
         emit DepositEnqueued(order.orderId, order);
     }
 
-    function _enqueueWithdrawOrder(
-        address[2] calldata tokens,
-        uint256 amount,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        bool unwrap,
-        address to,
-        uint256 gasPrice,
-        uint256 gasLimit,
-        uint32 validAfterTimestamp
-    ) external {
+    function _enqueueWithdrawOrder(Order calldata orderInfo) external {
         Orders.Order memory order = Orders.Order(
             0,
             Orders.OrderType.Withdraw,
-            false,
-            validAfterTimestamp,
-            unwrap,
+            orderInfo.validAfterTimestamp,
+            orderInfo.unwrap,
             0,
-            gasLimit,
-            gasPrice,
-            amount,
-            amountAMin,
-            amountBMin,
-            tokens[0],
-            tokens[1],
-            to,
+            orderInfo.gasLimit,
+            orderInfo.gasPrice,
+            orderInfo.liquidity,
+            orderInfo.value0,
+            orderInfo.value1,
+            orderInfo.tokens,
+            orderInfo.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            0, // priceAccumulator
             0, // amountLimit0
             0 // amountLimit1
         );
@@ -113,38 +100,23 @@ contract OrdersTest {
         emit WithdrawEnqueued(order.orderId, order);
     }
 
-    function _enqueueSellOrder(
-        address[2] calldata tokens,
-        bool inverse,
-        uint256 shareIn,
-        uint256 amountOutMin,
-        bool unwrap,
-        address to,
-        uint256 gasPrice,
-        uint256 gasLimit,
-        uint32 validAfterTimestamp,
-        uint256 priceAccumulator,
-        uint32 timestamp
-    ) external {
+    function _enqueueSellOrder(Order calldata orderInfo) external {
         Orders.Order memory order = Orders.Order(
             0,
             Orders.OrderType.Sell,
-            inverse,
-            validAfterTimestamp,
-            unwrap,
-            timestamp,
-            gasLimit,
-            gasPrice,
+            orderInfo.validAfterTimestamp,
+            orderInfo.unwrap,
+            orderInfo.timestamp,
+            orderInfo.gasLimit,
+            orderInfo.gasPrice,
             0, // liquidity
-            shareIn,
-            amountOutMin,
-            tokens[0],
-            tokens[1],
-            to,
+            orderInfo.value0,
+            orderInfo.value1,
+            orderInfo.tokens,
+            orderInfo.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            priceAccumulator,
             0, // amountLimit0
             0 // amountLimit1
         );
@@ -153,38 +125,23 @@ contract OrdersTest {
         emit SellEnqueued(order.orderId, order);
     }
 
-    function _enqueueBuyOrder(
-        address[2] calldata tokens,
-        bool inverse,
-        uint256 shareInMax,
-        uint256 amountOut,
-        bool unwrap,
-        address to,
-        uint256 gasPrice,
-        uint256 gasLimit,
-        uint32 validAfterTimestamp,
-        uint256 priceAccumulator,
-        uint32 timestamp
-    ) external {
+    function _enqueueBuyOrder(Order calldata orderInfo) external {
         Orders.Order memory order = Orders.Order(
             0,
             Orders.OrderType.Buy,
-            inverse,
-            validAfterTimestamp,
-            unwrap,
-            timestamp,
-            gasLimit,
-            gasPrice,
+            orderInfo.validAfterTimestamp,
+            orderInfo.unwrap,
+            orderInfo.timestamp,
+            orderInfo.gasLimit,
+            orderInfo.gasPrice,
             0, // liquidity
-            shareInMax,
-            amountOut,
-            tokens[0],
-            tokens[1],
-            to,
+            orderInfo.value0,
+            orderInfo.value1,
+            orderInfo.tokens,
+            orderInfo.to,
             0, // minSwapPrice
             0, // maxSwapPrice
             false, // swap
-            priceAccumulator,
             0, // amountLimit0
             0 // amountLimit1
         );
